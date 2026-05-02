@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-monist-core = { path = "../monist-core" }
-monist-comb = { path = "../monist-comb" }
-monist-category = { path = "../monist-category" }
-monist-verify = { version = "0.1.0", path = "../monist-verify" }
-monist-parser = { version = "0.1.0", path = "../monist-parser" }
+monist-core = { path = "../../crates/monist-core" }
+monist-comb = { path = "../../crates/monist-comb" }
+monist-category = { path = "../../crates/monist-category" }
+monist-verify = { version = "0.1.0", path = "../../crates/monist-verify" }
+monist-parser = { version = "0.1.0", path = "../../crates/monist-parser" }
 
 [[bin]]
 name = "russell"

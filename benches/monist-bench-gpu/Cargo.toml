@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-monist-core = { path = "../monist-core" }
-monist-comb = { path = "../monist-comb" }
-monist-macros = { path = "../monist-macros" }
+monist-core = { path = "../../crates/monist-core" }
+monist-comb = { path = "../../crates/monist-comb" }
+monist-macros = { path = "../../crates/monist-macros" }
 ocl = "0.19"
 
 [dev-dependencies]

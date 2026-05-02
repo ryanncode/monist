@@ -1,11 +1,16 @@
 [workspace]
 members = [
-    "monist-core",
-    "monist-comb",
-    "monist-parser",
-    "monist-seq",
-    "monist-cli",
-    "monist-category",
-    "monist-examples"
-, "monist-psg", "monist-macros", "monist-verify", "monist-bench-cpu", "monist-bench-gpu"]
+    "crates/monist-core",
+    "crates/monist-comb",
+    "crates/monist-parser",
+    "crates/monist-seq",
+    "crates/monist-category",
+    "crates/monist-psg",
+    "crates/monist-macros",
+    "crates/monist-verify",
+    "tools/monist-cli",
+    "tools/monist-examples",
+    "benches/monist-bench-cpu",
+    "benches/monist-bench-gpu"
+]
 resolver = "2"
