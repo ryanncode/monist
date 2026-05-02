@@ -22,7 +22,7 @@ This workspace serves as the foundational Rust backend for the logic engine. It 
 
 ## Architecture
 
-The engine architecture relies on pre-computing topological routes and limits before converting variables to physical graph bindings. For detailed execution semantics and structural forms, refer to [ARCHITECTURE.md](ARCHITECTURE.md), `COMB_CAT_PLAN.md`, and the theoretical documentation in `test/`.
+The engine architecture relies on pre-computing topological routes and limits before converting variables to physical graph bindings.
 
 ## Building
 
