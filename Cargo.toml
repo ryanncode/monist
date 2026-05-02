@@ -7,5 +7,5 @@ members = [
     "monist-cli",
     "monist-category",
     "monist-examples"
-, "monist-psg", "monist-macros", "monist-verify"]
+, "monist-psg", "monist-macros", "monist-verify", "monist-bench-cpu"]
 resolver = "2"

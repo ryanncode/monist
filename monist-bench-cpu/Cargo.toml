@@ -1,0 +1,23 @@
+[package]
+name = "monist-bench-cpu"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+monist-core = { path = "../monist-core" }
+monist-comb = { path = "../monist-comb" }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "acyclic_profile"
+harness = false
+
+[[bench]]
+name = "k_iteration"
+harness = false
+
+[[bench]]
+name = "token_passing"
+harness = false
