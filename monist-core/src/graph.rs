@@ -2,6 +2,7 @@ use crate::ast::{Atomic, Formula, FormulaArena, Var};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ScopedVar(pub Var, pub usize);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -70,7 +71,7 @@ pub fn extract_constraints_aux(
     constraints
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GraphArena {
     pub vars: Vec<ScopedVar>,
     pub var_to_idx: HashMap<ScopedVar, usize>,

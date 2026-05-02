@@ -1,4 +1,5 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum Var {
     Free(String),
     Bound(usize),
