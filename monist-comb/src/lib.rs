@@ -1,4 +1,6 @@
 pub mod ast;
+pub mod backend;
+pub mod translate;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
