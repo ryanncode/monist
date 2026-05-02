@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use ocl::{ProQue, Buffer, flags};
 use monist_macros::stage;
 

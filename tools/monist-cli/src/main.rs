@@ -9,6 +9,8 @@ use rustyline::{DefaultEditor, Result as RlResult};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+mod demos;
+
 #[derive(ClapParser)]
 #[command(name = "monist-cli")]
 #[command(about = "Monist Engine CLI", long_about = None)]
@@ -37,6 +39,19 @@ enum Commands {
     ExportSmt {
         formula: String,
     },
+    /// Run visual demonstrations
+    Demo {
+        #[command(subcommand)]
+        action: DemoAction,
+    },
+}
+
+#[derive(Subcommand)]
+enum DemoAction {
+    /// Holographic Sieve Visualizer
+    Holographic,
+    /// Agentic Reflection Topology Visualizer
+    Agentic,
 }
 
 impl Default for Session {
@@ -106,6 +121,13 @@ fn main() -> RlResult<()> {
                     Ok(_) => println!("{}", "Stratification successful.".green()),
                     Err(e) => println!("{}: {}", "Error".red(), e),
                 }
+            }
+            Ok(())
+        }
+        Some(Commands::Demo { action }) => {
+            match action {
+                DemoAction::Holographic => demos::run_holographic_demo(),
+                DemoAction::Agentic => demos::run_agentic_demo(),
             }
             Ok(())
         }
