@@ -8,6 +8,7 @@ monist-core = { path = "../monist-core" }
 monist-comb = { path = "../monist-comb" }
 monist-category = { path = "../monist-category" }
 monist-verify = { version = "0.1.0", path = "../monist-verify" }
+monist-parser = { version = "0.1.0", path = "../monist-parser" }
 
 [[bin]]
 name = "russell"
@@ -24,3 +25,8 @@ path = "src/bin/transfinite.rs"
 [[bin]]
 name = "collider_simulation"
 path = "src/bin/collider_simulation.rs"
+
+[[bin]]
+name = "smt_k_iteration"
+path = "src/bin/smt_k_iteration.rs"
+

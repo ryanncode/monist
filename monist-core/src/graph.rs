@@ -143,13 +143,14 @@ impl GraphArena {
         }
 
         // Map components to the smallest representative variable in that component
-        let mut reps = vec![0; scc_count];
+        let mut reps = vec![n; scc_count];
         for i in 0..n {
             let comp = component[i];
-            if i == 0 || i < reps[comp] {
+            if i < reps[comp] {
                 reps[comp] = i;
             }
         }
+
 
         // Update edges to use representatives
         let mut new_edges = HashSet::new();

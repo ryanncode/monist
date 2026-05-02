@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+monist-core = { version = "0.1.0", path = "../monist-core" }
+monist-parser = { version = "0.1.0", path = "../monist-parser" }
