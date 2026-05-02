@@ -6,9 +6,8 @@ fn bench_holographic_swarm(c: &mut Criterion) {
     // over a simulated dataset representing 10^8 elements to prove exclusion-first routing efficiency.
     // In OpenCL, we represent this conceptually via wave-parallel queries.
     
-    // Instead of allocating a literal 10^8 items (which might blow up memory on a simple benchmark),
-    // we simulate the access pattern over a block size that represents the sieve state.
-    let simulation_size: usize = 10_000_000; // Scaled down slightly for realistic bench times, but structurally identical
+    // We push the simulation size to the limit to demonstrate wave-parallel scaling
+    let simulation_size: usize = 100_000_000; // Scaled up to 10^8 for maximum desktop GPU load
 
     let src = r#"
         __kernel void holographic_sieve(__global ulong* swarm_state, __global ulong* query_results, ulong v_set_mask) {

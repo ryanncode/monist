@@ -34,7 +34,7 @@ fn bench_acyclic_profile(c: &mut Criterion) {
     group.warm_up_time(std::time::Duration::from_millis(500));
     group.measurement_time(std::time::Duration::from_secs(1));
     
-    for size in [100, 500, 1000].iter() {
+    for size in [100, 1000, 5000, 10000].iter() {
         group.bench_with_input(BenchmarkId::new("collapse_scc", size), size, |b, &size| {
             b.iter(|| {
                 let mut graph = generate_entangled_cycle_graph(size);
