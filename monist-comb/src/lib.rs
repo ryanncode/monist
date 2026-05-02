@@ -1,3 +1,5 @@
+pub mod ir;
+pub mod compile;
 pub mod ast;
 pub mod backend;
 pub mod translate;
