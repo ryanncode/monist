@@ -18,10 +18,31 @@ pub enum Atomic {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Formula {
     Atom(Atomic),
-    Neg(Box<Formula>),
-    Conj(Box<Formula>, Box<Formula>),
-    Disj(Box<Formula>, Box<Formula>),
-    Impl(Box<Formula>, Box<Formula>),
-    Univ(usize, String, Box<Formula>),
-    Comp(usize, String, Box<Formula>),
+    Neg(usize),
+    Conj(usize, usize),
+    Disj(usize, usize),
+    Impl(usize, usize),
+    Univ(usize, String, usize),
+    Comp(usize, String, usize),
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct FormulaArena {
+    nodes: Vec<Formula>,
+}
+
+impl FormulaArena {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add(&mut self, formula: Formula) -> usize {
+        let index = self.nodes.len();
+        self.nodes.push(formula);
+        index
+    }
+
+    pub fn get(&self, index: usize) -> Option<&Formula> {
+        self.nodes.get(index)
+    }
 }

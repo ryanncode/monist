@@ -1,16 +1,13 @@
-use std::collections::HashMap;
 use crate::graph::{Edge, ScopedVar};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EvalResult {
-    Success(HashMap<ScopedVar, i32>),
+    Success(Vec<(ScopedVar, i32)>),
     NegativeCycle,
 }
 
 pub fn evaluate_clause(edges: &[Edge]) -> EvalResult {
-    let mut dist: HashMap<ScopedVar, i32> = HashMap::new();
-    
-    // Extract unique vertices
+    // Extract unique vertices and assign them an index
     let mut vertices = Vec::new();
     for edge in edges {
         if !vertices.contains(&edge.source) {
@@ -23,22 +20,26 @@ pub fn evaluate_clause(edges: &[Edge]) -> EvalResult {
     
     let v_count = vertices.len();
     if v_count == 0 {
-        return EvalResult::Success(dist);
+        return EvalResult::Success(Vec::new());
     }
     
-    // Initialize distances. Starting with 0 allows us to compute valid relative stratifications.
-    for v in &vertices {
-        dist.insert(v.clone(), 0);
-    }
+    // Create a flat centralized array for distances
+    let mut dist = vec![0; v_count];
     
-    // Relax edges `v_count - 1` times
+    // Map ScopedVar to index
+    let get_idx = |v: &ScopedVar| vertices.iter().position(|x| x == v).unwrap();
+
+    // Convert edges to use indices for fast array relaxation
+    let indexed_edges: Vec<(usize, usize, i32)> = edges.iter().map(|e| {
+        (get_idx(&e.source), get_idx(&e.target), e.weight)
+    }).collect();
+    
+    // Relax edges `v_count - 1` times (Topologically-guided K-Iteration Bound)
     for _ in 0..(v_count - 1) {
         let mut updated = false;
-        for edge in edges {
-            let u_dist = *dist.get(&edge.source).unwrap();
-            let v_dist = *dist.get(&edge.target).unwrap();
-            if u_dist + edge.weight < v_dist {
-                dist.insert(edge.target.clone(), u_dist + edge.weight);
+        for &(u, v, weight) in &indexed_edges {
+            if dist[u] + weight < dist[v] {
+                dist[v] = dist[u] + weight;
                 updated = true;
             }
         }
@@ -47,14 +48,13 @@ pub fn evaluate_clause(edges: &[Edge]) -> EvalResult {
         }
     }
     
-    // Check for negative weight cycles
-    for edge in edges {
-        let u_dist = *dist.get(&edge.source).unwrap();
-        let v_dist = *dist.get(&edge.target).unwrap();
-        if u_dist + edge.weight < v_dist {
+    // Check for negative weight cycles (Extensionality Collisions)
+    for &(u, v, weight) in &indexed_edges {
+        if dist[u] + weight < dist[v] {
             return EvalResult::NegativeCycle;
         }
     }
     
-    EvalResult::Success(dist)
+    let final_dist = vertices.into_iter().zip(dist.into_iter()).collect();
+    EvalResult::Success(final_dist)
 }

@@ -1,4 +1,4 @@
-use crate::ast::{Atomic, Formula, Var};
+use crate::ast::{Atomic, Formula, FormulaArena, Var};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ScopedVar(pub Var, pub usize);
@@ -27,8 +27,18 @@ impl From<Constraint> for Edge {
     }
 }
 
-pub fn extract_constraints_aux(formula: &Formula, depth: usize) -> Vec<Constraint> {
+pub fn extract_constraints_aux(
+    arena: &FormulaArena,
+    formula_idx: usize,
+    depth: usize,
+) -> Vec<Constraint> {
     let mut constraints = Vec::new();
+
+    let formula = match arena.get(formula_idx) {
+        Some(f) => f,
+        None => return constraints,
+    };
+
     match formula {
         Formula::Atom(atomic) => match atomic {
             Atomic::Eq(x, y) => {
@@ -45,26 +55,26 @@ pub fn extract_constraints_aux(formula: &Formula, depth: usize) -> Vec<Constrain
             }
             _ => {}
         },
-        Formula::Neg(f) => {
-            constraints.extend(extract_constraints_aux(f, depth));
+        Formula::Neg(f_idx) => {
+            constraints.extend(extract_constraints_aux(arena, *f_idx, depth));
         }
-        Formula::Conj(f1, f2) => {
-            constraints.extend(extract_constraints_aux(f1, depth));
-            constraints.extend(extract_constraints_aux(f2, depth));
+        Formula::Conj(f1_idx, f2_idx) => {
+            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth));
+            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth));
         }
-        Formula::Disj(f1, f2) => {
-            constraints.extend(extract_constraints_aux(f1, depth));
-            constraints.extend(extract_constraints_aux(f2, depth));
+        Formula::Disj(f1_idx, f2_idx) => {
+            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth));
+            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth));
         }
-        Formula::Impl(f1, f2) => {
-            constraints.extend(extract_constraints_aux(f1, depth));
-            constraints.extend(extract_constraints_aux(f2, depth));
+        Formula::Impl(f1_idx, f2_idx) => {
+            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth));
+            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth));
         }
-        Formula::Univ(_, _, f) => {
-            constraints.extend(extract_constraints_aux(f, depth + 1));
+        Formula::Univ(_, _, f_idx) => {
+            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1));
         }
-        Formula::Comp(_, _, f) => {
-            constraints.extend(extract_constraints_aux(f, depth + 1));
+        Formula::Comp(_, _, f_idx) => {
+            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1));
         }
     }
     constraints
