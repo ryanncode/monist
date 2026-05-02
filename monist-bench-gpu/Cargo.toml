@@ -1,0 +1,29 @@
+[package]
+name = "monist-bench-gpu"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+monist-core = { path = "../monist-core" }
+monist-comb = { path = "../monist-comb" }
+monist-macros = { path = "../monist-macros" }
+ocl = "0.19"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "ocl_bridge"
+harness = false
+
+[[bench]]
+name = "holographic_swarm"
+harness = false
+
+[[bench]]
+name = "latbol_simulation"
+harness = false
+
+[[bench]]
+name = "discrete_gpu_dispatch"
+harness = false
