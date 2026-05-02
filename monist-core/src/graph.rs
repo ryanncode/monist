@@ -1,4 +1,5 @@
 use crate::ast::{Atomic, Formula, FormulaArena, Var};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ScopedVar(pub Var, pub usize);
@@ -58,24 +59,160 @@ pub fn extract_constraints_aux(
         Formula::Neg(f_idx) => {
             constraints.extend(extract_constraints_aux(arena, *f_idx, depth));
         }
-        Formula::Conj(f1_idx, f2_idx) => {
+        Formula::Conj(f1_idx, f2_idx) | Formula::Disj(f1_idx, f2_idx) | Formula::Impl(f1_idx, f2_idx) => {
             constraints.extend(extract_constraints_aux(arena, *f1_idx, depth));
             constraints.extend(extract_constraints_aux(arena, *f2_idx, depth));
         }
-        Formula::Disj(f1_idx, f2_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth));
-            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth));
-        }
-        Formula::Impl(f1_idx, f2_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth));
-            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth));
-        }
-        Formula::Univ(_, _, f_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1));
-        }
-        Formula::Comp(_, _, f_idx) => {
+        Formula::Univ(_, _, f_idx) | Formula::Comp(_, _, f_idx) => {
             constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1));
         }
     }
     constraints
+}
+
+#[derive(Debug, Clone)]
+pub struct GraphArena {
+    pub vars: Vec<ScopedVar>,
+    pub var_to_idx: HashMap<ScopedVar, usize>,
+    pub edges: Vec<(usize, usize, i32)>,
+}
+
+impl GraphArena {
+    pub fn new() -> Self {
+        Self {
+            vars: Vec::new(),
+            var_to_idx: HashMap::new(),
+            edges: Vec::new(),
+        }
+    }
+
+    pub fn add_var(&mut self, var: ScopedVar) -> usize {
+        if let Some(&idx) = self.var_to_idx.get(&var) {
+            idx
+        } else {
+            let idx = self.vars.len();
+            self.vars.push(var.clone());
+            self.var_to_idx.insert(var, idx);
+            idx
+        }
+    }
+
+    pub fn from_constraints(constraints: &[Constraint]) -> Self {
+        let mut arena = Self::new();
+        for c in constraints {
+            let u = arena.add_var(c.v1.clone());
+            let v = arena.add_var(c.v2.clone());
+            arena.edges.push((u, v, c.weight));
+        }
+        arena
+    }
+
+    /// Implement Kosaraju's SCC algorithm to locate and safely collapse 0-weight semantic cycles
+    pub fn collapse_scc_0_weight(&mut self) {
+        let n = self.vars.len();
+        if n == 0 { return; }
+
+        let mut adj = vec![Vec::new(); n];
+        let mut rev_adj = vec![Vec::new(); n];
+
+        for &(u, v, w) in &self.edges {
+            if w == 0 {
+                adj[u].push(v);
+                rev_adj[v].push(u);
+            }
+        }
+
+        let mut visited = vec![false; n];
+        let mut order = Vec::new();
+
+        for i in 0..n {
+            if !visited[i] {
+                self.dfs1(i, &adj, &mut visited, &mut order);
+            }
+        }
+
+        visited.fill(false);
+        let mut component = vec![0; n];
+        let mut scc_count = 0;
+
+        for &i in order.iter().rev() {
+            if !visited[i] {
+                self.dfs2(i, &rev_adj, &mut visited, &mut component, scc_count);
+                scc_count += 1;
+            }
+        }
+
+        // Map components to the smallest representative variable in that component
+        let mut reps = vec![0; scc_count];
+        for i in 0..n {
+            let comp = component[i];
+            if i == 0 || i < reps[comp] {
+                reps[comp] = i;
+            }
+        }
+
+        // Update edges to use representatives
+        let mut new_edges = HashSet::new();
+        for &(u, v, w) in &self.edges {
+            let rep_u = reps[component[u]];
+            let rep_v = reps[component[v]];
+            if rep_u != rep_v || w != 0 {
+                new_edges.insert((rep_u, rep_v, w));
+            }
+        }
+        self.edges = new_edges.into_iter().collect();
+    }
+
+    fn dfs1(&self, u: usize, adj: &[Vec<usize>], visited: &mut [bool], order: &mut Vec<usize>) {
+        visited[u] = true;
+        for &v in &adj[u] {
+            if !visited[v] {
+                self.dfs1(v, adj, visited, order);
+            }
+        }
+        order.push(u);
+    }
+
+    fn dfs2(&self, u: usize, rev_adj: &[Vec<usize>], visited: &mut [bool], component: &mut [usize], comp_id: usize) {
+        visited[u] = true;
+        component[u] = comp_id;
+        for &v in &rev_adj[u] {
+            if !visited[v] {
+                self.dfs2(v, rev_adj, visited, component, comp_id);
+            }
+        }
+    }
+
+    /// Bellman-Ford evaluation engine to definitively detect Extensionality Collisions
+    pub fn bellman_ford(&self) -> Result<Vec<i32>, String> {
+        let n = self.vars.len();
+        if n == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut d = vec![0; n];
+
+        // Relax edges n-1 times
+        for _ in 0..n {
+            let mut changed = false;
+            for &(u, v, w) in &self.edges {
+                if d[u] + w < d[v] {
+                    d[v] = d[u] + w;
+                    changed = true;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+
+        // Final pass for negative weight cycles
+        for &(u, v, w) in &self.edges {
+            if d[u] + w < d[v] {
+                return Err("Extensionality Collision: Negative-weight cycle detected!".to_string());
+            }
+        }
+
+        Ok(d)
+    }
 }

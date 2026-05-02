@@ -15,6 +15,7 @@ impl<'a> BendTranslator<'a> {
     /// This translates the combinator nodes and structural redexes.
     pub fn translate(&self) -> String {
         let mut source = String::new();
+        let _ = self.gnet;
         source.push_str("// Auto-generated Bend combinator syntax\n");
         
         // As a prototype, we output a standard main function.
