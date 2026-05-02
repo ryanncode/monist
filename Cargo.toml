@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "monist-core",
+    "monist-comb",
+    "monist-parser",
+    "monist-seq",
+    "monist-cli"
+]
+resolver = "2"
