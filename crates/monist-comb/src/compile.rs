@@ -61,7 +61,7 @@ impl<'a> Compiler<'a> {
                 self.compute_min_levels(*l, expected_level - 1, env);
                 self.compute_min_levels(*r, expected_level - 1, env);
             }
-            Formula::Univ(_level, var_name, inner) | Formula::Comp(_level, var_name, inner) => {
+            Formula::Univ(_level, var_name, inner) | Formula::Exist(_level, var_name, inner) | Formula::Comp(_level, var_name, inner) => {
                 env.push(var_name.clone());
                 self.compute_min_levels(*inner, expected_level, env);
                 env.pop();
@@ -94,6 +94,13 @@ impl<'a> Compiler<'a> {
                 env.pop();
                 let abstracted = inner_comb.abstract_var(var_name);
                 Comb::Forall.app(abstracted)
+            }
+            Formula::Exist(_level, var_name, inner) => {
+                env.push(var_name.clone());
+                let inner_comb = self.compile_with_env(*inner, expected_level, env);
+                env.pop();
+                let abstracted = inner_comb.abstract_var(var_name);
+                Comb::Var("Exists".to_string()).app(abstracted)
             }
             Formula::Comp(_level, var_name, inner) => {
                 env.push(var_name.clone());

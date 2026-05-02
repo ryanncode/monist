@@ -64,7 +64,7 @@ pub fn extract_constraints_aux(
             constraints.extend(extract_constraints_aux(arena, *f1_idx, depth));
             constraints.extend(extract_constraints_aux(arena, *f2_idx, depth));
         }
-        Formula::Univ(_, _, f_idx) | Formula::Comp(_, _, f_idx) => {
+        Formula::Univ(_, _, f_idx) | Formula::Exist(_, _, f_idx) | Formula::Comp(_, _, f_idx) => {
             constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1));
         }
     }

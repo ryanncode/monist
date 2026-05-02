@@ -94,6 +94,17 @@ impl<'a> Parser<'a> {
             } else {
                 panic!("Expected identifier after forall");
             }
+        } else if self.match_token(Token::Exists) {
+            if let Token::Ident(var) = self.current_token.clone() {
+                self.advance();
+                self.match_token(Token::Dot);
+                self.bound_vars.push(var.clone());
+                let inner = self.parse_formula();
+                self.bound_vars.pop();
+                self.arena.add(Formula::Exist(0, var, inner)) // dummy binder level 0 for now
+            } else {
+                panic!("Expected identifier after exists");
+            }
         } else {
             self.parse_primary()
         }

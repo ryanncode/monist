@@ -6,6 +6,7 @@ pub enum Var {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum Atomic {
     Eq(Var, Var),
     Mem(Var, Var),
@@ -17,6 +18,7 @@ pub enum Atomic {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum Formula {
     Atom(Atomic),
     Neg(usize),
@@ -24,10 +26,12 @@ pub enum Formula {
     Disj(usize, usize),
     Impl(usize, usize),
     Univ(usize, String, usize),
+    Exist(usize, String, usize),
     Comp(usize, String, usize),
 }
 
 #[derive(Debug, Clone, Default)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct FormulaArena {
     nodes: Vec<Formula>,
 }
