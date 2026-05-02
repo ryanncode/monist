@@ -24,9 +24,24 @@ impl BendExecutor {
         // Write the validated combinatorial logic to a Bend file
         fs::write(&filepath, logic_source)?;
 
-        // Invoke the Bend CUDA interpreter for massively parallel execution
-        Command::new("bend")
-            .arg("run-cu")
+        // Invoke the hvm gen-cu to compile the Bend/HVM syntax into CUDA
+        // Wait, hvm gen-cu generates the .cu file or binary.
+        // We will assume `hvm run` can be used or we run `hvm gen-cu` then `hvm run` if needed.
+        // Or if we compile it and then run the generated CU file. Let's just execute `hvm run`.
+        // The prompt asks to "trigger the `hvm gen-cu` and `hvm run` commands".
+        
+        let gen_output = Command::new("hvm")
+            .arg("gen-cu")
+            .arg(filepath.to_str().unwrap())
+            .output()?;
+
+        if !gen_output.status.success() {
+            return Ok(gen_output); // Return compilation error
+        }
+
+        // Invoke hvm run on the file
+        Command::new("hvm")
+            .arg("run")
             .arg(filepath.to_str().unwrap())
             .arg("-s") // Enables metrics like reductions and interactions per second
             .output()

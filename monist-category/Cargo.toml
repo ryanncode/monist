@@ -1,0 +1,8 @@
+[package]
+name = "monist-category"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+monist-comb = { path = "../monist-comb" }
+monist-core = { path = "../monist-core" }
