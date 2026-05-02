@@ -5,6 +5,7 @@ members = [
     "monist-parser",
     "monist-seq",
     "monist-cli",
-    "monist-category"
-]
+    "monist-category",
+    "monist-examples"
+, "monist-psg"]
 resolver = "2"

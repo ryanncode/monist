@@ -1,0 +1,25 @@
+[package]
+name = "monist-examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+monist-core = { path = "../monist-core" }
+monist-comb = { path = "../monist-comb" }
+monist-category = { path = "../monist-category" }
+
+[[bin]]
+name = "russell"
+path = "src/bin/russell.rs"
+
+[[bin]]
+name = "holographic_sieve"
+path = "src/bin/holographic_sieve.rs"
+
+[[bin]]
+name = "transfinite"
+path = "src/bin/transfinite.rs"
+
+[[bin]]
+name = "collider_simulation"
+path = "src/bin/collider_simulation.rs"

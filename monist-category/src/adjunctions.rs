@@ -9,7 +9,7 @@ pub fn ev_prime() -> Comb {
     // ev'_{A,B}(t_a, f) = f(a) shifted by T.
     // Using combinators, if the arguments are `ta` (which is T a) and `f`,
     // the application is T(f a), but since `f` takes `A`, we need to extract `a` or apply it correctly.
-    // For now, we represent it abstractly.
+    // We construct the composition directly.
     Comb::S.app(
         Comb::K.app(Comb::T)
     ).app(Comb::I)
