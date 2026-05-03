@@ -47,5 +47,9 @@ path = "src/bin/burali_forti.rs"
 name = "ai_alignment_playbook"
 path = "src/bin/ai_alignment_playbook.rs"
 
+[[bin]]
+name = "experimental_database_playbook"
+path = "src/bin/experimental_database_playbook.rs"
+
 
 
