@@ -30,3 +30,8 @@ path = "src/bin/collider_simulation.rs"
 name = "smt_k_iteration"
 path = "src/bin/smt_k_iteration.rs"
 
+[[bin]]
+name = "extensionality_collision"
+path = "src/bin/extensionality_collision.rs"
+
+
