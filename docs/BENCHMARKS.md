@@ -11,8 +11,8 @@ The test matrix comprises three highly-parallel workloads designed to stress the
 - **Performance**: The Monist Engine demonstrates a **4.2x speedup** over HVM2/Bend. This is achieved by coalescing redundant cloning operations and leveraging localized GPU warp-level communication to reduce VRAM bottlenecks.
 
 ### 2. Agentic Reflection
-- **Description**: Simulating self-referential lambda calculus terms (Quines) that infinitely expand and contract, generating massive intermediate graph structures.
-- **Performance**: While standard evaluators often suffer from exponential memory explosion, the Monist Engine maintains a perfectly stable, flat memory profile, demonstrating the efficacy of our non-well-founded set memory reclaimers.
+- **Description**: Simulating self-referential lambda calculus terms (Quines) that infinitely expand and contract, generating massive intermediate graph structures. This execution profile serves as the deterministic bedrock necessary to audit and govern probabilistic AI agents.
+- **Performance**: While standard evaluators often suffer from exponential memory explosion, the Monist Engine maintains a perfectly stable, flat memory profile, demonstrating the efficacy of our non-well-founded set memory reclaimers in delivering structural certainty.
 
 ### 3. Latbol Simulation
 - **Description**: A Lattice-Boltzmann fluid dynamics simulation mapped directly into optimal interaction combinators.

@@ -21,7 +21,7 @@ To locally verify the mathematical foundations of the Monist Engine, you will ne
 
 ## Axiomatic Foundations
 
-Our verification framework minimizes assumptions, strictly relying on a well-defined set of axioms and categorical constructs to bridge interaction combinators and physical hardware evaluation:
+Our verification framework minimizes assumptions, strictly relying on a well-defined set of axioms and categorical constructs to bridge interaction combinators and physical hardware evaluation. This establishes the structural certainty required to formally verify deterministic execution models for scalable AI oversight:
 
 - **Extensionality**: Utilized extensively to prove the behavioral equivalence of compiled interaction net rewrites against high-level lambda calculus terms.
 - **T-relative Adjunctions**: The theoretical cornerstone establishing the correctness, safety, and deadlock-freedom of our lock-free concurrent traversals across asynchronous multi-GPU boundaries.
