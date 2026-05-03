@@ -39,4 +39,9 @@ path = "src/bin/extensionality_collision.rs"
 name = "repl_tactic_integration"
 path = "src/bin/repl_tactic_integration.rs"
 
+[[bin]]
+name = "burali_forti"
+path = "src/bin/burali_forti.rs"
+
+
 
