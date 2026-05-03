@@ -44,7 +44,7 @@ To start the tactical theorem-proving environment:
 ```bash
 cargo run -p monist-cli -- repl
 ```
-Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x in x"`.
+Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x in x"`. For full details on available commands, axioms, and visualization options, see the [CLI Guide](docs/CLI_GUIDE.md).
 
 ### Visual Demonstrations
 The Engine includes visual terminal simulations illustrating its unique performance boundaries:
