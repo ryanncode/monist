@@ -43,5 +43,9 @@ path = "src/bin/repl_tactic_integration.rs"
 name = "burali_forti"
 path = "src/bin/burali_forti.rs"
 
+[[bin]]
+name = "ai_alignment_playbook"
+path = "src/bin/ai_alignment_playbook.rs"
+
 
 

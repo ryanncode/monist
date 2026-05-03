@@ -155,6 +155,17 @@ impl GraphArena {
 
         // Update edges to use representatives
         let mut new_edges = HashSet::new();
+
+        // Ensure that collapsed variables are not orphaned in the SMT matrix.
+        // We mathematically assert their equivalence to the Strongly Cantorian representative.
+        for i in 0..n {
+            let rep = reps[component[i]];
+            if i != rep {
+                new_edges.insert((rep, i, 0));
+                new_edges.insert((i, rep, 0));
+            }
+        }
+
         for &(u, v, w) in &self.edges {
             let rep_u = reps[component[u]];
             let rep_v = reps[component[v]];
