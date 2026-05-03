@@ -41,7 +41,7 @@ impl Session {
 }
 
 fn main() {
-    println!("=== Phase 26: The Extensionality Collision (Kuratowski vs. Quine) ===");
+    println!("=== The Extensionality Collision (Kuratowski vs. Quine) ===");
     
     let mut session = Session::new();
 

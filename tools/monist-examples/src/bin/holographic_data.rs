@@ -28,7 +28,7 @@ fn ingest_data_swarm(data: &[DataRecord]) -> Comb {
 }
 
 fn main() {
-    println!("=== Phase 18: Knowledge Management & Database Diagnostics ===");
+    println!("=== Knowledge Management & Database Diagnostics ===");
     println!("--- Holographic Data Indexing ---\n");
 
     // 1. Tabular/JSON simulated data

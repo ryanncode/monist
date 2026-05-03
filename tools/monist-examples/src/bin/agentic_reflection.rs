@@ -101,7 +101,7 @@ impl ScCutBoundary {
 }
 
 fn main() {
-    println!("=== Phase 19: AI Alignment & Typestate Bounding ===");
+    println!("=== AI Alignment & Typestate Bounding ===");
     println!("--- Agentic Reflection & Principle of Least Syntactic Action ---\n");
 
     // 1. Implement a self-referential agent loop inside a `SC_CUT` isolation boundary.

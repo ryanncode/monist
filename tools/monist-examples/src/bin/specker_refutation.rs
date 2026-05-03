@@ -34,7 +34,7 @@ impl Session {
 }
 
 fn main() {
-    println!("=== Phase 25: Specker's Theorem Automated Script ===");
+    println!("=== Specker's Theorem Automated Script ===");
     println!("Initializing REPL/Session engine programmatically...");
 
     let mut session = Session::new();
