@@ -65,7 +65,7 @@ cargo run -p monist-cli -- demo agentic
 
 The engine's validity is proven via a suite of automated diagnostic refutations located in `tools/monist-examples/src/bin/`. These execute the core paradoxes of modern set theory, outputting the mathematically verified topological boundaries and generating standard `SMT-LIB v2` witnesses for third-party prover ingestion.
 
-* **Specker's Refutation of Global Choice (`specker_refutation.rs`)**: Mechanically proves that bridging disjoint integer weight elevations ($\Phi(m)$ vs $\Phi(T(m))$) without a $T$-operator creates a negative-weight cycle, validating the absolute halting limit.
+* **Specker's Refutation of Global Choice (`specker_refutation.rs`)**: Mechanically proves that bridging disjoint integer weight elevations (${ \Phi(m) }$ vs ${ \Phi(T(m)) }$) without a $T$-operator creates a negative-weight cycle, validating the absolute halting limit.
 * **The Extensionality Collision (`extensionality_collision.rs`)**: Evaluates the Kuratowski ordered pair vs the Quine ordered pair, proving the engine tracks dense structural depth offsets (+2 vs 0) without triggering a false paradox halt.
 * **Russell's Paradox (`russell.rs`)**: Computes $R \in R$, dynamically intercepting the unstratified graph prior to call-stack exhaustion via the $K$-Iteration bound.
 

@@ -129,6 +129,29 @@ Proof accepted.
 
 ---
 
+## Understanding the Engine: Constraints and Tactics
+
+To effectively use this dual-engine architecture, it is crucial to understand what the underlying Rust graph engine can "see," and how to guide your tactical proofs to produce that specific geometry.
+
+### Geometric Constraints
+The Bellman-Ford topological engine (`eval` / `step`) is incredibly fast, but its vocabulary is strictly limited to foundational set-theoretic boundaries. It translates formulas into a geometric Directed Acyclic Graph (DAG) using **only** the following atomic constraints:
+
+*   **Equality (`x = y`)**: Generates a **`0` weight** constraint. The engine mathematically locks the two variables at the exact same typestate level.
+*   **Membership (`x e y`)**: Generates a **`+1` weight** constraint. The set `y` must exist at a typestate level strictly higher than its element `x`.
+*   **Function Application (`z = u(v)`)**: Generates a **`+1` weight** constraint. The function `u` must be typed one level higher than the argument `v`.
+*   **Lambda Abstraction (`z = \lambda x. t`)**: Generates a **`+1` weight** constraint. The abstracted function body sits one level higher than the variable it binds.
+*   **Quine Pairs (`Q(a,b)`)**: Generates **`0` weight** constraints. Unlike standard Kuratowski pairs (which force a `+2` type shift), Quine pairs are geometrically "flat." 
+
+### The Tactical Workflow
+When staring at a high-level mathematical theorem, your goal as the user is to act as the "compiler," using tactics to translate human semantics down into the raw spatial constraints listed above.
+
+1.  **Strip the Logical Scaffolding**: The geometric engine evaluates spatial structures, not conditional hypotheticals. Use `intro` to strip away `forall` quantifiers and pull `If` premises down into your local Context as usable facts. Use `destruct` to break complex conjunctions (`/\`) into isolated facts.
+2.  **Unfold Semantic Definitions**: The graph engine cannot read abstract properties like "Strongly Cantorian" or "Ordinal." Use `rewrite` (alongside your global `assume` axioms) to unfold these abstractions into raw set theory (e.g., rewriting `SC(x)` to `x = T(x)`).
+3.  **Isolate the Friction**: Use `rewrite` to substitute variables across your equalities until the core components of your target goal are expressed purely in terms of raw variables connected by `=` or `e`. You want to find the exact boundary where the theorem forces a variable to cross a typestate level.
+4.  **The Topological Handoff**: Once your `ProofState` has been entirely stripped of implications, quantifiers, and abstract names, you gather the surviving structural equations and feed them into `eval`. The graph engine will instantly compute if that raw geometry can safely exist in finite computational space, or if it collapses into a negative-weight cycle (a paradox).
+
+---
+
 ## One-Shot Commands
 
 You can still use the CLI in traditional one-shot mode for scripting or quick checks outside the REPL.
