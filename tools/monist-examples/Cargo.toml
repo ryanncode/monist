@@ -51,5 +51,9 @@ path = "src/bin/ai_alignment_playbook.rs"
 name = "experimental_database_playbook"
 path = "src/bin/experimental_database_playbook.rs"
 
+[[bin]]
+name = "incomparable_cardinals"
+path = "src/bin/incomparable_cardinals.rs"
+
 
 
