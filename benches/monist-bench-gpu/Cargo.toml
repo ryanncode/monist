@@ -27,3 +27,7 @@ harness = false
 [[bench]]
 name = "discrete_gpu_dispatch"
 harness = false
+
+[[bench]]
+name = "knaster_tarski"
+harness = false

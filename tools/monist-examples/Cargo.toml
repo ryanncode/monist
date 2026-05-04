@@ -55,5 +55,13 @@ path = "src/bin/experimental_database_playbook.rs"
 name = "incomparable_cardinals"
 path = "src/bin/incomparable_cardinals.rs"
 
+[[bin]]
+name = "strongly_cantorian"
+path = "src/bin/strongly_cantorian.rs"
+
+[[bin]]
+name = "knaster_tarski_data_exec"
+path = "src/bin/knaster_tarski_data_exec.rs"
+
 
 
