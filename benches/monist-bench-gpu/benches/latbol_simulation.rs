@@ -6,7 +6,7 @@ fn bench_latbol_simulation(c: &mut Criterion) {
     // iterative simulation to explicitly measure lock-free atomic `swap` contention
     // and GPU wave alignment under maximum occupancy.
 
-    let grid_size = 1024 * 1024; // 1M cells
+    let grid_size = 256 * 1024; // 256K cells
     let iterations = 10; // For benchmarking, simulate 10 steps
 
     // To measure lock-free atomic swap contention natively in OpenCL, we use atomic_xchg.
@@ -45,6 +45,8 @@ fn bench_latbol_simulation(c: &mut Criterion) {
 
     if let Ok(pro_que) = pro_que_res {
         let mut group = c.benchmark_group("gpu_latbol_simulation");
+        group.sample_size(10);
+        group.measurement_time(std::time::Duration::from_secs(1));
         
         group.bench_function("latbol_wave_alignment", |b| {
             b.iter(|| {

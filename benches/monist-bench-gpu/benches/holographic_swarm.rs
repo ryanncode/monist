@@ -7,7 +7,7 @@ fn bench_holographic_swarm(c: &mut Criterion) {
     // In OpenCL, we represent this conceptually via wave-parallel queries.
     
     // We push the simulation size to the limit to demonstrate wave-parallel scaling
-    let simulation_size: usize = 100_000_000; // Scaled up to 10^8 for maximum desktop GPU load
+    let simulation_size: usize = 25_000_000; // Scaled to 2.5 * 10^7 for faster testing
 
     let src = r#"
         __kernel void holographic_sieve(__global ulong* swarm_state, __global ulong* query_results, ulong v_set_mask) {
@@ -33,6 +33,7 @@ fn bench_holographic_swarm(c: &mut Criterion) {
     if let Ok(pro_que) = pro_que_res {
         let mut group = c.benchmark_group("gpu_holographic_swarm");
         group.sample_size(10); // GPU allocations can be slow
+        group.measurement_time(std::time::Duration::from_secs(1));
         
         group.bench_function("sieve_10M", |b| {
             b.iter(|| {

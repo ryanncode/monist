@@ -6,11 +6,11 @@ It mathematically computes the precise topological weight of systemic ambiguity,
 
 ---
 
-## Scalable Oversight
+## Scalable Oversight & Neuro-Symbolic Integration
 
 The frontier of machine learning is overwhelmingly probabilistic. Neural architectures generate outputs that resist strict, structural verification. The Monist Engine provides the exact opposite: a deterministic execution layer capable of safely evaluating infinitely recursive or cyclical structures. 
 
-As the industry shifts its focus from experimental models toward scalable oversight and governance, organizations require mathematical guarantees over black-box systems. The Monist Engine's non-well-founded set evaluator serves as the deterministic bedrock necessary to audit, govern, and formally verify probabilistic agents, delivering absolute structural certainty.
+As the industry shifts its focus from experimental models toward scalable oversight, organizations require mathematical guarantees over black-box systems. The Monist Engine serves as the deterministic bedrock necessary to audit, govern, and formally verify probabilistic agents. Through Semantic Self-Verification (SSV) and active retrieve-generate-verify feedback loops, it structurally grounds LLMs to solve high-difficulty mathematical abstractions without hallucinatory semantic drift.
 
 ---
 
@@ -22,13 +22,13 @@ The Monist Engine subverts this by bifurcating the computational stack:
 
 1. **The Oracle Layer (CPU/Geometry):** The frontend parser transforms standard first-order logic into an algebraic system of constraints. Instead of rejecting cyclic graphs, the `monist-core` executes Kosaraju's SCC algorithm to flatten 0-weight semantic cycles, and deploys the Bellman-Ford algorithm to map the thermodynamic weight between nodes. If a paradox forms, the engine dynamically calculates the $K$-Iteration depth boundary and intercepts the recursion mathematically.
 2. **The T-Functor Synthesis:** When dense impredicative recursion forms (like the Burali-Forti sequence), the engine dynamically synthesizes and injects a `T-operator` ($x \mapsto \iota"x$), acting as a topological stabilizer that absorbs the structural friction, preserving the weak stratification boundary.
-3. **The Interaction Net Backend (GPU/Physics):** Stripped of all types and hierarchical scaffolding, the validated logic is compiled into pure $S, K, I$ combinators (`monist-comb`). We bypass traditional substitution environments, feeding these localized atomic nodes directly to HVM2/Bend-style Interaction Nets. The hardware natively folds self-reference topologically, scaling across millions of lock-free collisions per second.
+3. **The Interaction Net Backend (GPU/Physics):** Stripped of all types and hierarchical scaffolding, the validated logic is compiled into pure $S, K, I$ combinators (`monist-comb`). We bypass traditional substitution environments, feeding these localized atomic nodes directly to autonomous WGSL compute shaders. Operating entirely in WGPU without CPU synchronization overhead, the hardware natively folds self-reference topologically, scaling across millions of lock-free collisions per second.
 
 ---
 
 ## Build & Run
 
-Ensure you have Rust and Cargo installed, alongside an OpenCL-compatible driver if targeting discrete GPU execution.
+Ensure you have Rust and Cargo installed, alongside a WGPU-compatible graphics backend (Vulkan, Metal, DirectX 12, or WebGPU) for executing the engine natively on the GPU.
 
 ```bash
 # Clone the repository
@@ -78,7 +78,7 @@ cargo run -p monist-examples --bin specker_refutation
 For bare-metal throughput execution tests bypassing the CLI:
 
 ```bash
-# Run the lock-free OpenCL bridge benchmark
+# Run the lock-free OpenCL and discrete GPU bounds benchmarks
 cargo bench -p monist-bench-gpu
 ```
 

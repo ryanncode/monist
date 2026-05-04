@@ -16,6 +16,7 @@ pub struct WgpuExecutor {
     device: wgpu::Device,
     queue: wgpu::Queue,
     pipeline: wgpu::ComputePipeline,
+    gc_pipeline: wgpu::ComputePipeline,
 }
 
 impl Default for WgpuExecutor {
@@ -50,7 +51,14 @@ impl WgpuExecutor {
                 entry_point: "main",
             });
 
-            Self { device, queue, pipeline }
+            let gc_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("GC Pipeline"),
+                layout: None,
+                module: &shader,
+                entry_point: "cycle_gc",
+            });
+
+            Self { device, queue, pipeline, gc_pipeline }
         })
     }
 
@@ -157,6 +165,37 @@ impl WgpuExecutor {
                     max_iterations -= 1;
                 }
             }
+
+            let gc_bind_group_layout = self.gc_pipeline.get_bind_group_layout(0);
+            let gc_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("GC Bind Group"),
+                layout: &gc_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: arena_buf.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: free_list_buf.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: state_buf.as_entire_binding(),
+                    },
+                ],
+            });
+
+            // Dispatch isolated topological compute pass for Cycle Garbage Collection (Phase 12)
+            let mut gc_encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("GC Encoder") });
+            {
+                let mut gc_pass = gc_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("GC Pass"), timestamp_writes: None });
+                gc_pass.set_pipeline(&self.gc_pipeline);
+                gc_pass.set_bind_group(0, &gc_bind_group, &[]);
+                let workgroups = (out_net.nodes.len() as u32 + 63) / 64;
+                gc_pass.dispatch_workgroups(workgroups, 1, 1);
+            }
+            self.queue.submit(Some(gc_encoder.finish()));
 
             // Create staging buffer for final readback
             let staging_arena = self.device.create_buffer(&wgpu::BufferDescriptor {

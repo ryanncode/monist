@@ -26,7 +26,7 @@ fn create_ocl_proque() -> ocl::Result<ProQue> {
 
     ProQue::builder()
         .src(src)
-        .dims(1000)
+        .dims(250)
         .build()
 }
 
@@ -36,20 +36,22 @@ fn bench_ocl_bridge(c: &mut Criterion) {
     
     if let Ok(pro_que) = pro_que_res {
         let mut group = c.benchmark_group("gpu_ocl_bridge");
+        group.sample_size(10);
+        group.measurement_time(std::time::Duration::from_secs(1));
         
         group.bench_function("node_collision_dispatch", |b| {
             b.iter(|| {
                 let nodes_buffer = Buffer::<u64>::builder()
                     .queue(pro_que.queue().clone())
                     .flags(flags::MEM_READ_WRITE)
-                    .len(1000)
+                    .len(250)
                     .build()
                     .unwrap();
 
                 let results_buffer = Buffer::<u64>::builder()
                     .queue(pro_que.queue().clone())
                     .flags(flags::MEM_READ_WRITE)
-                    .len(1000)
+                    .len(250)
                     .build()
                     .unwrap();
 

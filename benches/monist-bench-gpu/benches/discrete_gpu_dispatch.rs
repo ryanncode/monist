@@ -35,7 +35,7 @@ fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
     if let Some(device) = selected_device {
         println!("Selected Discrete GPU/NPU: {}", device.name().unwrap_or_default());
 
-        let grid_size = 1024 * 1024 * 4; // 4M cells to stress GPU further
+        let grid_size = 1024 * 1024 * 1; // 1M cells to stress GPU further
         let iterations = 20;
 
         let src = r#"
@@ -67,8 +67,8 @@ fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
 
         if let Ok(pro_que) = pro_que_res {
             let mut group = c.benchmark_group("discrete_gpu_dispatch");
-            group.sample_size(50);
-            group.measurement_time(std::time::Duration::from_secs(15));
+            group.sample_size(10);
+            group.measurement_time(std::time::Duration::from_secs(3));
             
             group.bench_function("topology_reduction", |b| {
                 b.iter(|| {

@@ -6,7 +6,7 @@ fn bench_knaster_tarski(c: &mut Criterion) {
     // Operating within the safe bounds of an SC_CUT, the GPU Interaction Net
     // computes the fixpoint F(X) = X natively using parallel wavefront iterations.
     
-    let domain_size: usize = 1_000_000; // Simulating 1 million set elements
+    let domain_size: usize = 250_000; // Simulating 250k set elements
 
     let src = r#"
         __kernel void knaster_tarski_lfp(__global ulong* current_set, __global ulong* next_set, ulong choice_mask) {
@@ -33,6 +33,7 @@ fn bench_knaster_tarski(c: &mut Criterion) {
     if let Ok(pro_que) = pro_que_res {
         let mut group = c.benchmark_group("gpu_knaster_tarski");
         group.sample_size(10); 
+        group.measurement_time(std::time::Duration::from_secs(1));
         
         group.bench_function("lfp_1M_elements", |b| {
             b.iter(|| {

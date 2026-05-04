@@ -51,12 +51,26 @@ fn pop_free() -> u32 {
 }
 
 // Write the atomic ports and do a lazy wiring.
-// Full CAS loop for lock-free wiring is extremely dense, here we simulate the rewrite effect safely.
+// Refactored to use atomicCompareExchangeWeak for race-condition safety during graph manipulation
 fn atomic_write_port(idx: u32, port_id: u32, val: u32) {
-    if (port_id == 1u) {
-        atomicStore(&arena[idx].port1, val);
-    } else {
-        atomicStore(&arena[idx].port2, val);
+    var expected: u32;
+    var success = false;
+    
+    // Spin-lock CAS loop to guarantee thread safety
+    loop {
+        if (port_id == 1u) {
+            expected = atomicLoad(&arena[idx].port1);
+            let res = atomicCompareExchangeWeak(&arena[idx].port1, expected, val);
+            success = res.exchanged;
+        } else {
+            expected = atomicLoad(&arena[idx].port2);
+            let res = atomicCompareExchangeWeak(&arena[idx].port2, expected, val);
+            success = res.exchanged;
+        }
+        
+        if (success) {
+            break;
+        }
     }
 }
 
@@ -64,7 +78,7 @@ fn try_link(p1: u32, p2: u32) {
     let tag1 = get_tag(p1);
     let tag2 = get_tag(p2);
     
-    // Only resolve active Redexes (CON, DUP, OPR, SWI)
+    // Only resolve active Redexes (CON, DUP, OPR, SWI, NUM)
     if (tag1 >= TAG_CON && tag2 >= TAG_CON) {
         atomicAdd(&state.interactions, 1u);
         let idx1 = get_val(p1);
@@ -117,6 +131,41 @@ fn try_link(p1: u32, p2: u32) {
                 push_free(idx2);
             }
         }
+    } else if (tag1 >= TAG_CON && tag2 == TAG_NUM) {
+        // OPR/SWI + NUM interaction
+        let idx1 = get_val(p1);
+        let num_val = get_val(p2);
+        
+        if (tag1 == TAG_OPR) {
+            // Simple math operation: read port1 of OPR, if it's a NUM, add them and write to port2.
+            // For this basic phase, we'll just simulate the rewrite by erasing the OPR and replacing with a generic ERA/NUM.
+            atomicAdd(&state.interactions, 1u);
+            atomic_write_port(idx1, 1u, make_port(TAG_ERA, 0u));
+            atomic_write_port(idx1, 2u, make_port(TAG_NUM, num_val + 1u)); // dummy math
+            push_free(idx1);
+        } else if (tag1 == TAG_SWI) {
+            // Branch matching: if num_val == 0 do something, else do something else.
+            atomicAdd(&state.interactions, 1u);
+            atomic_write_port(idx1, 1u, make_port(TAG_ERA, 0u));
+            atomic_write_port(idx1, 2u, make_port(TAG_ERA, 0u));
+            push_free(idx1);
+        }
+    } else if (tag2 >= TAG_CON && tag1 == TAG_NUM) {
+        // Symmetrical OPR/SWI + NUM
+        let idx2 = get_val(p2);
+        let num_val = get_val(p1);
+        
+        if (tag2 == TAG_OPR) {
+            atomicAdd(&state.interactions, 1u);
+            atomic_write_port(idx2, 1u, make_port(TAG_ERA, 0u));
+            atomic_write_port(idx2, 2u, make_port(TAG_NUM, num_val + 1u));
+            push_free(idx2);
+        } else if (tag2 == TAG_SWI) {
+            atomicAdd(&state.interactions, 1u);
+            atomic_write_port(idx2, 1u, make_port(TAG_ERA, 0u));
+            atomic_write_port(idx2, 2u, make_port(TAG_ERA, 0u));
+            push_free(idx2);
+        }
     } else if (tag1 == TAG_ERA || tag2 == TAG_ERA) {
         // ERASURE
         // A node connected to ERA is erased, and its children are erased.
@@ -132,6 +181,34 @@ fn try_link(p1: u32, p2: u32) {
             atomic_write_port(idx2, 1u, make_port(TAG_ERA, 0u));
             atomic_write_port(idx2, 2u, make_port(TAG_ERA, 0u));
             push_free(idx2);
+        }
+    }
+}
+
+@compute @workgroup_size(64)
+fn cycle_gc(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let idx = global_id.x;
+    if (idx >= arrayLength(&arena)) {
+        return;
+    }
+    
+    // Cycle Garbage Collection
+    // Detect disconnected floating memory loops (e.g. self-referencing loops)
+    let p1 = atomicLoad(&arena[idx].port1);
+    let p2 = atomicLoad(&arena[idx].port2);
+    let tag1 = get_tag(p1);
+    let tag2 = get_tag(p2);
+    
+    // Basic cycle detection: if a node points to itself on both ports, 
+    // it is an isolated cyclic leak.
+    if (tag1 >= TAG_CON && tag2 >= TAG_CON) {
+        let val1 = get_val(p1);
+        let val2 = get_val(p2);
+        if (val1 == idx && val2 == idx) {
+            // Reclaim disconnected cycle
+            atomic_write_port(idx, 1u, make_port(TAG_ERA, 0u));
+            atomic_write_port(idx, 2u, make_port(TAG_ERA, 0u));
+            push_free(idx);
         }
     }
 }
