@@ -56,7 +56,7 @@ enum DemoAction {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Goal {
-    context: Vec<usize>,
+    context: Vec<(String, usize)>,
     target: usize,
 }
 
@@ -188,22 +188,25 @@ fn process_repl_command(input: &str, session: &mut Session) {
     match parts[0] {
         "help" => {
             println!("Commands:");
-            println!("  help                    - Show this help message");
-            println!("  exit                    - Exit the REPL");
-            println!("  save_session <file>     - Save current session to a JSON file");
-            println!("  load_session <file>     - Load a session from a JSON file");
-            println!("  assume <axiom>          - Add an axiom");
-            println!("  eval <formula>          - Evaluate a formula");
-            println!("  step <formula>          - Step-by-step diagnostic evaluation");
-            println!("  goal <formula>          - Set a new goal to prove");
-            println!("  show_goal               - Show the current goal state");
-            println!("  intro [var]             - Introduce a hypothesis or variable");
-            println!("  exact <hyp_idx>         - Close goal if it matches hypothesis exactly");
-            println!("  split                   - Split a conjunction goal into two");
-            println!("  left                    - Prove left side of a disjunction");
-            println!("  right                   - Prove right side of a disjunction");
-            println!("  apply <thm_idx>         - Apply a theorem/hypothesis (backward reasoning)");
-            println!("  destruct <hyp_idx>      - Break down a hypothesis (e.g. conjunction)");
+            println!("  help                          - Show this help message");
+            println!("  exit                          - Exit the REPL");
+            println!("  save_session <file>           - Save current session to a JSON file");
+            println!("  load_session <file>           - Load a session from a JSON file");
+            println!("  eval <formula>                - Evaluate a formula");
+            println!("  step <formula>                - Step-by-step diagnostic evaluation");
+            println!("  assume <name> <formula>       - Add a named axiom");
+            println!("  theorem <name> <formula>      - Set a new goal to prove");
+            println!("  show_goal                     - Show the current goal state");
+            println!("  intro [name]                  - Introduce a hypothesis or variable");
+            println!("  exact <name>                  - Close goal if it matches hypothesis exactly");
+            println!("  split                         - Split a conjunction goal into two");
+            println!("  left                          - Prove left side of a disjunction");
+            println!("  right                         - Prove right side of a disjunction");
+            println!("  apply <name>                  - Apply a theorem/hypothesis");
+            println!("  destruct <name> [n1] [n2]     - Break down a hypothesis");
+            println!("  rewrite <name>                - Substitute variables using equality");
+            println!("  qed                           - Finish proof");
+            println!("  abort                         - Abort current proof");
         }
         "exit" => {
             std::process::exit(0);
@@ -317,11 +320,12 @@ fn process_repl_command(input: &str, session: &mut Session) {
             }
         }
         "intro" => {
+            let name = if parts.len() > 1 { parts[1].to_string() } else { "H".to_string() };
             if let Some(mut goal) = session.active_goals.pop() {
                 let target = session.arena.get(goal.target).cloned();
                 match target {
                     Some(Formula::Impl(l, r)) => {
-                        goal.context.push(l);
+                        goal.context.push((name, l));
                         goal.target = r;
                         session.active_goals.push(goal);
                         show_goal(session);
@@ -343,31 +347,28 @@ fn process_repl_command(input: &str, session: &mut Session) {
         }
         "exact" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: exact <hyp_idx>".red());
+                println!("{}", "Usage: exact <hyp_name>".red());
                 return;
             }
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if let Some(goal) = session.active_goals.last() {
-                    if let Some(&hyp) = goal.context.get(idx) {
-                        if hyp == goal.target {
-                            println!("{}", "Goal closed!".green());
-                            session.active_goals.pop();
-                            if session.active_goals.is_empty() {
-                                println!("{}", "Proof complete!".green().bold());
-                            } else {
-                                show_goal(session);
-                            }
+            let name = parts[1].to_string();
+            if let Some(goal) = session.active_goals.last() {
+                if let Some((_, hyp_idx)) = goal.context.iter().find(|(n, _)| n == &name) {
+                    if *hyp_idx == goal.target {
+                        println!("{}", "Goal closed!".green());
+                        session.active_goals.pop();
+                        if session.active_goals.is_empty() {
+                            println!("{}", "Proof complete!".green().bold());
                         } else {
-                            println!("{}", "Hypothesis does not exactly match the target.".red());
+                            show_goal(session);
                         }
                     } else {
-                        println!("{}", "Invalid hypothesis index.".red());
+                        println!("{}", "Hypothesis does not exactly match the target.".red());
                     }
                 } else {
-                    println!("{}", "No active goals.".red());
+                    println!("{}", "Invalid hypothesis name.".red());
                 }
             } else {
-                println!("{}", "Invalid index.".red());
+                println!("{}", "No active goals.".red());
             }
         }
         "split" => {
@@ -428,86 +429,78 @@ fn process_repl_command(input: &str, session: &mut Session) {
             }
         }
         "apply" => {
-            // Apply backward reasoning: A -> B against target B changes target to A.
-            // Wait, we need to find an implication in the context that matches the target.
-            // Usage: apply <hyp_idx>
             if parts.len() < 2 {
-                println!("{}", "Usage: apply <hyp_idx>".red());
+                println!("{}", "Usage: apply <hyp_name>".red());
                 return;
             }
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if let Some(mut goal) = session.active_goals.pop() {
-                    if let Some(&hyp) = goal.context.get(idx) {
-                        let hyp_f = session.arena.get(hyp).cloned();
-                        match hyp_f {
-                            Some(Formula::Impl(l, r)) if r == goal.target => {
-                                goal.target = l;
-                                session.active_goals.push(goal);
-                                show_goal(session);
-                            }
-                            _ => {
-                                println!("{}", "Hypothesis is not an implication matching the target.".red());
-                                session.active_goals.push(goal);
-                            }
+            let name = parts[1].to_string();
+            if let Some(mut goal) = session.active_goals.pop() {
+                if let Some(&(_, hyp_idx)) = goal.context.iter().find(|(n, _)| n == &name) {
+                    let hyp_f = session.arena.get(hyp_idx).cloned();
+                    match hyp_f {
+                        Some(Formula::Impl(l, r)) if r == goal.target => {
+                            goal.target = l;
+                            session.active_goals.push(goal);
+                            show_goal(session);
                         }
-                    } else {
-                        println!("{}", "Invalid hypothesis index.".red());
-                        session.active_goals.push(goal);
+                        _ => {
+                            println!("{}", "Hypothesis is not an implication matching the target.".red());
+                            session.active_goals.push(goal);
+                        }
                     }
                 } else {
-                    println!("{}", "No active goals.".red());
+                    println!("{}", "Invalid hypothesis name.".red());
+                    session.active_goals.push(goal);
                 }
             } else {
-                println!("{}", "Invalid index.".red());
+                println!("{}", "No active goals.".red());
             }
         }
         "destruct" => {
-            // Break down a hypothesis. e.g., A /\ B -> adds A and B to context.
-            // A \/ B -> splits into two goals, one with A, one with B.
             if parts.len() < 2 {
-                println!("{}", "Usage: destruct <hyp_idx>".red());
+                println!("{}", "Usage: destruct <hyp_name> [n1] [n2]".red());
                 return;
             }
-            if let Ok(idx) = parts[1].parse::<usize>() {
-                if let Some(mut goal) = session.active_goals.pop() {
-                    if idx < goal.context.len() {
-                        let hyp = goal.context.remove(idx); // remove it
-                        let hyp_f = session.arena.get(hyp).cloned();
-                        match hyp_f {
-                            Some(Formula::Conj(l, r)) => {
-                                goal.context.push(l);
-                                goal.context.push(r);
-                                session.active_goals.push(goal);
-                                show_goal(session);
-                            }
-                            Some(Formula::Disj(l, r)) => {
-                                let mut goal2 = goal.clone();
-                                goal.context.push(l);
-                                goal2.context.push(r);
-                                session.active_goals.push(goal2);
-                                session.active_goals.push(goal);
-                                show_goal(session);
-                            }
-                            Some(Formula::Exist(_, _, inner)) => {
-                                goal.context.push(inner);
-                                session.active_goals.push(goal);
-                                show_goal(session);
-                            }
-                            _ => {
-                                println!("{}", "Hypothesis cannot be destructed.".red());
-                                goal.context.insert(idx, hyp); // put it back
-                                session.active_goals.push(goal);
-                            }
+            let name = parts[1].to_string();
+            let n1 = if parts.len() > 2 { parts[2].to_string() } else { format!("{}a", name) };
+            let n2 = if parts.len() > 3 { parts[3].to_string() } else { format!("{}b", name) };
+
+            if let Some(mut goal) = session.active_goals.pop() {
+                if let Some(idx) = goal.context.iter().position(|(n, _)| n == &name) {
+                    let (_, hyp_idx) = goal.context.remove(idx);
+                    let hyp_f = session.arena.get(hyp_idx).cloned();
+                    match hyp_f {
+                        Some(Formula::Conj(l, r)) => {
+                            goal.context.push((n1, l));
+                            goal.context.push((n2, r));
+                            session.active_goals.push(goal);
+                            show_goal(session);
                         }
-                    } else {
-                        println!("{}", "Invalid hypothesis index.".red());
-                        session.active_goals.push(goal);
+                        Some(Formula::Disj(l, r)) => {
+                            let mut goal2 = goal.clone();
+                            goal.context.push((n1, l));
+                            goal2.context.push((n2, r));
+                            session.active_goals.push(goal2);
+                            session.active_goals.push(goal);
+                            show_goal(session);
+                        }
+                        Some(Formula::Exist(_, _, inner)) => {
+                            goal.context.push((n1, inner));
+                            session.active_goals.push(goal);
+                            show_goal(session);
+                        }
+                        _ => {
+                            println!("{}", "Hypothesis cannot be destructed.".red());
+                            goal.context.insert(idx, (name, hyp_idx));
+                            session.active_goals.push(goal);
+                        }
                     }
                 } else {
-                    println!("{}", "No active goals.".red());
+                    println!("{}", "Invalid hypothesis name.".red());
+                    session.active_goals.push(goal);
                 }
             } else {
-                println!("{}", "Invalid index.".red());
+                println!("{}", "No active goals.".red());
             }
         }
         _ => {
@@ -546,8 +539,8 @@ fn format_var(v: &Var) -> String {
 fn show_goal(session: &Session) {
     if let Some(goal) = session.active_goals.last() {
         println!("{}", "--- Context ---".yellow());
-        for (i, &hyp) in goal.context.iter().enumerate() {
-            println!("H{}: {}", i, format_formula(&session.arena, hyp));
+        for hyp in goal.context.iter() {
+            println!("{}: {}", hyp.0, format_formula(&session.arena, hyp.1));
         }
         println!("{}", "--- Target ---".yellow());
         println!("{}", format_formula(&session.arena, goal.target).cyan().bold());

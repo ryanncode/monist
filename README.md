@@ -20,9 +20,9 @@ The standard computing industry enforces memory safety via strict Directed Acycl
 
 The Monist Engine subverts this by bifurcating the computational stack:
 
-1.  **The Oracle Layer (CPU/Geometry):** The frontend parser transforms standard first-order logic into an algebraic system of constraints. Instead of rejecting cyclic graphs, the `monist-core` executes Kosaraju's SCC algorithm to flatten 0-weight semantic cycles, and deploys the Bellman-Ford algorithm to map the thermodynamic weight between nodes. If a paradox forms, the engine dynamically calculates the $K$-Iteration depth boundary and intercepts the recursion mathematically.
-2.  **The T-Functor Synthesis:** When dense impredicative recursion forms (like the Burali-Forti sequence), the engine dynamically synthesizes and injects a `T-operator` ($x \mapsto \iota"x$), acting as a topological stabilizer that absorbs the structural friction, preserving the weak stratification boundary.
-3.  **The Interaction Net Backend (GPU/Physics):** Stripped of all types and hierarchical scaffolding, the validated logic is compiled into pure $S, K, I$ combinators (`monist-comb`). We bypass traditional substitution environments, feeding these localized atomic nodes directly to HVM2/Bend-style Interaction Nets. The hardware natively folds self-reference topologically, scaling across millions of lock-free collisions per second.
+1. **The Oracle Layer (CPU/Geometry):** The frontend parser transforms standard first-order logic into an algebraic system of constraints. Instead of rejecting cyclic graphs, the `monist-core` executes Kosaraju's SCC algorithm to flatten 0-weight semantic cycles, and deploys the Bellman-Ford algorithm to map the thermodynamic weight between nodes. If a paradox forms, the engine dynamically calculates the $K$-Iteration depth boundary and intercepts the recursion mathematically.
+2. **The T-Functor Synthesis:** When dense impredicative recursion forms (like the Burali-Forti sequence), the engine dynamically synthesizes and injects a `T-operator` ($x \mapsto \iota"x$), acting as a topological stabilizer that absorbs the structural friction, preserving the weak stratification boundary.
+3. **The Interaction Net Backend (GPU/Physics):** Stripped of all types and hierarchical scaffolding, the validated logic is compiled into pure $S, K, I$ combinators (`monist-comb`). We bypass traditional substitution environments, feeding these localized atomic nodes directly to HVM2/Bend-style Interaction Nets. The hardware natively folds self-reference topologically, scaling across millions of lock-free collisions per second.
 
 ---
 
@@ -41,13 +41,16 @@ cargo build --release
 
 ### The Interactive REPL
 To start the tactical theorem-proving environment:
+
 ```bash
 cargo run -p monist-cli -- repl
 ```
+
 Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x in x"`. For full details on available commands, axioms, and visualization options, see the [CLI Guide](docs/CLI_GUIDE.md).
 
 ### Visual Demonstrations
 The Engine includes visual terminal simulations illustrating its unique performance boundaries:
+
 ```bash
 # Demonstrate O(1) Exclusion-First Routing for Holographic Queries
 cargo run -p monist-cli -- demo holographic
@@ -62,16 +65,18 @@ cargo run -p monist-cli -- demo agentic
 
 The engine's validity is proven via a suite of automated diagnostic refutations located in `tools/monist-examples/src/bin/`. These execute the core paradoxes of modern set theory, outputting the mathematically verified topological boundaries and generating standard `SMT-LIB v2` witnesses for third-party prover ingestion.
 
-*   **Specker's Refutation of Global Choice (`specker_refutation.rs`)**: Mechanically proves that bridging disjoint integer weight elevations ($\Phi(m)$ vs $\Phi(T(m))$) without a $T$-operator creates a negative-weight cycle, validating the absolute halting limit.
-*   **The Extensionality Collision (`extensionality_collision.rs`)**: Evaluates the Kuratowski ordered pair vs the Quine ordered pair, proving the engine tracks dense structural depth offsets (+2 vs 0) without triggering a false paradox halt.
-*   **Russell's Paradox (`russell.rs`)**: Computes $R \in R$, dynamically intercepting the unstratified graph prior to call-stack exhaustion via the $K$-Iteration bound.
+* **Specker's Refutation of Global Choice (`specker_refutation.rs`)**: Mechanically proves that bridging disjoint integer weight elevations ($\Phi(m)$ vs $\Phi(T(m))$) without a $T$-operator creates a negative-weight cycle, validating the absolute halting limit.
+* **The Extensionality Collision (`extensionality_collision.rs`)**: Evaluates the Kuratowski ordered pair vs the Quine ordered pair, proving the engine tracks dense structural depth offsets (+2 vs 0) without triggering a false paradox halt.
+* **Russell's Paradox (`russell.rs`)**: Computes $R \in R$, dynamically intercepting the unstratified graph prior to call-stack exhaustion via the $K$-Iteration bound.
 
 To execute a diagnostic:
+
 ```bash
 cargo run -p monist-examples --bin specker_refutation
 ```
 
 For bare-metal throughput execution tests bypassing the CLI:
+
 ```bash
 # Run the lock-free OpenCL bridge benchmark
 cargo bench -p monist-bench-gpu

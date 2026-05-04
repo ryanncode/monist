@@ -45,36 +45,39 @@ fn main() {
     
     thread::sleep(Duration::from_millis(400));
 
-    println!("> load_axiom SC_Def: \"forall x. SC(x) <-> (x = T(x))\"");
+    println!("> assume SC_Def \"forall x. SC(x) <-> (x = T(x))\"");
     println!("[Loaded] Axiom SC_Def registered.\n");
     
     thread::sleep(Duration::from_millis(400));
 
-    println!("> load_axiom Quine_Flatness: \"forall x y. typestate(Q(x,y)) == max(typestate(x), typestate(y))\"");
+    println!("> assume Quine_Flatness \"forall x y. typestate(Q(x,y)) == max(typestate(x), typestate(y))\"");
     println!("[Loaded] Axiom Quine_Flatness registered.\n");
     
     thread::sleep(Duration::from_millis(400));
 
-    println!("> goal: \"forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))\"");
+    println!("> theorem SC_Preservation \"forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))\"");
     println!("[Goal Set] 1 unproven target.");
-    println!("Target 1: SC(Q(a,b))");
-    println!("Context: SC(a), SC(b)\n");
+    println!("Target 1: forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))");
+    println!("Context: \n");
     
     thread::sleep(Duration::from_millis(400));
 
-    println!("> tactic apply_intro");
-    println!("[Context Updated] Variables 'a' and 'b' bound.");
+    println!("> intro a");
+    println!("> intro b");
+    println!("> intro H_SC");
+    println!("> destruct H_SC H1 H2");
     println!("[Context Updated] Hypotheses H1: SC(a), H2: SC(b) added.\n");
+    println!("Target 1: SC(Q(a,b))");
 
     thread::sleep(Duration::from_millis(400));
 
-    println!("> tactic unfold SC_Def target");
+    println!("> rewrite SC_Def");
     println!("[Goal Rewritten] Target 1 is now: Q(a,b) = T(Q(a,b))\n");
-
+    
     thread::sleep(Duration::from_millis(400));
 
-    println!("> tactic rewrite <- H1");
-    println!("> tactic rewrite <- H2");
+    println!("> rewrite H1");
+    println!("> rewrite H2");
     println!("[Goal Rewritten] Target 1 is now: Q(T(a), T(b)) = T(Q(a,b))\n");
 
     thread::sleep(Duration::from_millis(400));
