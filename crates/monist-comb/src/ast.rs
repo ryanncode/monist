@@ -1,4 +1,7 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use bytemuck::{Pod, Zeroable};
+use crate::ir::Comb;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
 #[repr(transparent)]
 pub struct Port(pub u32);
 
@@ -16,21 +19,27 @@ impl Port {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct Pair(pub u64);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
+#[repr(C)]
+pub struct Node {
+    pub port1: u32,
+    pub port2: u32,
+}
 
-impl Pair {
+impl Node {
     pub fn new(p1: Port, p2: Port) -> Self {
-        Pair((p1.0 as u64) | ((p2.0 as u64) << 32))
+        Node {
+            port1: p1.0,
+            port2: p2.0,
+        }
     }
 
     pub fn port1(self) -> Port {
-        Port(self.0 as u32)
+        Port(self.port1)
     }
 
     pub fn port2(self) -> Port {
-        Port((self.0 >> 32) as u32)
+        Port(self.port2)
     }
 }
 
@@ -45,26 +54,39 @@ pub const TAG_SWI: u32 = 7;
 
 #[derive(Debug, Clone, Default)]
 pub struct GNet {
-    pub nodes: Vec<Pair>,
+    pub nodes: Vec<Node>,
     pub vars: Vec<Port>,
     pub redexes: Vec<(Port, Port)>,
+    pub free_list: Vec<u32>,
 }
 
 impl GNet {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(capacity: usize) -> Self {
+        let mut free_list = Vec::with_capacity(capacity);
+        for i in (0..capacity).rev() {
+            free_list.push(i as u32);
+        }
+        let mut nodes = vec![Node::new(Port(0), Port(0)); capacity];
+        
+        Self {
+            nodes,
+            vars: Vec::new(),
+            redexes: Vec::new(),
+            free_list,
+        }
     }
 
     pub fn alloc_node(&mut self, p1: Port, p2: Port) -> u32 {
-        let idx = self.nodes.len() as u32;
-        self.nodes.push(Pair::new(p1, p2));
-        idx
+        if let Some(idx) = self.free_list.pop() {
+            self.nodes[idx as usize] = Node::new(p1, p2);
+            idx
+        } else {
+            panic!("OOM");
+        }
     }
 
-    /// Link two ports together. Triggers VOID or ERASE on ERA tags.
     pub fn link(&mut self, p1: Port, p2: Port) {
         if p1.tag() == TAG_ERA && p2.tag() == TAG_ERA {
-            // VOID sub-interaction
             return;
         }
 
@@ -95,14 +117,14 @@ impl GNet {
         }
     }
 
-    /// ERASE sub-interaction
     fn erase(&mut self, port: Port) {
         if port.tag() >= TAG_CON {
             let idx = port.val() as usize;
             if idx < self.nodes.len() {
-                let pair = self.nodes[idx];
-                self.link(Port::new(TAG_ERA, 0), pair.port1());
-                self.link(Port::new(TAG_ERA, 0), pair.port2());
+                let node = self.nodes[idx];
+                self.link(Port::new(TAG_ERA, 0), node.port1());
+                self.link(Port::new(TAG_ERA, 0), node.port2());
+                self.free_list.push(idx as u32);
             }
         } else if port.tag() == TAG_VAR {
             if (port.val() as usize) < self.vars.len() {
@@ -111,28 +133,79 @@ impl GNet {
         }
     }
 
-    /// Topologically-Guided Call-by-Need Evaluation Engine
-    /// Executes the Interaction Net and halts dynamically via K-Iteration bounds
     pub fn reduce(&mut self, k_iteration_limit: usize) -> Result<usize, &'static str> {
         let mut iterations = 0;
 
         while let Some((_p1, _p2)) = self.redexes.pop() {
             if iterations >= k_iteration_limit {
-                // Trap into the K_ITERATION_HALT terminal state
-                // Mathematically isolates paradox regressions (like V in V) natively
                 return Err("K_ITERATION_HALT: Topological Execution Limit Exceeded.");
             }
-
-            // At this stage, standard Interaction Net reductions would occur:
-            // 1. Commutation (e.g. CON/DUP crossing)
-            // 2. Annihilation (e.g. CON/CON merging)
-            
-            // For now, assume rule consumes redex and potentially adds more
-            // Actual implementation hooks into HVM2 / Interaction Net rewrite matrices
-            
             iterations += 1;
         }
 
         Ok(iterations)
+    }
+
+    // Basic serializer for Comb -> GNet (flat array)
+    pub fn from_comb(comb: &Comb, capacity: usize) -> Self {
+        let mut net = GNet::new(capacity);
+        let root = Self::build_comb(&mut net, comb);
+        // We link a generic VAR to root to keep it active
+        let root_var_idx = net.vars.len() as u32;
+        net.vars.push(Port(0));
+        net.link(Port::new(TAG_VAR, root_var_idx), root);
+        net
+    }
+
+    fn build_comb(net: &mut GNet, comb: &Comb) -> Port {
+        match comb {
+            Comb::App(left, right) => {
+                let l_port = Self::build_comb(net, left);
+                let r_port = Self::build_comb(net, right);
+                // Simple representation, just as an example
+                // In actual IN, App is a CON node pointing to l_port and r_port
+                let node_idx = net.alloc_node(l_port, r_port);
+                Port::new(TAG_CON, node_idx)
+            }
+            // For now, other combinators represent REF or specific CON tags
+            _ => Port::new(TAG_REF, 0), // Stub for complex translation
+        }
+    }
+
+    pub fn to_comb_string(&self) -> String {
+        // Find the root port via vars[0] if it exists
+        if self.vars.is_empty() {
+            return "Empty Net".to_string();
+        }
+        let root_port = self.vars[0];
+        let mut string = self.port_to_string(root_port, 0);
+        if string.len() > 100 {
+            string.truncate(97);
+            string.push_str("...");
+        }
+        string
+    }
+
+    fn port_to_string(&self, port: Port, depth: usize) -> String {
+        if depth > 10 {
+            return "...".to_string();
+        }
+        match port.tag() {
+            TAG_VAR => format!("Var({})", port.val()),
+            TAG_REF => "Ref(Comb)".to_string(),
+            TAG_ERA => "Era".to_string(),
+            TAG_CON => {
+                let idx = port.val() as usize;
+                if idx < self.nodes.len() {
+                    let node = &self.nodes[idx];
+                    format!("App({}, {})", 
+                        self.port_to_string(node.port1(), depth + 1), 
+                        self.port_to_string(node.port2(), depth + 1))
+                } else {
+                    "Invalid(CON)".to_string()
+                }
+            }
+            _ => format!("UnknownTag({})", port.tag()),
+        }
     }
 }

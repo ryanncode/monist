@@ -5,3 +5,6 @@ edition = "2024"
 
 [dependencies]
 monist-core = { path = "../monist-core" }
+wgpu = "0.19"
+bytemuck = { version = "1.15", features = ["derive"] }
+pollster = "0.3"

@@ -1,44 +1,189 @@
-use std::process::{Command, Output};
-use std::fs;
-use std::io::Result;
-use std::path::PathBuf;
+use std::borrow::Cow;
+use wgpu::util::DeviceExt;
+use crate::ast::GNet;
+use bytemuck::{Pod, Zeroable};
 
-pub struct BendExecutor {
-    temp_dir: PathBuf,
+#[derive(Debug, Clone, Copy, Pod, Zeroable)]
+#[repr(C)]
+pub struct GpuState {
+    pub active_nodes: u32,
+    pub interactions: u32,
+    pub free_list_head: u32,
+    pub _padding: u32, // to align to 16 bytes
 }
 
-impl BendExecutor {
-    pub fn new(temp_dir: impl Into<PathBuf>) -> Self {
-        BendExecutor {
-            temp_dir: temp_dir.into(),
-        }
+pub struct WgpuExecutor {
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    pipeline: wgpu::ComputePipeline,
+}
+
+impl Default for WgpuExecutor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WgpuExecutor {
+    pub fn new() -> Self {
+        pollster::block_on(async {
+            let instance = wgpu::Instance::default();
+            let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
+                compatible_surface: None,
+            }).await.expect("Failed to find WGPU adapter");
+
+            let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor::default(), None)
+                .await.expect("Failed to create device");
+
+            let shader_src = include_str!("reduce.wgsl");
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("Reduce Shader"),
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(shader_src)),
+            });
+
+            let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("Reduce Pipeline"),
+                layout: None,
+                module: &shader,
+                entry_point: "main",
+            });
+
+            Self { device, queue, pipeline }
+        })
     }
 
-    pub fn compile_and_run_cuda(&self, filename: &str, logic_source: &str) -> Result<Output> {
-        // Ensure the directory exists
-        fs::create_dir_all(&self.temp_dir)?;
-        
-        let mut filepath = self.temp_dir.clone();
-        filepath.push(format!("{}.bend", filename));
-        
-        // Write the validated combinatorial logic to a Bend file
-        fs::write(&filepath, logic_source)?;
+    pub fn execute(&self, net: &GNet) -> (GNet, GpuState) {
+        pollster::block_on(async {
+            let arena_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Arena Buffer"),
+                contents: bytemuck::cast_slice(&net.nodes),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            });
 
-        // Invoke the hvm gen-cu to compile the Bend/HVM syntax into CUDA
-        let gen_output = Command::new("hvm")
-            .arg("gen-cu")
-            .arg(filepath.to_str().unwrap())
-            .output()?;
+            let free_list_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Free List Buffer"),
+                contents: bytemuck::cast_slice(&net.free_list),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            });
 
-        if !gen_output.status.success() {
-            return Ok(gen_output); // Return compilation error
-        }
+            let initial_state = GpuState {
+                active_nodes: net.nodes.len() as u32,
+                interactions: 0,
+                free_list_head: 0,
+                _padding: 0,
+            };
 
-        // Invoke hvm run on the file
-        Command::new("hvm")
-            .arg("run")
-            .arg(filepath.to_str().unwrap())
-            .arg("-s") // Enables metrics like reductions and interactions per second
-            .output()
+            let state_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("State Buffer"),
+                contents: bytemuck::cast_slice(&[initial_state]),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
+            });
+
+            let bind_group_layout = self.pipeline.get_bind_group_layout(0);
+            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Bind Group"),
+                layout: &bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: arena_buf.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: free_list_buf.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: state_buf.as_entire_binding(),
+                    },
+                ],
+            });
+
+            let mut out_net = net.clone();
+            let mut final_state = initial_state;
+            let mut interactions_occurred = true;
+            let mut max_iterations = 1000;
+
+            while interactions_occurred && max_iterations > 0 {
+                // Reset interaction counter for this pass
+                let pass_state = GpuState {
+                    active_nodes: final_state.active_nodes,
+                    interactions: 0,
+                    free_list_head: final_state.free_list_head,
+                    _padding: 0,
+                };
+                
+                self.queue.write_buffer(&state_buf, 0, bytemuck::cast_slice(&[pass_state]));
+
+                let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+                {
+                    let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None, timestamp_writes: None });
+                    cpass.set_pipeline(&self.pipeline);
+                    cpass.set_bind_group(0, &bind_group, &[]);
+                    let workgroups = (out_net.nodes.len() as u32 + 63) / 64;
+                    cpass.dispatch_workgroups(workgroups, 1, 1);
+                }
+
+                // Create staging buffer to read back just the state
+                let staging_state = self.device.create_buffer(&wgpu::BufferDescriptor {
+                    label: None,
+                    size: std::mem::size_of::<GpuState>() as u64,
+                    usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                });
+
+                encoder.copy_buffer_to_buffer(&state_buf, 0, &staging_state, 0, staging_state.size());
+                self.queue.submit(Some(encoder.finish()));
+
+                let state_slice = staging_state.slice(..);
+                let (tx, rx) = std::sync::mpsc::channel();
+                state_slice.map_async(wgpu::MapMode::Read, move |v| tx.send(v).unwrap());
+                self.device.poll(wgpu::Maintain::Wait);
+                rx.recv().unwrap().unwrap();
+
+                let state_data = state_slice.get_mapped_range();
+                let current_state: GpuState = bytemuck::cast_slice(&state_data)[0];
+                drop(state_data);
+                staging_state.unmap();
+
+                if current_state.interactions == 0 {
+                    interactions_occurred = false;
+                } else {
+                    final_state.interactions += current_state.interactions;
+                    final_state.active_nodes = current_state.active_nodes;
+                    final_state.free_list_head = current_state.free_list_head;
+                    max_iterations -= 1;
+                }
+            }
+
+            // Create staging buffer for final readback
+            let staging_arena = self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: (out_net.nodes.len() * std::mem::size_of::<crate::ast::Node>()) as u64,
+                usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+
+            let mut final_encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            final_encoder.copy_buffer_to_buffer(&arena_buf, 0, &staging_arena, 0, staging_arena.size());
+            self.queue.submit(Some(final_encoder.finish()));
+
+            let arena_slice = staging_arena.slice(..);
+            let (tx, rx) = std::sync::mpsc::channel();
+            arena_slice.map_async(wgpu::MapMode::Read, move |v| tx.send(v).unwrap());
+            self.device.poll(wgpu::Maintain::Wait);
+            rx.recv().unwrap().unwrap();
+
+            let arena_data = arena_slice.get_mapped_range();
+            let final_nodes: Vec<crate::ast::Node> = bytemuck::cast_slice(&arena_data).to_vec();
+            drop(arena_data);
+            staging_arena.unmap();
+
+            out_net.nodes = final_nodes;
+
+            (out_net, final_state)
+        })
     }
 }
