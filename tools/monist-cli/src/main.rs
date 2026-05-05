@@ -66,6 +66,7 @@ struct Session {
     axioms: Vec<String>,
     arena: FormulaArena,
     active_goals: Vec<Goal>,
+    macros: std::collections::HashMap<String, usize>,
 }
 
 impl Default for Session {
@@ -75,6 +76,7 @@ impl Default for Session {
             axioms: Vec::new(),
             arena: FormulaArena::new(),
             active_goals: Vec::new(),
+            macros: std::collections::HashMap::new(),
         }
     }
 }
@@ -503,47 +505,152 @@ fn process_repl_command(input: &str, session: &mut Session) {
                 println!("{}", "No active goals.".red());
             }
         }
+        "focus_hyp" => {
+            if parts.len() < 2 {
+                println!("{}", "Usage: focus_hyp <hyp_name>".red());
+                return;
+            }
+            let name = parts[1].to_string();
+            if let Some(mut goal) = session.active_goals.pop() {
+                if let Some(idx) = goal.context.iter().position(|(n, _)| n == &name) {
+                    let hyp = goal.context.remove(idx);
+                    goal.context.insert(0, hyp);
+                    session.active_goals.push(goal);
+                    show_goal(session);
+                } else {
+                    println!("{}", "Invalid hypothesis name.".red());
+                    session.active_goals.push(goal);
+                }
+            } else {
+                println!("{}", "No active goals.".red());
+            }
+        }
+        "defer" => {
+            if session.active_goals.len() > 1 {
+                let goal = session.active_goals.pop().unwrap();
+                session.active_goals.insert(0, goal);
+                println!("{}", "Goal deferred.".green());
+                show_goal(session);
+            } else if session.active_goals.len() == 1 {
+                println!("{}", "Only one active goal.".yellow());
+            } else {
+                println!("{}", "No active goals.".red());
+            }
+        }
+        "cut" => {
+            if parts.len() < 2 {
+                println!("{}", "Usage: cut <formula>".red());
+                return;
+            }
+            let formula_str = parts[1..].join(" ");
+            let mut parser = Parser::new(&formula_str, &mut session.arena);
+            let cut_idx = parser.parse_formula();
+
+            if let Some(mut goal) = session.active_goals.pop() {
+                let mut goal2 = goal.clone();
+                goal2.context.push(("Cut".to_string(), cut_idx));
+                
+                let mut goal1 = goal.clone();
+                goal1.target = cut_idx;
+
+                session.active_goals.push(goal2);
+                session.active_goals.push(goal1);
+                show_goal(session);
+            } else {
+                println!("{}", "No active goals.".red());
+            }
+        }
+        "check_strat" => {
+            if parts.len() < 2 {
+                println!("{}", "Usage: check_strat <formula>".red());
+                return;
+            }
+            let formula = parts[1..].join(" ");
+            
+            let mut arena = FormulaArena::new();
+            let mut parser = Parser::new(&formula, &mut arena);
+            let root_idx = parser.parse_formula();
+
+            let constraints = extract_constraints_aux(&arena, root_idx, 0);
+            let mut graph = GraphArena::from_constraints(&constraints);
+            graph.collapse_scc_0_weight();
+
+            match graph.bellman_ford() {
+                Ok(_) => println!("{}", "Stratification successful. Topologically sound.".green()),
+                Err(e) => println!("{}: {}", "Error: Negative-weight cycle detected".red(), e),
+            }
+        }
+        "deff" => {
+            if parts.len() < 3 || !parts.contains(&":=") {
+                println!("{}", "Usage: deff <name> := <formula>".red());
+                return;
+            }
+            let name = parts[1].to_string();
+            let eq_idx = parts.iter().position(|&x| x == ":=").unwrap();
+            let formula_str = parts[eq_idx + 1..].join(" ");
+            
+            let mut parser = Parser::new(&formula_str, &mut session.arena);
+            let root_idx = parser.parse_formula();
+
+            let constraints = extract_constraints_aux(&session.arena, root_idx, 0);
+            let mut graph = GraphArena::from_constraints(&constraints);
+            graph.collapse_scc_0_weight();
+            
+            session.macros.insert(name.clone(), root_idx);
+            println!("Macro {} defined and SCC flattened.", name.cyan());
+        }
         _ => {
             println!("{}: Unknown command '{}'", "Error".red(), parts[0]);
         }
     }
 }
 
-fn format_formula(arena: &FormulaArena, idx: usize) -> String {
+fn format_formula(arena: &FormulaArena, idx: usize, show_tags: bool) -> String {
     let formula = match arena.get(idx) {
         Some(f) => f,
         None => return format!("<?{}>", idx),
     };
     match formula {
-        Formula::Atom(Atomic::Eq(v1, v2)) => format!("{} = {}", format_var(v1), format_var(v2)),
-        Formula::Atom(Atomic::Mem(v1, v2)) => format!("{} in {}", format_var(v1), format_var(v2)),
+        Formula::Atom(Atomic::Eq(v1, v2)) => format!("{} = {}", format_var(v1, show_tags), format_var(v2, show_tags)),
+        Formula::Atom(Atomic::Mem(v1, v2)) => format!("{} in {}", format_var(v1, show_tags), format_var(v2, show_tags)),
         Formula::Atom(a) => format!("{:?}", a),
-        Formula::Neg(i) => format!("~{}", format_formula(arena, *i)),
-        Formula::Conj(l, r) => format!("({} /\\ {})", format_formula(arena, *l), format_formula(arena, *r)),
-        Formula::Disj(l, r) => format!("({} \\/ {})", format_formula(arena, *l), format_formula(arena, *r)),
-        Formula::Impl(l, r) => format!("({} -> {})", format_formula(arena, *l), format_formula(arena, *r)),
-        Formula::Univ(_, var, inner) => format!("forall {}. {}", var, format_formula(arena, *inner)),
-        Formula::Exist(_, var, inner) => format!("exists {}. {}", var, format_formula(arena, *inner)),
-        Formula::Comp(_, var, inner) => format!("{{ {} | {} }}", var, format_formula(arena, *inner)),
+        Formula::Neg(i) => format!("~{}", format_formula(arena, *i, show_tags)),
+        Formula::Conj(l, r) => format!("({} /\\ {})", format_formula(arena, *l, show_tags), format_formula(arena, *r, show_tags)),
+        Formula::Disj(l, r) => format!("({} \\/ {})", format_formula(arena, *l, show_tags), format_formula(arena, *r, show_tags)),
+        Formula::Impl(l, r) => format!("({} -> {})", format_formula(arena, *l, show_tags), format_formula(arena, *r, show_tags)),
+        Formula::Univ(_, var, inner) => format!("forall {}. {}", var, format_formula(arena, *inner, show_tags)),
+        Formula::Exist(_, var, inner) => format!("exists {}. {}", var, format_formula(arena, *inner, show_tags)),
+        Formula::Comp(_, var, inner) => format!("{{ {} | {} }}", var, format_formula(arena, *inner, show_tags)),
     }
 }
 
-fn format_var(v: &Var) -> String {
+fn format_var(v: &Var, show_tags: bool) -> String {
     match v {
-        Var::Free(name) => name.clone(),
-        Var::Bound(idx) => format!("^{}", idx),
+        Var::Free(name) => {
+            if !show_tags && name.contains('@') {
+                name.split('@').next().unwrap_or(name).to_string()
+            } else {
+                name.clone()
+            }
+        },
+        Var::Bound(idx) => {
+            if show_tags {
+                format!("^{}", idx)
+            } else {
+                format!("v{}", idx)
+            }
+        }
     }
 }
-// I'll append the logic for the commands to process_repl_command using a diff/edit next.
 
 fn show_goal(session: &Session) {
     if let Some(goal) = session.active_goals.last() {
         println!("{}", "--- Context ---".yellow());
         for hyp in goal.context.iter() {
-            println!("{}: {}", hyp.0, format_formula(&session.arena, hyp.1));
+            println!("{}: {}", hyp.0, format_formula(&session.arena, hyp.1, false));
         }
         println!("{}", "--- Target ---".yellow());
-        println!("{}", format_formula(&session.arena, goal.target).cyan().bold());
+        println!("{}", format_formula(&session.arena, goal.target, false).cyan().bold());
     } else {
         println!("No active goals.");
     }
