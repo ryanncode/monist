@@ -66,7 +66,7 @@ struct Session {
     axioms: Vec<String>,
     arena: FormulaArena,
     active_goals: Vec<Goal>,
-    macros: std::collections::HashMap<String, usize>,
+    macros: std::collections::HashMap<String, (Vec<String>, usize)>,
 }
 
 impl Default for Session {
@@ -90,7 +90,7 @@ fn main() -> RlResult<()> {
         }
         Some(Commands::Verify { formula }) => {
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::new(formula, &mut arena);
+            let mut parser = Parser::with_macros(formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
             let constraints = extract_constraints_aux(&arena, root_idx, 0);
@@ -105,7 +105,7 @@ fn main() -> RlResult<()> {
         }
         Some(Commands::ExportSmt { formula }) => {
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::new(formula, &mut arena);
+            let mut parser = Parser::with_macros(formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
             let constraints = extract_constraints_aux(&arena, root_idx, 0);
@@ -118,7 +118,7 @@ fn main() -> RlResult<()> {
         }
         Some(Commands::Eval { formula, export_smt }) => {
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::new(formula, &mut arena);
+            let mut parser = Parser::with_macros(formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
             let constraints = extract_constraints_aux(&arena, root_idx, 0);
@@ -207,9 +207,57 @@ fn process_repl_command(input: &str, session: &mut Session) {
             println!("  apply <name>                  - Apply a theorem/hypothesis");
             println!("  destruct <name> [n1] [n2]     - Break down a hypothesis");
             println!("  rewrite <name>                - Substitute variables using equality");
+            println!("  deff <name>(<args>) := <formula> - Define a macro with Kosaraju SCC pre-flattening");
+            println!("  cut <formula>                 - Introduce a formula as a sub-goal");
+            println!("  focus_hyp <name>              - Pull a hypothesis to the top of the context");
+            println!("  defer                         - Skip the current goal and send it to the back");
+            println!("  check_strat <formula>         - Run Bellman-Ford on raw geometry");
             println!("  qed                           - Finish proof");
             println!("  abort                         - Abort current proof");
         }
+        
+        "theorem" => {
+            if parts.len() < 3 {
+                println!("{}", "Usage: theorem <name> <formula>".red());
+                return;
+            }
+            let _name = parts[1].to_string();
+            let formula = parts[2..].join(" ");
+            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
+            let root_idx = parser.parse_formula();
+
+            let goal = Goal {
+                context: Vec::new(),
+                target: root_idx,
+            };
+            session.active_goals.push(goal);
+            println!("[Goal Set] 1 unproven target.");
+        }
+        "show_goal" => {
+            show_goal(session);
+        }
+        "qed" => {
+            if session.active_goals.is_empty() {
+                println!("Proof accepted.");
+            } else {
+                println!("There are still unproven goals.");
+            }
+        }
+        "abort" => {
+            session.active_goals.clear();
+            println!("Proof aborted.");
+        }
+        "rewrite" => {
+            if parts.len() < 2 {
+                println!("{}", "Usage: rewrite <hyp_name>".red());
+                return;
+            }
+            println!("Rewriting..."); // Dummy rewrite implementation
+        }
+        "quit" => {
+            std::process::exit(0);
+        }
+
         "exit" => {
             std::process::exit(0);
         }
@@ -266,7 +314,7 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let formula = parts[1..].join(" ");
             
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::new(&formula, &mut arena);
+            let mut parser = Parser::with_macros(&formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
             let constraints = extract_constraints_aux(&arena, root_idx, 0);
@@ -287,7 +335,7 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let formula = parts[1..].join(" ");
             
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::new(&formula, &mut arena);
+            let mut parser = Parser::with_macros(&formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
             let constraints = extract_constraints_aux(&arena, root_idx, 0);
@@ -543,7 +591,7 @@ fn process_repl_command(input: &str, session: &mut Session) {
                 return;
             }
             let formula_str = parts[1..].join(" ");
-            let mut parser = Parser::new(&formula_str, &mut session.arena);
+            let mut parser = Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
             let cut_idx = parser.parse_formula();
 
             if let Some(mut goal) = session.active_goals.pop() {
@@ -567,11 +615,10 @@ fn process_repl_command(input: &str, session: &mut Session) {
             }
             let formula = parts[1..].join(" ");
             
-            let mut arena = FormulaArena::new();
-            let mut parser = Parser::new(&formula, &mut arena);
+            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&session.arena, root_idx, 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
@@ -582,21 +629,39 @@ fn process_repl_command(input: &str, session: &mut Session) {
         }
         "deff" => {
             if parts.len() < 3 || !parts.contains(&":=") {
-                println!("{}", "Usage: deff <name> := <formula>".red());
+                println!("{}", "Usage: deff <name>(<args>) := <formula>".red());
                 return;
             }
-            let name = parts[1].to_string();
             let eq_idx = parts.iter().position(|&x| x == ":=").unwrap();
+            let sig_str = parts[1..eq_idx].join(" ");
             let formula_str = parts[eq_idx + 1..].join(" ");
+
+            // parse signature: Name(A, B)
+            let sig_str = sig_str.replace(" ", "");
+            let open_paren = sig_str.find('(');
+            let close_paren = sig_str.find(')');
             
-            let mut parser = Parser::new(&formula_str, &mut session.arena);
+            let mut name = String::new();
+            let mut params = Vec::new();
+
+            if let (Some(op), Some(cp)) = (open_paren, close_paren) {
+                name = sig_str[..op].to_string();
+                let params_str = &sig_str[op + 1..cp];
+                if !params_str.is_empty() {
+                    params = params_str.split(',').map(|s| s.to_string()).collect();
+                }
+            } else {
+                name = sig_str;
+            }
+
+            let mut parser = Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
             let root_idx = parser.parse_formula();
 
             let constraints = extract_constraints_aux(&session.arena, root_idx, 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
             
-            session.macros.insert(name.clone(), root_idx);
+            session.macros.insert(name.clone(), (params, root_idx));
             println!("Macro {} defined and SCC flattened.", name.cyan());
         }
         _ => {

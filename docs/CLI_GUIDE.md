@@ -112,7 +112,7 @@ Proof accepted.
 
 * `assume <name> <formula>`: Register a named axiom into the global environment.
 * `theorem <name> <formula>`: Start a new proof with a target goal and enter tactical mode.
-* `deff <name> := <formula>`: Define a macro with Kosaraju SCC pre-flattening, collapsing internal 0-weight edges into an optimized DAG to minimize topological evaluation overhead.
+* `deff <name>(<args>) := <formula>`: Define a macro with Kosaraju SCC pre-flattening, collapsing internal 0-weight edges into an optimized DAG to minimize topological evaluation overhead.
 * `show_goal`: Print the active target goal and its local context/hypotheses (with De Bruijn scope tags intentionally hidden to minimize UI clutter).
 * `qed`: Conclude an interactive proof if all goals are solved.
 * `abort`: Cancel the current interactive proof.

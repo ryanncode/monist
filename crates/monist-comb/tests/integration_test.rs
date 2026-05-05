@@ -28,7 +28,7 @@ mod tests {
         // OPR node
         let opr_idx = gnet.alloc_node(Port::new(TAG_NUM, 5), Port::new(TAG_NUM, 0));
         // Wire connecting OPR main port to NUM port
-        let wire_idx = gnet.alloc_node(Port::new(TAG_OPR, opr_idx), Port::new(TAG_NUM, 10));
+        let _wire_idx = gnet.alloc_node(Port::new(TAG_OPR, opr_idx), Port::new(TAG_NUM, 10));
         
         // Trigger execution
         let executor = WgpuExecutor::new();

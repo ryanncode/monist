@@ -7,6 +7,7 @@ pub enum Token {
     And,
     Or,
     Impl,
+    Iff,
     Eq,
     In,
     LParen,
@@ -15,6 +16,7 @@ pub enum Token {
     RBrace,
     Bar,
     Dot,
+    Comma,
     EOF,
 }
 
@@ -67,6 +69,7 @@ impl<'a> Lexer<'a> {
                 '}' => Token::RBrace,
                 '|' => Token::Bar,
                 '.' => Token::Dot,
+                ',' => Token::Comma,
                 '=' => Token::Eq,
                 '~' | '¬' => Token::Not,
                 '∀' => Token::Forall,
@@ -78,6 +81,7 @@ impl<'a> Lexer<'a> {
                 '/' if self.advance_if('\\') => Token::And,
                 '\\' if self.advance_if('/') => Token::Or,
                 '-' if self.advance_if('>') => Token::Impl,
+                '<' if self.advance_if('-') && self.advance_if('>') => Token::Iff,
                 _ if c.is_alphabetic() => {
                     let mut ident = String::new();
                     ident.push(c);

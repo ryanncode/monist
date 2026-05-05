@@ -66,7 +66,7 @@ impl GNet {
         for i in (0..capacity).rev() {
             free_list.push(i as u32);
         }
-        let mut nodes = vec![Node::new(Port(0), Port(0)); capacity];
+        let nodes = vec![Node::new(Port(0), Port(0)); capacity];
         
         Self {
             nodes,

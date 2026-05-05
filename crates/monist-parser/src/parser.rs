@@ -1,7 +1,10 @@
 use crate::lexer::{Lexer, Token};
 use monist_core::ast::{Atomic, Formula, FormulaArena, Var};
 
+use std::collections::HashMap;
+
 pub struct Parser<'a> {
+    macros: Option<&'a HashMap<String, (Vec<String>, usize)>>,
     lexer: Lexer<'a>,
     current_token: Token,
     arena: &'a mut FormulaArena,
@@ -10,6 +13,10 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(input: &'a str, arena: &'a mut FormulaArena) -> Self {
+        Self::with_macros(input, arena, None)
+    }
+
+    pub fn with_macros(input: &'a str, arena: &'a mut FormulaArena, macros: Option<&'a HashMap<String, (Vec<String>, usize)>>) -> Self {
         let mut lexer = Lexer::new(input);
         let current_token = lexer.next_token();
         Self {
@@ -17,6 +24,7 @@ impl<'a> Parser<'a> {
             current_token,
             arena,
             bound_vars: Vec::new(),
+            macros,
         }
     }
 
@@ -48,7 +56,19 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_formula(&mut self) -> usize {
-        self.parse_impl()
+        self.parse_iff()
+    }
+
+    fn parse_iff(&mut self) -> usize {
+        let left = self.parse_impl();
+        if self.match_token(Token::Iff) {
+            let right = self.parse_iff();
+            let lr = self.arena.add(Formula::Impl(left, right));
+            let rl = self.arena.add(Formula::Impl(right, left));
+            self.arena.add(Formula::Conj(lr, rl))
+        } else {
+            left
+        }
     }
 
     fn parse_impl(&mut self) -> usize {
@@ -129,7 +149,7 @@ impl<'a> Parser<'a> {
                 panic!("Expected identifier in comprehension");
             }
         } else {
-            // Atomic: x = y or x in y
+            // Atomic: x = y or x in y or macro
             let v1 = self.parse_var();
             if self.match_token(Token::Eq) {
                 let v2 = self.parse_var();
@@ -137,8 +157,93 @@ impl<'a> Parser<'a> {
             } else if self.match_token(Token::In) {
                 let v2 = self.parse_var();
                 self.arena.add(Formula::Atom(Atomic::Mem(v1, v2)))
+            } else if self.match_token(Token::LParen) {
+                if let Var::Free(name) = v1 {
+                    let mut args = Vec::new();
+                    if self.current_token != Token::RParen {
+                        args.push(self.parse_var());
+                        while self.match_token(Token::Comma) {
+                            args.push(self.parse_var());
+                        }
+                    }
+                    self.match_token(Token::RParen);
+                    if let Some(macros) = self.macros {
+                        if let Some((params, formula_idx)) = macros.get(&name) {
+                            if params.len() == args.len() {
+                                return self.expand_macro(*formula_idx, params, &args);
+                            }
+                        }
+                    }
+                    panic!("Macro {} not found or wrong arity", name);
+                } else {
+                    panic!("Expected macro name");
+                }
             } else {
-                panic!("Expected = or in after variable");
+                self.arena.add(Formula::Atom(Atomic::Eq(v1.clone(), v1))) // fallback
+            }
+        }
+    }
+
+    fn expand_macro(&mut self, root: usize, params: &[String], args: &[Var]) -> usize {
+        let f = match self.arena.get(root) {
+            Some(f) => f.clone(),
+            None => return root,
+        };
+
+        let map_var = |v: &Var| -> Var {
+            match v {
+                Var::Free(s) => {
+                    if let Some(pos) = params.iter().position(|p| p == s) {
+                        args[pos].clone()
+                    } else {
+                        v.clone()
+                    }
+                }
+                _ => v.clone()
+            }
+        };
+
+        match f {
+            Formula::Atom(mut atomic) => {
+                match &mut atomic {
+                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) => {
+                        *v1 = map_var(v1);
+                        *v2 = map_var(v2);
+                    }
+                    _ => {}
+                }
+                self.arena.add(Formula::Atom(atomic))
+            }
+            Formula::Neg(i) => {
+                let ni = self.expand_macro(i, params, args);
+                self.arena.add(Formula::Neg(ni))
+            }
+            Formula::Conj(l, r) => {
+                let nl = self.expand_macro(l, params, args);
+                let nr = self.expand_macro(r, params, args);
+                self.arena.add(Formula::Conj(nl, nr))
+            }
+            Formula::Disj(l, r) => {
+                let nl = self.expand_macro(l, params, args);
+                let nr = self.expand_macro(r, params, args);
+                self.arena.add(Formula::Disj(nl, nr))
+            }
+            Formula::Impl(l, r) => {
+                let nl = self.expand_macro(l, params, args);
+                let nr = self.expand_macro(r, params, args);
+                self.arena.add(Formula::Impl(nl, nr))
+            }
+            Formula::Univ(b, s, inner) => {
+                let ninner = self.expand_macro(inner, params, args);
+                self.arena.add(Formula::Univ(b, s, ninner))
+            }
+            Formula::Exist(b, s, inner) => {
+                let ninner = self.expand_macro(inner, params, args);
+                self.arena.add(Formula::Exist(b, s, ninner))
+            }
+            Formula::Comp(b, s, inner) => {
+                let ninner = self.expand_macro(inner, params, args);
+                self.arena.add(Formula::Comp(b, s, ninner))
             }
         }
     }

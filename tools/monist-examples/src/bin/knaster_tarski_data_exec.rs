@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 use indicatif::{ProgressBar, ProgressStyle};
-use monist_comb::ir::Comb;
+
 use monist_comb::comblib::encodings::{v, y_comb, head, false_comb};
 use monist_comb::backend::WgpuExecutor;
 use monist_comb::ast::GNet;
