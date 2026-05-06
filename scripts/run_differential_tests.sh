@@ -2,7 +2,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR/../../nf-sketches/parse-strat"
 
-tests=("strongly_cantorian" "incomparable_cardinals" "sc_daemon_proof" "ai_alignment_playbook" "smt_k_iteration" "extensionality_collision" "specker_refutation" "russell" "test_specker" "burali_forti")
+tests=("strongly_cantorian" "incomparable_cardinals" "sc_daemon_proof" "ai_alignment_playbook" "smt_k_iteration" "extensionality_collision" "specker_refutation" "russell" "test_specker" "burali_forti" "transfinite" "frege_russell_numerals")
 
 for test_name in "${tests[@]}"; do
     echo "========================================"
