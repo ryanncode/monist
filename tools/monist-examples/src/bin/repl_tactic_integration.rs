@@ -36,6 +36,8 @@ impl Session {
         if let Some(limits) = ExecutionLimits::compute_for_graph(&self.graph) {
             println!("Execution Limits Computed: MCM = {:.2}, Max K-Iterations = {}\n", limits.mcm, limits.max_k_iterations);
         }
+
+        println!("Max Graph Topology: {} nodes reached.\n", self.graph.vars.len());
     }
 }
 

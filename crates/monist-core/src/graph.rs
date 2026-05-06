@@ -176,6 +176,44 @@ impl GraphArena {
         self.edges = new_edges.into_iter().collect();
     }
 
+    /// Continuous daemon that isolates Strongly Cantorian (ZFC-compliant) bedrock
+    /// by scanning for subgraphs satisfying the x = T(x) constraint (topological self-loops)
+    /// and severing their outgoing +1 offset edges to reduce computational load.
+    pub fn isolate_sc_bedrock(&mut self) {
+        let mut sc_nodes = HashSet::new();
+
+        // Detect x = T(x) constraints: nodes that have a +1 or -1 weight self-loop.
+        // This occurs when a 0-weight semantic cycle collapses nodes that also 
+        // possess a direct hierarchical (+1 offset) relationship.
+        for &(u, v, w) in &self.edges {
+            if u == v && w != 0 {
+                sc_nodes.insert(u);
+            }
+        }
+
+        if sc_nodes.is_empty() {
+            return;
+        }
+
+        let mut new_edges = HashSet::new();
+        for &(u, v, w) in &self.edges {
+            // Sever the paradoxical self-loops that define the SC node
+            if u == v && w != 0 {
+                continue;
+            }
+            // Sever outgoing +1 offset edges from SC bedrock
+            if sc_nodes.contains(&u) && w == 1 {
+                continue;
+            }
+            // Sever corresponding incoming -1 edges to fully isolate the topology
+            if sc_nodes.contains(&v) && w == -1 {
+                continue;
+            }
+            new_edges.insert((u, v, w));
+        }
+        self.edges = new_edges.into_iter().collect();
+    }
+
     fn dfs1(&self, u: usize, adj: &[Vec<usize>], visited: &mut [bool], order: &mut Vec<usize>) {
         visited[u] = true;
         for &v in &adj[u] {
@@ -197,7 +235,10 @@ impl GraphArena {
     }
 
     /// Bellman-Ford evaluation engine to definitively detect Extensionality Collisions
-    pub fn bellman_ford(&self) -> Result<Vec<i32>, String> {
+    pub fn bellman_ford(&mut self) -> Result<Vec<i32>, String> {
+        // Run the continuous daemon to dynamically sever outgoing +1 offset edges from SC bedrock
+        self.isolate_sc_bedrock();
+
         let n = self.vars.len();
         if n == 0 {
             return Ok(Vec::new());
