@@ -1,8 +1,8 @@
-# Lean 4 Proofs Repository Integration
+# Lean Proofs Repository Integration
 
-This document provides detailed instructions for verification firms and hardware engineers to run and verify the Lean 4 formal proofs underlying the Monist Engine's core semantics and execution model.
+This document provides detailed instructions for verification firms and hardware engineers to run and verify the Lean formal proofs underlying the Monist Engine's core semantics and execution model.
 
-## Running the Lean 4 Proofs
+## Running the Lean Proofs
 
 To locally verify the mathematical foundations of the Monist Engine, you will need a working Lean 4 environment managed by `elan`.
 

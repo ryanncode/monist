@@ -1,9 +1,9 @@
+use indicatif::{ProgressBar, ProgressStyle};
+use monist_core::ast::Var;
+use monist_core::graph::{GraphArena, ScopedVar};
+use monist_core::smt::export_smt_lib;
 use std::thread;
 use std::time::Duration;
-use indicatif::{ProgressBar, ProgressStyle};
-use monist_core::graph::{GraphArena, ScopedVar};
-use monist_core::ast::Var;
-use monist_core::smt::export_smt_lib;
 
 fn main() {
     println!("============================================================");
@@ -56,13 +56,13 @@ fn main() {
     let mut arena = GraphArena::new();
     let omega_var = ScopedVar(Var::Free("Omega".to_string()), 1);
     let t_omega_var = ScopedVar(Var::Free("T_Omega".to_string()), 1);
-    
+
     let u_omega = arena.add_var(omega_var);
     let u_t_omega = arena.add_var(t_omega_var);
 
     // T(Omega) < Omega =>  T(Omega) in Omega
     // means weight from Omega to T(Omega) is -1
-    arena.edges.push((u_omega, u_t_omega, -1));
+    arena.edges.push((u_omega, u_t_omega, -1, false));
 
     // Also need an edge from T_Omega to Omega with +1 weight?
     // In T(Omega) in Omega, usually the graph needs strong connectivity or cycle.
@@ -70,12 +70,17 @@ fn main() {
 
     use monist_core::eval::ExecutionLimits;
     if let Some(limits) = ExecutionLimits::compute_for_graph(&arena) {
-        println!("\nExecution Limits Computed: MCM = {:.2}, Max K-Iterations = {}", limits.mcm, limits.max_k_iterations);
+        println!(
+            "\nExecution Limits Computed: MCM = {:.2}, Max K-Iterations = {}",
+            limits.mcm, limits.max_k_iterations
+        );
     }
 
     match arena.bellman_ford() {
-        Ok(dist) => {
-            println!("\n[SUCCESS] Engine successfully resolved dynamic typestates for Burali-Forti!");
+        Ok((dist, _)) => {
+            println!(
+                "\n[SUCCESS] Engine successfully resolved dynamic typestates for Burali-Forti!"
+            );
             println!("Stratification Distance Vector Witness: {:?}", dist);
             let dist_t_omega = dist[u_t_omega];
             let dist_omega = dist[u_omega];
@@ -88,9 +93,22 @@ fn main() {
     }
 
     // Phase 4: SMT-LIB Witness Output
+    let bf_result = arena.bellman_ford();
     println!("\n=== Stratification Witness (SMT-LIB format) for Burali_Forti_T_Functor ===");
-    let smt_out = export_smt_lib(&arena, "Burali_Forti_T_Functor");
-    println!("{}", smt_out);
+    match &bf_result {
+        Ok((success_depths, sc_actions)) => {
+            println!(
+                "{}",
+                export_smt_lib(&arena, "Burali_Forti_T_Functor", None, sc_actions, Some(success_depths))
+            );
+        }
+        Err(collision_trace) => {
+            println!(
+                "{}",
+                export_smt_lib(&arena, "Burali_Forti_T_Functor", Some(collision_trace), &[], None)
+            );
+        }
+    }
     println!("===============================================\n");
 
     let pb_smt = ProgressBar::new_spinner();

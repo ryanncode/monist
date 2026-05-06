@@ -9,13 +9,13 @@ struct DataRecord {
     payload: String,
 }
 
-/// Constructs a "Distributed Swarm Graph" by translating conventional data 
+/// Constructs a "Distributed Swarm Graph" by translating conventional data
 /// into a raw interaction net representation (Comb).
 fn ingest_data_swarm(data: &[DataRecord]) -> Comb {
     // We encode the tabular data into a nested `cons` Comb structure (Church-encoded list)
     // The end of the list is represented by false_comb() (nil equivalent)
     let mut swarm_graph = false_comb();
-    
+
     // We build it from right to left (end to start) to maintain order in cons
     for record in data.iter().rev() {
         // We encode the record as a Terminal node to represent the data payload
@@ -23,7 +23,7 @@ fn ingest_data_swarm(data: &[DataRecord]) -> Comb {
         // Apply cons to record_node and the rest of the swarm graph
         swarm_graph = cons().app(record_node).app(swarm_graph);
     }
-    
+
     swarm_graph
 }
 
@@ -33,13 +33,28 @@ fn main() {
 
     // 1. Tabular/JSON simulated data
     let database = vec![
-        DataRecord { id: 1, payload: "Alice".to_string() },
-        DataRecord { id: 2, payload: "Bob".to_string() },
-        DataRecord { id: 3, payload: "Charlie".to_string() },
-        DataRecord { id: 4, payload: "TargetData".to_string() },
-        DataRecord { id: 5, payload: "Eve".to_string() },
+        DataRecord {
+            id: 1,
+            payload: "Alice".to_string(),
+        },
+        DataRecord {
+            id: 2,
+            payload: "Bob".to_string(),
+        },
+        DataRecord {
+            id: 3,
+            payload: "Charlie".to_string(),
+        },
+        DataRecord {
+            id: 4,
+            payload: "TargetData".to_string(),
+        },
+        DataRecord {
+            id: 5,
+            payload: "Eve".to_string(),
+        },
     ];
-    
+
     println!("1. Conventional Data Source (Simulated Tabular):");
     for record in &database {
         println!("   {:?}", record);
@@ -57,20 +72,22 @@ fn main() {
     println!("3. Holographic Search Query Compilation:");
     let target_node = Comb::Terminal("Record_4_TargetData".to_string());
     println!("   Target Query: {:?}", target_node);
-    
+
     let _ex_gate = exclusion_gate(target_node.clone());
     println!("   Compiled Exclusion Gate (V \\ A): Enforces O(1) exclusion logic.");
-    
+
     let h_search = holographic_search();
     println!("   Holographic Search Combinator generated.");
-    
+
     // 4. CLI Demonstration: Applying the query
     println!("\n4. Execution Simulation: Contradiction Isolation");
     let _query_instance = h_search.app(swarm_comb.clone()).app(target_node.clone());
-    
+
     println!("   Query Instance constructed: Applying search over the distributed swarm graph.");
     println!("   [O(1) Absolute Complement Query triggered]");
-    println!("   The interaction net isolates non-matching paths as negative-weight cycles natively,");
+    println!(
+        "   The interaction net isolates non-matching paths as negative-weight cycles natively,"
+    );
     println!("   performing exclusion-first logic rather than an O(N) linear scan.\n");
 
     println!("   Successfully executed contradiction isolation within the data swarm.");

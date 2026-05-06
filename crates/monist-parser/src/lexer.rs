@@ -74,7 +74,7 @@ impl<'a> Lexer<'a> {
                 '~' | '¬' => Token::Not,
                 '∀' => Token::Forall,
                 '∃' => Token::Exists,
-                '∧' => Token::And,
+                '∧' | '&' => Token::And,
                 '∨' => Token::Or,
                 '→' => Token::Impl,
                 '∈' => Token::In,
@@ -95,7 +95,7 @@ impl<'a> Lexer<'a> {
                     match ident.as_str() {
                         "forall" => Token::Forall,
                         "exists" => Token::Exists,
-                        "in" => Token::In,
+                        "in" | "e" => Token::In,
                         _ => Token::Ident(ident),
                     }
                 }

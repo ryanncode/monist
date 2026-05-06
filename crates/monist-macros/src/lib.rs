@@ -13,20 +13,20 @@ pub fn source(_attr: TokenStream, item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-/// Flags the logic reduction function. 
+/// Flags the logic reduction function.
 /// It parses the Rust function, confirms it only uses basic operations
 /// and emits code that preserves the raw syntax string for the runtime to digest.
 #[proc_macro_attribute]
 pub fn stage(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
-    
+
     // Extract the function name to generate a constant with its raw source
     let fn_name = &input.sig.ident;
     let const_name = syn::Ident::new(
         &format!("{}_RAW_SOURCE", fn_name.to_string().to_uppercase()),
-        fn_name.span()
+        fn_name.span(),
     );
-    
+
     let raw_source = quote!(#input).to_string();
 
     let expanded = quote! {
@@ -36,7 +36,7 @@ pub fn stage(_attr: TokenStream, item: TokenStream) -> TokenStream {
         // representing an OpenCL/CUDA kernel execution environment template.
         pub const #const_name: &str = #raw_source;
     };
-    
+
     TokenStream::from(expanded)
 }
 

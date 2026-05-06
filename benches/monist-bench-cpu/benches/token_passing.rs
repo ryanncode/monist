@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 use monist_comb::ir::Comb;
 
 // Mimics a sequential token
@@ -18,7 +18,7 @@ impl Token {
         // Advance token state
         self.0 = self.0.wrapping_add(1);
     }
-    
+
     pub fn get_state(&self) -> u64 {
         self.0
     }
@@ -38,31 +38,35 @@ fn bench_token_passing(c: &mut Criterion) {
     group.sample_size(10);
     group.warm_up_time(std::time::Duration::from_millis(500));
     group.measurement_time(std::time::Duration::from_secs(1));
-    
+
     for size in [100, 500, 1000].iter() {
-        group.bench_with_input(BenchmarkId::new("intertwined_io", size), size, |b, &size| {
-            b.iter(|| {
-                let mut token = Token::new();
-                let mut side_effect_counter = 0;
-                
-                for _ in 0..size {
-                    // 1. Sequential side-effect (guarded by token)
-                    token.pass_with_effect(|| {
-                        side_effect_counter += 1;
-                        black_box(side_effect_counter);
-                    });
-                    
-                    // 2. Pure interaction net reduction (mocked by AST traversal/abstraction)
-                    let expr = generate_pure_reductions(10);
-                    let abstracted = expr.abstract_var("x");
-                    black_box(abstracted);
-                }
-                
-                black_box(token.get_state());
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("intertwined_io", size),
+            size,
+            |b, &size| {
+                b.iter(|| {
+                    let mut token = Token::new();
+                    let mut side_effect_counter = 0;
+
+                    for _ in 0..size {
+                        // 1. Sequential side-effect (guarded by token)
+                        token.pass_with_effect(|| {
+                            side_effect_counter += 1;
+                            black_box(side_effect_counter);
+                        });
+
+                        // 2. Pure interaction net reduction (mocked by AST traversal/abstraction)
+                        let expr = generate_pure_reductions(10);
+                        let abstracted = expr.abstract_var("x");
+                        black_box(abstracted);
+                    }
+
+                    black_box(token.get_state());
+                });
+            },
+        );
     }
-    
+
     group.finish();
 }
 

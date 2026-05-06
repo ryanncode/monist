@@ -1,5 +1,5 @@
+use super::encodings::{cons, v, y_comb, zero};
 use crate::ir::Comb;
-use super::encodings::{v, y_comb, cons, zero};
 
 // Quine atom: \Omega = {\Omega}
 // Represented via Y Combinator and List structures
@@ -13,7 +13,11 @@ pub fn quine_atom() -> Comb {
 
 // Bounded quine atom (intercepts infinite recursion with Topologically-Guided limits)
 pub fn bounded_quine_atom(limit: usize) -> Comb {
-    Comb::Limit(limit, "K_ITERATION_HALT".to_string(), Box::new(quine_atom()))
+    Comb::Limit(
+        limit,
+        "K_ITERATION_HALT".to_string(),
+        Box::new(quine_atom()),
+    )
 }
 
 #[cfg(test)]

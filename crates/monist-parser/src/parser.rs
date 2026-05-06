@@ -16,7 +16,11 @@ impl<'a> Parser<'a> {
         Self::with_macros(input, arena, None)
     }
 
-    pub fn with_macros(input: &'a str, arena: &'a mut FormulaArena, macros: Option<&'a HashMap<String, (Vec<String>, usize)>>) -> Self {
+    pub fn with_macros(
+        input: &'a str,
+        arena: &'a mut FormulaArena,
+        macros: Option<&'a HashMap<String, (Vec<String>, usize)>>,
+    ) -> Self {
         let mut lexer = Lexer::new(input);
         let current_token = lexer.next_token();
         Self {
@@ -199,7 +203,7 @@ impl<'a> Parser<'a> {
                         v.clone()
                     }
                 }
-                _ => v.clone()
+                _ => v.clone(),
             }
         };
 

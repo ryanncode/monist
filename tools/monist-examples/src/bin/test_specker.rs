@@ -1,7 +1,7 @@
 use monist_core::ast::FormulaArena;
-use monist_parser::parser::Parser;
-use monist_core::graph::{GraphArena, extract_constraints_aux};
+use monist_core::graph::{extract_constraints_aux, GraphArena};
 use monist_core::smt::export_smt_lib;
+use monist_parser::parser::Parser;
 
 fn main() {
     println!("============================================================");
@@ -9,7 +9,7 @@ fn main() {
     println!("============================================================\n");
 
     let formula = "{ F | (((m in F /\\ p1 in F) /\\ p2 in F) /\\ (z in p1 -> (w in z -> w in m))) /\\ (z2 in p2 -> (w2 in z2 -> w2 in p1)) }";
-    
+
     println!(">> Parsing Specker Formula:");
     println!("   {}\n", formula);
     println!("This formula attempts to define a Universal Choice function F over");
@@ -21,19 +21,34 @@ fn main() {
     let mut parser = Parser::new(formula, &mut arena);
     let root_idx = parser.parse_formula();
 
-    let constraints = extract_constraints_aux(&arena, root_idx, 0);
+    let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
     let mut graph = GraphArena::from_constraints(&constraints);
-    
+
     println!(">> Executing Kosaraju SCC Flattening...");
     graph.collapse_scc_0_weight();
-    
-    println!("=== Stratification Witness (SMT-LIB format) ===");
-    println!("{}", export_smt_lib(&graph, "Specker_Collision"));
-    println!("===============================================\n");
 
     println!(">> Running Bellman-Ford Shortest-Path Topology Check...");
-    match graph.bellman_ford() {
-        Ok(_) => println!("[FAIL] The unstratified choice function was incorrectly allowed."),
+    let bf_result = graph.bellman_ford();
+
+    println!("=== Stratification Witness (SMT-LIB format) ===");
+    match &bf_result {
+        Ok((success_depths, sc_actions)) => {
+            println!(
+                "{}",
+                export_smt_lib(&graph, "Specker_Collision", None, sc_actions, Some(success_depths))
+            );
+        }
+        Err(collision_trace) => {
+            println!(
+                "{}",
+                export_smt_lib(&graph, "Specker_Collision", Some(collision_trace), &[], None)
+            );
+        }
+    }
+    println!("===============================================\n");
+
+    match bf_result {
+        Ok((_, _)) => println!("[FAIL] The unstratified choice function was incorrectly allowed."),
         Err(e) => {
             println!("[SUCCESS] Native topological limits intercepted the paradox!");
             println!("Error: {}", e);

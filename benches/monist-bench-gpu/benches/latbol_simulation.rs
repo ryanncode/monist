@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use ocl::{ProQue, Buffer, flags};
+use criterion::{Criterion, criterion_group, criterion_main};
+use ocl::{Buffer, ProQue, flags};
 
 fn bench_latbol_simulation(c: &mut Criterion) {
     // We implement an interaction-combinator variant of a lattice-Boltzmann
@@ -38,16 +38,13 @@ fn bench_latbol_simulation(c: &mut Criterion) {
         }
     "#;
 
-    let pro_que_res = ProQue::builder()
-        .src(src)
-        .dims(grid_size)
-        .build();
+    let pro_que_res = ProQue::builder().src(src).dims(grid_size).build();
 
     if let Ok(pro_que) = pro_que_res {
         let mut group = c.benchmark_group("gpu_latbol_simulation");
         group.sample_size(10);
         group.measurement_time(std::time::Duration::from_secs(1));
-        
+
         group.bench_function("latbol_wave_alignment", |b| {
             b.iter(|| {
                 let grid_a = Buffer::<u64>::builder()
@@ -70,8 +67,9 @@ fn bench_latbol_simulation(c: &mut Criterion) {
                     } else {
                         (&grid_b, &grid_a)
                     };
-                    
-                    let kernel = pro_que.kernel_builder("latbol_step")
+
+                    let kernel = pro_que
+                        .kernel_builder("latbol_step")
                         .arg(curr)
                         .arg(next)
                         .build()
@@ -81,14 +79,16 @@ fn bench_latbol_simulation(c: &mut Criterion) {
                         kernel.enq().unwrap();
                     }
                 }
-                
+
                 pro_que.queue().finish().unwrap();
             })
         });
-        
+
         group.finish();
     } else {
-        println!("OpenCL not available or cl_khr_int64_base_atomics not supported. Skipping latbol_simulation benchmark.");
+        println!(
+            "OpenCL not available or cl_khr_int64_base_atomics not supported. Skipping latbol_simulation benchmark."
+        );
     }
 }
 

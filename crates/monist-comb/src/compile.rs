@@ -9,7 +9,7 @@ pub struct Compiler<'a> {
 
 impl<'a> Compiler<'a> {
     pub fn new(arena: &'a FormulaArena) -> Self {
-        Self { 
+        Self {
             arena,
             min_levels: HashMap::new(),
         }
@@ -17,7 +17,7 @@ impl<'a> Compiler<'a> {
 
     pub fn compile(&mut self, root: usize) -> Comb {
         // Step 1: Extract constraints to compute execution limits
-        let constraints = monist_core::graph::extract_constraints_aux(self.arena, root, 0);
+        let constraints = monist_core::graph::extract_constraints_aux(self.arena, root, 0, false);
         let graph = monist_core::graph::GraphArena::from_constraints(&constraints);
         let limits = monist_core::eval::ExecutionLimits::compute_for_graph(&graph);
 
@@ -30,7 +30,11 @@ impl<'a> Compiler<'a> {
 
         // Step 4: Map ExecutionLimits into the IR
         if let Some(lim) = limits {
-            Comb::Limit(lim.max_k_iterations, lim.mcm.to_string(), Box::new(compiled))
+            Comb::Limit(
+                lim.max_k_iterations,
+                lim.mcm.to_string(),
+                Box::new(compiled),
+            )
         } else {
             compiled
         }
@@ -39,19 +43,17 @@ impl<'a> Compiler<'a> {
     fn compute_min_levels(&mut self, root: usize, expected_level: i32, env: &mut Vec<String>) {
         let formula = self.arena.get(root).expect("Invalid formula index");
         match formula {
-            Formula::Atom(atomic) => {
-                match atomic {
-                    Atomic::Eq(v1, v2) => {
-                        self.register_var_req(v1, expected_level, env);
-                        self.register_var_req(v2, expected_level, env);
-                    }
-                    Atomic::Mem(v1, v2) => {
-                        self.register_var_req(v1, expected_level - 1, env);
-                        self.register_var_req(v2, expected_level, env);
-                    }
-                    _ => {}
+            Formula::Atom(atomic) => match atomic {
+                Atomic::Eq(v1, v2) => {
+                    self.register_var_req(v1, expected_level, env);
+                    self.register_var_req(v2, expected_level, env);
                 }
-            }
+                Atomic::Mem(v1, v2) => {
+                    self.register_var_req(v1, expected_level - 1, env);
+                    self.register_var_req(v2, expected_level, env);
+                }
+                _ => {}
+            },
             Formula::Neg(inner) => self.compute_min_levels(*inner, expected_level, env),
             Formula::Conj(l, r) | Formula::Disj(l, r) => {
                 self.compute_min_levels(*l, expected_level, env);
@@ -61,7 +63,9 @@ impl<'a> Compiler<'a> {
                 self.compute_min_levels(*l, expected_level - 1, env);
                 self.compute_min_levels(*r, expected_level - 1, env);
             }
-            Formula::Univ(_level, var_name, inner) | Formula::Exist(_level, var_name, inner) | Formula::Comp(_level, var_name, inner) => {
+            Formula::Univ(_level, var_name, inner)
+            | Formula::Exist(_level, var_name, inner)
+            | Formula::Comp(_level, var_name, inner) => {
                 env.push(var_name.clone());
                 self.compute_min_levels(*inner, expected_level, env);
                 env.pop();
@@ -84,10 +88,18 @@ impl<'a> Compiler<'a> {
         let formula = self.arena.get(root).expect("Invalid formula index");
         match formula {
             Formula::Atom(atomic) => self.compile_atomic(atomic, expected_level, env),
-            Formula::Neg(inner) => Comb::Neg.app(self.compile_with_env(*inner, expected_level, env)),
-            Formula::Conj(l, r) => Comb::Conj.app(self.compile_with_env(*l, expected_level, env)).app(self.compile_with_env(*r, expected_level, env)),
-            Formula::Disj(l, r) => Comb::Disj.app(self.compile_with_env(*l, expected_level, env)).app(self.compile_with_env(*r, expected_level, env)),
-            Formula::Impl(l, r) => Comb::Impl.app(self.compile_with_env(*l, expected_level - 1, env)).app(self.compile_with_env(*r, expected_level - 1, env)),
+            Formula::Neg(inner) => {
+                Comb::Neg.app(self.compile_with_env(*inner, expected_level, env))
+            }
+            Formula::Conj(l, r) => Comb::Conj
+                .app(self.compile_with_env(*l, expected_level, env))
+                .app(self.compile_with_env(*r, expected_level, env)),
+            Formula::Disj(l, r) => Comb::Disj
+                .app(self.compile_with_env(*l, expected_level, env))
+                .app(self.compile_with_env(*r, expected_level, env)),
+            Formula::Impl(l, r) => Comb::Impl
+                .app(self.compile_with_env(*l, expected_level - 1, env))
+                .app(self.compile_with_env(*r, expected_level - 1, env)),
             Formula::Univ(_level, var_name, inner) => {
                 env.push(var_name.clone());
                 let inner_comb = self.compile_with_env(*inner, expected_level, env);
@@ -137,9 +149,9 @@ impl<'a> Compiler<'a> {
             Var::Free(n) => n.clone(),
             Var::Bound(idx) => env[env.len() - 1 - *idx].clone(),
         };
-        
+
         let mut comb = Comb::Var(name.clone());
-        
+
         // T-Weaking Algorithm
         // Inject T operators if the required expected_level is higher than the base min_level
         if let Some(&min_lvl) = self.min_levels.get(&name) {
@@ -150,7 +162,7 @@ impl<'a> Compiler<'a> {
                 }
             }
         }
-        
+
         comb
     }
 }
@@ -164,12 +176,15 @@ mod tests {
     fn test_compile_formula() {
         let mut arena = FormulaArena::new();
         // Compile a simple formula: {x | x in y} -> Should translate to an abstraction over x
-        let inner = arena.add(Formula::Atom(Atomic::Mem(Var::Free("x".to_string()), Var::Free("y".to_string()))));
+        let inner = arena.add(Formula::Atom(Atomic::Mem(
+            Var::Free("x".to_string()),
+            Var::Free("y".to_string()),
+        )));
         let comp = arena.add(Formula::Comp(0, "x".to_string(), inner));
 
         let mut compiler = Compiler::new(&arena);
         let result = compiler.compile(comp);
-        
+
         // Check that Limits wrapper is applied correctly and C Mem y is produced.
         match result {
             Comb::Limit(_, _, inner) => {
@@ -192,9 +207,15 @@ mod tests {
         // x min level = -2.
         // Left side x needs level -1, so it gets 1 T-operator: T x
         // Right side x needs level -2, so 0 T-operators: x
-        
-        let eq = arena.add(Formula::Atom(Atomic::Eq(Var::Free("x".to_string()), Var::Free("y".to_string()))));
-        let mem = arena.add(Formula::Atom(Atomic::Mem(Var::Free("x".to_string()), Var::Free("y".to_string()))));
+
+        let eq = arena.add(Formula::Atom(Atomic::Eq(
+            Var::Free("x".to_string()),
+            Var::Free("y".to_string()),
+        )));
+        let mem = arena.add(Formula::Atom(Atomic::Mem(
+            Var::Free("x".to_string()),
+            Var::Free("y".to_string()),
+        )));
         let impl_form = arena.add(Formula::Impl(eq, mem));
 
         let mut compiler = Compiler::new(&arena);
@@ -203,19 +224,25 @@ mod tests {
         match result {
             Comb::Limit(_, _, inner) => {
                 let Comb::App(l1, r1) = *inner else { panic!() };
-                let Comb::App(impl_op, left_eq) = *l1 else { panic!() };
+                let Comb::App(impl_op, left_eq) = *l1 else {
+                    panic!()
+                };
                 assert_eq!(*impl_op, Comb::Impl);
-                
+
                 // Left side: Eq (T x) y
                 assert_eq!(
                     *left_eq,
-                    Comb::Eq.app(Comb::T.app(Comb::Var("x".to_string()))).app(Comb::Var("y".to_string()))
+                    Comb::Eq
+                        .app(Comb::T.app(Comb::Var("x".to_string())))
+                        .app(Comb::Var("y".to_string()))
                 );
 
                 // Right side: Mem x y
                 assert_eq!(
                     *r1,
-                    Comb::Mem.app(Comb::Var("x".to_string())).app(Comb::Var("y".to_string()))
+                    Comb::Mem
+                        .app(Comb::Var("x".to_string()))
+                        .app(Comb::Var("y".to_string()))
                 );
             }
             _ => panic!("Expected Limit wrapper"),

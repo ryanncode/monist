@@ -126,7 +126,7 @@ Proof accepted.
 * `left` / `right`: Choose a side to prove for a disjunction (`\/`) goal.
 * `destruct <name> [n1] [n2]`: Break down a hypothesis (like a conjunction or disjunction) into smaller pieces in the context.
 * `rewrite <name>`: Substitute variables inside the goal based on an equality hypothesis.
-* `cut <formula>`: Weaponized Cut Tactic. Introduces a highly saturated formula as a sub-goal, allowing you to explicitly trigger Extensionality bounds.
+* `cut <formula>`: Diagnostic Cut Tactic. Introduces a highly saturated formula as a sub-goal, allowing you to explicitly trigger Extensionality bounds.
 * `focus_hyp <name>`: Pull a specific hypothesis to the top of your context array for easier visibility.
 * `defer`: Skip the current active goal, sending it to the back of the `ProofState` queue.
 

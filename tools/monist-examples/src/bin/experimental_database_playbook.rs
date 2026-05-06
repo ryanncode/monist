@@ -7,25 +7,26 @@ fn main() {
     println!("     MONIST ENGINE - EXPERIMENTAL DATABASE PLAYBOOK     ");
     println!("============================================================");
     println!();
-    
+
     println!(">> DEFINING CYCLICAL DATA SCHEMA...");
     println!("   Mapping ontology: EntityA -> EntityB -> EntityA");
-    
+
     thread::sleep(Duration::from_millis(500));
-    
+
     println!("   [GraphArena Allocation] Mapping continuous self-reference...");
     println!("   EntityA (id: 0x00) -> Relation (next: 0x01)");
     println!("   EntityB (id: 0x01) -> Relation (next: 0x00)");
-    
+
     thread::sleep(Duration::from_millis(800));
     println!();
     println!(">> INITIATING INFINITE PATH LENGTH QUERY...");
     println!("   Querying: SELECT * FROM EntityA MATCH (EntityA -> EntityB)*");
     println!();
-    
-    let spinner_style = ProgressStyle::with_template("{prefix:.bold.dim} {spinner:.green} {wide_msg}")
-        .unwrap()
-        .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ");
+
+    let spinner_style =
+        ProgressStyle::with_template("{prefix:.bold.dim} {spinner:.green} {wide_msg}")
+            .unwrap()
+            .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ");
 
     let pb = ProgressBar::new_spinner();
     pb.set_style(spinner_style);
@@ -41,7 +42,7 @@ fn main() {
         "Routing infinite paths via MCM (Minimum Cycle Mean)...",
         "Applying O(1) thermodynamic typestate cost reduction...",
         "Collapsing the cycle to a flat topological domain...",
-        "Returning results without stack execution..."
+        "Returning results without stack execution...",
     ];
 
     for step in steps.iter() {
@@ -51,7 +52,9 @@ fn main() {
             thread::sleep(Duration::from_millis(50));
         }
     }
-    pb.finish_with_message("MCM Routing complete: Detected stable O(1) loop. Stack overflow avoided.");
+    pb.finish_with_message(
+        "MCM Routing complete: Detected stable O(1) loop. Stack overflow avoided.",
+    );
 
     println!();
     println!(">> RESOLVING THERMODYNAMIC TYPESTATE BOUNDS...");
@@ -59,7 +62,7 @@ fn main() {
     println!("   Database pointer evaluated as Topologically Flat (Strongly Cantorian).");
     println!("   Finite constraint verified via Z3 SMT Solver.");
     println!();
-    
+
     println!(">> SMT-LIB WITNESS OUTPUT:");
     println!("--------------------------------------------------");
     println!("(set-logic QF_IDL)");
@@ -73,7 +76,7 @@ fn main() {
     println!("; Proof: Topological stability confirmed, safely routing cyclic data schema.");
     println!("--------------------------------------------------");
     println!();
-    
+
     println!(">> QUERY COMPLETE: Infinite relational recursion bypassed natively.");
     println!("============================================================");
 }

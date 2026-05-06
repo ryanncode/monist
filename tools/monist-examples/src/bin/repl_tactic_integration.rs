@@ -1,11 +1,11 @@
-use std::thread;
-use std::time::Duration;
 use indicatif::{ProgressBar, ProgressStyle};
 use monist_core::ast::FormulaArena;
-use monist_parser::parser::Parser;
-use monist_core::graph::{GraphArena, extract_constraints_aux};
 use monist_core::eval::ExecutionLimits;
+use monist_core::graph::{extract_constraints_aux, GraphArena};
 use monist_core::smt::export_smt_lib;
+use monist_parser::parser::Parser;
+use std::thread;
+use std::time::Duration;
 
 struct Session {
     graph: GraphArena,
@@ -24,44 +24,53 @@ impl Session {
         let mut parser = Parser::new(formula, &mut self.arena);
         let root_idx = parser.parse_formula();
 
-        let constraints = extract_constraints_aux(&self.arena, root_idx, 0);
+        let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false);
         self.graph = GraphArena::from_constraints(&constraints);
-        
-        println!("\n=== Stratification Witness (SMT-LIB format) for {} ===", test_name);
-        println!("{}", export_smt_lib(&self.graph, test_name));
+
+        println!(
+            "\n=== Stratification Witness (SMT-LIB format) for {} ===",
+            test_name
+        );
+        println!("{}", export_smt_lib(&self.graph, test_name, None, &[], None));
         println!("===============================================\n");
 
         self.graph.collapse_scc_0_weight();
 
         if let Some(limits) = ExecutionLimits::compute_for_graph(&self.graph) {
-            println!("Execution Limits Computed: MCM = {:.2}, Max K-Iterations = {}\n", limits.mcm, limits.max_k_iterations);
+            println!(
+                "Execution Limits Computed: MCM = {:.2}, Max K-Iterations = {}\n",
+                limits.mcm, limits.max_k_iterations
+            );
         }
 
-        println!("Max Graph Topology: {} nodes reached.\n", self.graph.vars.len());
+        println!(
+            "Max Graph Topology: {} nodes reached.\n",
+            self.graph.vars.len()
+        );
     }
 }
 
 fn main() {
     println!("=== REPL Tactic Integration ===");
     println!("Initializing Interactive Proof Session...\n");
-    
+
     thread::sleep(Duration::from_millis(400));
 
     println!("> assume SC_Def \"forall x. SC(x) <-> (x = T(x))\"");
     println!("[Loaded] Axiom SC_Def registered.\n");
-    
+
     thread::sleep(Duration::from_millis(400));
 
     println!("> assume Quine_Flatness \"forall x y. typestate(Q(x,y)) == max(typestate(x), typestate(y))\"");
     println!("[Loaded] Axiom Quine_Flatness registered.\n");
-    
+
     thread::sleep(Duration::from_millis(400));
 
     println!("> theorem SC_Preservation \"forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))\"");
     println!("[Goal Set] 1 unproven target.");
     println!("Target 1: forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))");
     println!("Context: \n");
-    
+
     thread::sleep(Duration::from_millis(400));
 
     println!("> intro a");
@@ -75,7 +84,7 @@ fn main() {
 
     println!("> rewrite SC_Def");
     println!("[Goal Rewritten] Target 1 is now: Q(a,b) = T(Q(a,b))\n");
-    
+
     thread::sleep(Duration::from_millis(400));
 
     println!("> rewrite H1");
@@ -85,7 +94,7 @@ fn main() {
     thread::sleep(Duration::from_millis(400));
 
     println!("> tactic t_shift_resolve");
-    
+
     let pb = ProgressBar::new_spinner();
     pb.set_style(
         ProgressStyle::default_spinner()
@@ -102,17 +111,17 @@ fn main() {
     pb.set_message("Applying Quine_Flatness constraint...");
     thread::sleep(Duration::from_millis(800));
     pb.suspend(|| println!("Applying Quine_Flatness constraint..."));
-    
+
     pb.set_message("Typestate tracking initiated for sub-graphs...");
     thread::sleep(Duration::from_millis(800));
     pb.suspend(|| println!("Typestate tracking initiated for sub-graphs..."));
 
     pb.finish_and_clear();
-    
+
     println!("H1 constraints: typestate(T(a)) - typestate(a) = 0");
     println!("H2 constraints: typestate(T(b)) - typestate(b) = 0");
     println!("Composite structural matrix evaluated.");
-    
+
     let mut session = Session::new();
     let formula = "((((((a = T_a /\\ b = T_b) /\\ Q_ab = a) /\\ Q_ab = b) /\\ Q_Ta_Tb = T_a) /\\ Q_Ta_Tb = T_b) /\\ Q_Ta_Tb = T_Q_ab) /\\ Q_ab = T_Q_ab";
     session.eval_graph(formula, "repl_tactic_integration");

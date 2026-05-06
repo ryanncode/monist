@@ -16,20 +16,25 @@ pub fn false_comb() -> Comb {
 
 pub fn and_comb() -> Comb {
     // \p q. p q p
-    v("p").app(v("q")).app(v("p"))
-        .abstract_var("q").abstract_var("p")
+    v("p")
+        .app(v("q"))
+        .app(v("p"))
+        .abstract_var("q")
+        .abstract_var("p")
 }
 
 pub fn or_comb() -> Comb {
     // \p q. p p q
-    v("p").app(v("p")).app(v("q"))
-        .abstract_var("q").abstract_var("p")
+    v("p")
+        .app(v("p"))
+        .app(v("q"))
+        .abstract_var("q")
+        .abstract_var("p")
 }
 
 pub fn not_comb() -> Comb {
     // \p. p False True
-    v("p").app(false_comb()).app(true_comb())
-        .abstract_var("p")
+    v("p").app(false_comb()).app(true_comb()).abstract_var("p")
 }
 
 // Numerals
@@ -40,15 +45,22 @@ pub fn zero() -> Comb {
 
 pub fn succ() -> Comb {
     // \n f x. f (n f x)
-    v("f").app(v("n").app(v("f")).app(v("x")))
-        .abstract_var("x").abstract_var("f").abstract_var("n")
+    v("f")
+        .app(v("n").app(v("f")).app(v("x")))
+        .abstract_var("x")
+        .abstract_var("f")
+        .abstract_var("n")
 }
 
 // Inductive Lists geometries
 pub fn cons() -> Comb {
     // \h t z. z h t
-    v("z").app(v("h")).app(v("t"))
-        .abstract_var("z").abstract_var("t").abstract_var("h")
+    v("z")
+        .app(v("h"))
+        .app(v("t"))
+        .abstract_var("z")
+        .abstract_var("t")
+        .abstract_var("h")
 }
 
 pub fn head() -> Comb {

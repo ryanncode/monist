@@ -25,16 +25,16 @@ mod tests {
         let mut arena = FormulaArena::new();
         let mut parser = Parser::new("x = y /\\ y in z", &mut arena);
         let id = parser.parse_formula();
-        
+
         let left = Formula::Atom(Atomic::Eq(
             Var::Free("x".to_string()),
-            Var::Free("y".to_string())
+            Var::Free("y".to_string()),
         ));
         let right = Formula::Atom(Atomic::Mem(
             Var::Free("y".to_string()),
-            Var::Free("z".to_string())
+            Var::Free("z".to_string()),
         ));
-        
+
         // We know they are added sequentially in this simple test
         assert_eq!(arena.get(0), Some(&left));
         assert_eq!(arena.get(1), Some(&right));
@@ -46,12 +46,9 @@ mod tests {
         let mut arena = FormulaArena::new();
         let mut parser = Parser::new("forall x . x = y", &mut arena);
         let id = parser.parse_formula();
-        
-        let inner = Formula::Atom(Atomic::Eq(
-            Var::Bound(0),
-            Var::Free("y".to_string())
-        ));
-        
+
+        let inner = Formula::Atom(Atomic::Eq(Var::Bound(0), Var::Free("y".to_string())));
+
         assert_eq!(arena.get(0), Some(&inner));
         assert_eq!(arena.get(id), Some(&Formula::Univ(0, "x".to_string(), 0)));
     }

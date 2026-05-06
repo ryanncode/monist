@@ -1,5 +1,5 @@
-use bytemuck::{Pod, Zeroable};
 use crate::ir::Comb;
+use bytemuck::{Pod, Zeroable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
 #[repr(transparent)]
@@ -67,7 +67,7 @@ impl GNet {
             free_list.push(i as u32);
         }
         let nodes = vec![Node::new(Port(0), Port(0)); capacity];
-        
+
         Self {
             nodes,
             vars: Vec::new(),
@@ -198,9 +198,11 @@ impl GNet {
                 let idx = port.val() as usize;
                 if idx < self.nodes.len() {
                     let node = &self.nodes[idx];
-                    format!("App({}, {})", 
-                        self.port_to_string(node.port1(), depth + 1), 
-                        self.port_to_string(node.port2(), depth + 1))
+                    format!(
+                        "App({}, {})",
+                        self.port_to_string(node.port1(), depth + 1),
+                        self.port_to_string(node.port2(), depth + 1)
+                    )
                 } else {
                     "Invalid(CON)".to_string()
                 }

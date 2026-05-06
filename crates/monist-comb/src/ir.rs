@@ -10,11 +10,11 @@ pub enum Comb {
     Limit(usize, String, Box<Comb>),
     Var(String),
     App(Box<Comb>, Box<Comb>),
-    
+
     // Set operations
     Eq,
     Mem,
-    
+
     // Logic operations
     Neg,
     Conj,
@@ -60,7 +60,9 @@ impl Comb {
                 } else if left_contains && !right_contains {
                     Comb::C.app(left.abstract_var(var)).app(*right)
                 } else {
-                    Comb::S.app(left.abstract_var(var)).app(right.abstract_var(var))
+                    Comb::S
+                        .app(left.abstract_var(var))
+                        .app(right.abstract_var(var))
                 }
             }
             _ => Comb::K.app(self), // Unreachable due to earlier check, but kept for completeness

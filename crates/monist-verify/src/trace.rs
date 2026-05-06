@@ -22,7 +22,7 @@ impl IntrinsicTracker {
             dest: dest as usize,
             len,
         });
-        
+
         // Simulating the promotion to 64-bit words as required by HVM2 backend
         let words = len / 8;
         for i in 0..words {

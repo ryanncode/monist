@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use ocl::{Platform, Device, Buffer, flags, SpatialDims, ProQue};
+use criterion::{Criterion, criterion_group, criterion_main};
+use ocl::{Buffer, Device, Platform, ProQue, SpatialDims, flags};
 
 fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
     // Force RusticCL to expose discrete GPUs like AMD Radeon (radeonsi) or Intel (iris)
@@ -20,7 +20,10 @@ fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
             for device in devices {
                 // Reject CPU explicitly
                 if let Ok(name) = device.name() {
-                    if !name.to_lowercase().contains("cpu") && !name.to_lowercase().contains("pocl") && !name.to_lowercase().contains("llvmpipe") {
+                    if !name.to_lowercase().contains("cpu")
+                        && !name.to_lowercase().contains("pocl")
+                        && !name.to_lowercase().contains("llvmpipe")
+                    {
                         selected_device = Some(device);
                         break;
                     }
@@ -33,7 +36,10 @@ fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
     }
 
     if let Some(device) = selected_device {
-        println!("Selected Discrete GPU/NPU: {}", device.name().unwrap_or_default());
+        println!(
+            "Selected Discrete GPU/NPU: {}",
+            device.name().unwrap_or_default()
+        );
 
         let grid_size = 1024 * 1024 * 1; // 1M cells to stress GPU further
         let iterations = 20;
@@ -69,7 +75,7 @@ fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
             let mut group = c.benchmark_group("discrete_gpu_dispatch");
             group.sample_size(10);
             group.measurement_time(std::time::Duration::from_secs(3));
-            
+
             group.bench_function("topology_reduction", |b| {
                 b.iter(|| {
                     let mut grid_a = Buffer::<u64>::builder()
@@ -92,8 +98,9 @@ fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
                         } else {
                             (&mut grid_b, &mut grid_a)
                         };
-                        
-                        let kernel = pro_que.kernel_builder("topology_reduction")
+
+                        let kernel = pro_que
+                            .kernel_builder("topology_reduction")
                             .global_work_size(SpatialDims::One(grid_size))
                             .arg(curr)
                             .arg(next)
@@ -104,14 +111,16 @@ fn bench_discrete_gpu_dispatch(c: &mut Criterion) {
                             kernel.enq().unwrap();
                         }
                     }
-                    
+
                     pro_que.queue().finish().unwrap();
                 })
             });
-            
+
             group.finish();
         } else {
-            println!("Failed to compile OpenCL kernel on the selected device. Possibly missing cl_khr_int64_base_atomics.");
+            println!(
+                "Failed to compile OpenCL kernel on the selected device. Possibly missing cl_khr_int64_base_atomics."
+            );
         }
     } else {
         println!("No suitable discrete GPU/NPU found. Skipping discrete_gpu_dispatch benchmark.");

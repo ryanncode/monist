@@ -92,7 +92,7 @@ impl DtsInference {
         // Mock implementation of constraint solving (Gaussian elimination over Z^n)
         // In a full implementation, we'd build a matrix of the component differences
         // and reduce it to verify linear consistency.
-        
+
         for (lhs, rhs) in &self.equations {
             let diff = lhs.divide(rhs);
             // If the difference is not the identity (all zero powers) but contains unbound terms,

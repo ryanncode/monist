@@ -1,8 +1,8 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use ocl::{ProQue, Buffer, flags};
+use criterion::{Criterion, criterion_group, criterion_main};
 use monist_macros::stage;
+use ocl::{Buffer, ProQue, flags};
 
-// We use the #[stage] macro output here nominally to mark it, 
+// We use the #[stage] macro output here nominally to mark it,
 // though OpenCL requires string kernels for the build.
 #[stage]
 fn create_ocl_proque() -> ocl::Result<ProQue> {
@@ -24,21 +24,18 @@ fn create_ocl_proque() -> ocl::Result<ProQue> {
         }
     "#;
 
-    ProQue::builder()
-        .src(src)
-        .dims(250)
-        .build()
+    ProQue::builder().src(src).dims(250).build()
 }
 
 fn bench_ocl_bridge(c: &mut Criterion) {
     // If there is no OpenCL device, we just skip or gracefully handle it.
     let pro_que_res = create_ocl_proque();
-    
+
     if let Ok(pro_que) = pro_que_res {
         let mut group = c.benchmark_group("gpu_ocl_bridge");
         group.sample_size(10);
         group.measurement_time(std::time::Duration::from_secs(1));
-        
+
         group.bench_function("node_collision_dispatch", |b| {
             b.iter(|| {
                 let nodes_buffer = Buffer::<u64>::builder()
@@ -55,7 +52,8 @@ fn bench_ocl_bridge(c: &mut Criterion) {
                     .build()
                     .unwrap();
 
-                let kernel = pro_que.kernel_builder("node_collision")
+                let kernel = pro_que
+                    .kernel_builder("node_collision")
                     .arg(&nodes_buffer)
                     .arg(&results_buffer)
                     .build()
@@ -64,7 +62,7 @@ fn bench_ocl_bridge(c: &mut Criterion) {
                 unsafe {
                     kernel.enq().unwrap();
                 }
-                
+
                 pro_que.queue().finish().unwrap();
             })
         });

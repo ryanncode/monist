@@ -1,6 +1,6 @@
 use clap::{Parser as ClapParser, Subcommand};
 use colored::*;
-use monist_core::ast::{FormulaArena, Formula, Atomic, Var};
+use monist_core::ast::{Atomic, Formula, FormulaArena, Var};
 use monist_core::graph::{GraphArena, extract_constraints_aux};
 use monist_core::smt::export_smt_lib;
 use monist_parser::parser::Parser;
@@ -32,13 +32,9 @@ enum Commands {
         export_smt: bool,
     },
     /// Verify a single formula without entering REPL
-    Verify {
-        formula: String,
-    },
+    Verify { formula: String },
     /// Export a StratificationWitness in SMT-LIB v2 format
-    ExportSmt {
-        formula: String,
-    },
+    ExportSmt { formula: String },
     /// Run visual demonstrations
     Demo {
         #[command(subcommand)]
@@ -85,21 +81,24 @@ fn main() -> RlResult<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Repl) | None => {
-            run_repl()
-        }
+        Some(Commands::Repl) | None => run_repl(),
         Some(Commands::Verify { formula }) => {
             let mut arena = FormulaArena::new();
             let mut parser = Parser::with_macros(formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
             match graph.bellman_ford() {
-                Ok(_) => println!("{}", "Stratification successful.".green()),
-                Err(e) => println!("{}: {}", "Error".red(), e),
+                Ok((_, actions)) => {
+                    eprintln!("{}", "Stratification successful.".green());
+                    for action in actions {
+                        eprintln!("{}", action.cyan());
+                    }
+                }
+                Err(e) => eprintln!("{}: {}", "Error".red(), e),
             }
             Ok(())
         }
@@ -108,30 +107,60 @@ fn main() -> RlResult<()> {
             let mut parser = Parser::with_macros(formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
-            let smt_output = export_smt_lib(&graph, "cli_input");
+            let (trace, sc_actions, success_depths) = match graph.bellman_ford() {
+                Ok((depths, actions)) => (None, actions, Some(depths)),
+                Err(e) => (Some(e), Vec::new(), None),
+            };
+
+            let smt_output = export_smt_lib(
+                &graph,
+                "cli_input",
+                trace.as_deref(),
+                &sc_actions,
+                success_depths.as_deref(),
+            );
             println!("{}", smt_output);
             Ok(())
         }
-        Some(Commands::Eval { formula, export_smt }) => {
+        Some(Commands::Eval {
+            formula,
+            export_smt,
+        }) => {
             let mut arena = FormulaArena::new();
             let mut parser = Parser::with_macros(formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
             if *export_smt {
-                let smt_output = export_smt_lib(&graph, "cli_input");
+                let (trace, sc_actions, success_depths) = match graph.bellman_ford() {
+                    Ok((depths, actions)) => (None, actions, Some(depths)),
+                    Err(e) => (Some(e), Vec::new(), None),
+                };
+
+                let smt_output = export_smt_lib(
+                    &graph,
+                    "cli_input",
+                    trace.as_deref(),
+                    &sc_actions,
+                    success_depths.as_deref(),
+                );
                 println!("{}", smt_output);
             } else {
                 match graph.bellman_ford() {
-                    Ok(_) => println!("{}", "Stratification successful.".green()),
-                    Err(e) => println!("{}: {}", "Error".red(), e),
+                    Ok((_, actions)) => {
+                        eprintln!("{}", "Stratification successful.".green());
+                        for action in actions {
+                            eprintln!("{}", action.cyan());
+                        }
+                    }
+                    Err(e) => eprintln!("{}: {}", "Error".red(), e),
                 }
             }
             Ok(())
@@ -147,8 +176,8 @@ fn main() -> RlResult<()> {
 }
 
 fn run_repl() -> RlResult<()> {
-    println!("{}", "Welcome to Monist Engine REPL.".cyan().bold());
-    println!("Type 'help' for a list of commands, or 'exit' to quit.");
+    eprintln!("{}", "Welcome to Monist Engine REPL.".cyan().bold());
+    eprintln!("Type 'help' for a list of commands, or 'exit' to quit.");
 
     let mut rl = DefaultEditor::new()?;
     let _ = rl.load_history("history.txt");
@@ -163,15 +192,15 @@ fn run_repl() -> RlResult<()> {
                 process_repl_command(&line, &mut session);
             }
             Err(ReadlineError::Interrupted) => {
-                println!("CTRL-C");
+                eprintln!("CTRL-C");
                 break;
             }
             Err(ReadlineError::Eof) => {
-                println!("CTRL-D");
+                eprintln!("CTRL-D");
                 break;
             }
             Err(err) => {
-                println!("Error: {:?}", err);
+                eprintln!("Error: {:?}", err);
                 break;
             }
         }
@@ -189,41 +218,50 @@ fn process_repl_command(input: &str, session: &mut Session) {
 
     match parts[0] {
         "help" => {
-            println!("Commands:");
-            println!("  help                          - Show this help message");
-            println!("  exit                          - Exit the REPL");
-            println!("  save_session <file>           - Save current session to a JSON file");
-            println!("  load_session <file>           - Load a session from a JSON file");
-            println!("  eval <formula>                - Evaluate a formula");
-            println!("  step <formula>                - Step-by-step diagnostic evaluation");
-            println!("  assume <name> <formula>       - Add a named axiom");
-            println!("  theorem <name> <formula>      - Set a new goal to prove");
-            println!("  show_goal                     - Show the current goal state");
-            println!("  intro [name]                  - Introduce a hypothesis or variable");
-            println!("  exact <name>                  - Close goal if it matches hypothesis exactly");
-            println!("  split                         - Split a conjunction goal into two");
-            println!("  left                          - Prove left side of a disjunction");
-            println!("  right                         - Prove right side of a disjunction");
-            println!("  apply <name>                  - Apply a theorem/hypothesis");
-            println!("  destruct <name> [n1] [n2]     - Break down a hypothesis");
-            println!("  rewrite <name>                - Substitute variables using equality");
-            println!("  deff <name>(<args>) := <formula> - Define a macro with Kosaraju SCC pre-flattening");
-            println!("  cut <formula>                 - Introduce a formula as a sub-goal");
-            println!("  focus_hyp <name>              - Pull a hypothesis to the top of the context");
-            println!("  defer                         - Skip the current goal and send it to the back");
-            println!("  check_strat <formula>         - Run Bellman-Ford on raw geometry");
-            println!("  qed                           - Finish proof");
-            println!("  abort                         - Abort current proof");
+            eprintln!("Commands:");
+            eprintln!("  help                          - Show this help message");
+            eprintln!("  exit                          - Exit the REPL");
+            eprintln!("  save_session <file>           - Save current session to a JSON file");
+            eprintln!("  load_session <file>           - Load a session from a JSON file");
+            eprintln!("  eval <formula>                - Evaluate a formula");
+            eprintln!("  step <formula>                - Step-by-step diagnostic evaluation");
+            eprintln!("  assume <name> <formula>       - Add a named axiom");
+            eprintln!("  theorem <name> <formula>      - Set a new goal to prove");
+            eprintln!("  show_goal                     - Show the current goal state");
+            eprintln!("  intro [name]                  - Introduce a hypothesis or variable");
+            eprintln!(
+                "  exact <name>                  - Close goal if it matches hypothesis exactly"
+            );
+            eprintln!("  split                         - Split a conjunction goal into two");
+            eprintln!("  left                          - Prove left side of a disjunction");
+            eprintln!("  right                         - Prove right side of a disjunction");
+            eprintln!("  apply <name>                  - Apply a theorem/hypothesis");
+            eprintln!("  destruct <name> [n1] [n2]     - Break down a hypothesis");
+            eprintln!("  rewrite <name>                - Substitute variables using equality");
+            eprintln!(
+                "  deff <name>(<args>) := <formula> - Define a macro with Kosaraju SCC pre-flattening"
+            );
+            eprintln!("  cut <formula>                 - Introduce a formula as a sub-goal");
+            eprintln!(
+                "  focus_hyp <name>              - Pull a hypothesis to the top of the context"
+            );
+            eprintln!(
+                "  defer                         - Skip the current goal and send it to the back"
+            );
+            eprintln!("  check_strat <formula>         - Run Bellman-Ford on raw geometry");
+            eprintln!("  qed                           - Finish proof");
+            eprintln!("  abort                         - Abort current proof");
         }
-        
+
         "theorem" => {
             if parts.len() < 3 {
-                println!("{}", "Usage: theorem <name> <formula>".red());
+                eprintln!("{}", "Usage: theorem <name> <formula>".red());
                 return;
             }
             let _name = parts[1].to_string();
             let formula = parts[2..].join(" ");
-            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
+            let mut parser =
+                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
             let root_idx = parser.parse_formula();
 
             let goal = Goal {
@@ -231,28 +269,28 @@ fn process_repl_command(input: &str, session: &mut Session) {
                 target: root_idx,
             };
             session.active_goals.push(goal);
-            println!("[Goal Set] 1 unproven target.");
+            eprintln!("[Goal Set] 1 unproven target.");
         }
         "show_goal" => {
             show_goal(session);
         }
         "qed" => {
             if session.active_goals.is_empty() {
-                println!("Proof accepted.");
+                eprintln!("Proof accepted.");
             } else {
-                println!("There are still unproven goals.");
+                eprintln!("There are still unproven goals.");
             }
         }
         "abort" => {
             session.active_goals.clear();
-            println!("Proof aborted.");
+            eprintln!("Proof aborted.");
         }
         "rewrite" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: rewrite <hyp_name>".red());
+                eprintln!("{}", "Usage: rewrite <hyp_name>".red());
                 return;
             }
-            println!("Rewriting..."); // Dummy rewrite implementation
+            eprintln!("Rewriting..."); // Dummy rewrite implementation
         }
         "quit" => {
             std::process::exit(0);
@@ -263,114 +301,116 @@ fn process_repl_command(input: &str, session: &mut Session) {
         }
         "save_session" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: save_session <file>".red());
+                eprintln!("{}", "Usage: save_session <file>".red());
                 return;
             }
             let filename = parts[1];
             match serde_json::to_string_pretty(session) {
                 Ok(json) => {
                     if let Err(e) = fs::write(filename, json) {
-                        println!("{}: {}", "Failed to save session".red(), e);
+                        eprintln!("{}: {}", "Failed to save session".red(), e);
                     } else {
-                        println!("Session saved to {}", filename.green());
+                        eprintln!("Session saved to {}", filename.green());
                     }
                 }
-                Err(e) => println!("{}: {}", "Failed to serialize session".red(), e),
+                Err(e) => eprintln!("{}: {}", "Failed to serialize session".red(), e),
             }
         }
         "load_session" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: load_session <file>".red());
+                eprintln!("{}", "Usage: load_session <file>".red());
                 return;
             }
             let filename = parts[1];
             match fs::read_to_string(filename) {
-                Ok(json) => {
-                    match serde_json::from_str(&json) {
-                        Ok(loaded_session) => {
-                            *session = loaded_session;
-                            println!("Session loaded from {}", filename.green());
-                        }
-                        Err(e) => println!("{}: {}", "Failed to deserialize session".red(), e),
+                Ok(json) => match serde_json::from_str(&json) {
+                    Ok(loaded_session) => {
+                        *session = loaded_session;
+                        eprintln!("Session loaded from {}", filename.green());
                     }
-                }
-                Err(e) => println!("{}: {}", "Failed to load session".red(), e),
+                    Err(e) => eprintln!("{}: {}", "Failed to deserialize session".red(), e),
+                },
+                Err(e) => eprintln!("{}: {}", "Failed to load session".red(), e),
             }
         }
         "assume" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: assume <axiom>".red());
+                eprintln!("{}", "Usage: assume <axiom>".red());
                 return;
             }
             let axiom = parts[1..].join(" ");
             session.axioms.push(axiom.clone());
-            println!("Assumed: {}", axiom.cyan());
+            eprintln!("Assumed: {}", axiom.cyan());
         }
         "eval" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: eval <formula>".red());
+                eprintln!("{}", "Usage: eval <formula>".red());
                 return;
             }
             let formula = parts[1..].join(" ");
-            
+
             let mut arena = FormulaArena::new();
             let mut parser = Parser::with_macros(&formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
             // Merge with session graph? For now just evaluate independently
             match graph.bellman_ford() {
-                Ok(_) => println!("{}", "Stratification successful.".green()),
-                Err(e) => println!("{}: {}", "Error".red(), e),
+                Ok((_, _)) => eprintln!("{}", "Stratification successful.".green()),
+                Err(e) => eprintln!("{}: {}", "Error".red(), e),
             }
         }
         "step" => {
-             if parts.len() < 2 {
-                println!("{}", "Usage: step <formula>".red());
+            if parts.len() < 2 {
+                eprintln!("{}", "Usage: step <formula>".red());
                 return;
             }
             let formula = parts[1..].join(" ");
-            
+
             let mut arena = FormulaArena::new();
             let mut parser = Parser::with_macros(&formula, &mut arena, None);
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
             let mut graph = GraphArena::from_constraints(&constraints);
-            
-            println!("{}", "--- Extracting Constraints ---".yellow());
+
+            eprintln!("{}", "--- Extracting Constraints ---".yellow());
             for c in &constraints {
-                println!("{:?}", c);
-            }
-            
-            println!("{}", "--- Graph Nodes ---".yellow());
-            for i in 0..graph.vars.len() {
-                println!("Node {}", i);
+                eprintln!("{:?}", c);
             }
 
-            println!("{}", "--- Graph Edges ---".yellow());
+            eprintln!("{}", "--- Graph Nodes ---".yellow());
+            for i in 0..graph.vars.len() {
+                eprintln!("Node {}", i);
+            }
+
+            eprintln!("{}", "--- Graph Edges ---".yellow());
             for e in &graph.edges {
                 if e.2 < 0 {
-                    println!("Edge {} -> {} weight {}", e.0, e.1, e.2.to_string().red());
+                    eprintln!("Edge {} -> {} weight {}", e.0, e.1, e.2.to_string().red());
                 } else {
-                    println!("Edge {} -> {} weight {}", e.0, e.1, e.2);
+                    eprintln!("Edge {} -> {} weight {}", e.0, e.1, e.2);
                 }
             }
 
-            println!("{}", "--- Collapsing SCC ---".yellow());
+            eprintln!("{}", "--- Collapsing SCC ---".yellow());
             graph.collapse_scc_0_weight();
-            
-            println!("{}", "--- Running Bellman-Ford ---".yellow());
+
+            eprintln!("{}", "--- Running Bellman-Ford ---".yellow());
             match graph.bellman_ford() {
-                Ok(_) => println!("{}", "Stratification successful.".green()),
-                Err(e) => println!("{}: {}", "Error".red(), e),
+                Ok((_, _)) => eprintln!("{}", "Stratification successful.".green()),
+                Err(e) => eprintln!("{}: {}", "Error".red(), e),
             }
         }
         "intro" => {
-            let name = if parts.len() > 1 { parts[1].to_string() } else { "H".to_string() };
+            let name = if parts.len() > 1 {
+                parts[1].to_string()
+            } else {
+                "H".to_string()
+            };
             if let Some(mut goal) = session.active_goals.pop() {
                 let target = session.arena.get(goal.target).cloned();
                 match target {
@@ -387,38 +427,41 @@ fn process_repl_command(input: &str, session: &mut Session) {
                         show_goal(session);
                     }
                     _ => {
-                        println!("{}", "Goal is not an implication or universal quantification.".red());
+                        eprintln!(
+                            "{}",
+                            "Goal is not an implication or universal quantification.".red()
+                        );
                         session.active_goals.push(goal);
                     }
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "exact" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: exact <hyp_name>".red());
+                eprintln!("{}", "Usage: exact <hyp_name>".red());
                 return;
             }
             let name = parts[1].to_string();
             if let Some(goal) = session.active_goals.last() {
                 if let Some((_, hyp_idx)) = goal.context.iter().find(|(n, _)| n == &name) {
                     if *hyp_idx == goal.target {
-                        println!("{}", "Goal closed!".green());
+                        eprintln!("{}", "Goal closed!".green());
                         session.active_goals.pop();
                         if session.active_goals.is_empty() {
-                            println!("{}", "Proof complete!".green().bold());
+                            eprintln!("{}", "Proof complete!".green().bold());
                         } else {
                             show_goal(session);
                         }
                     } else {
-                        println!("{}", "Hypothesis does not exactly match the target.".red());
+                        eprintln!("{}", "Hypothesis does not exactly match the target.".red());
                     }
                 } else {
-                    println!("{}", "Invalid hypothesis name.".red());
+                    eprintln!("{}", "Invalid hypothesis name.".red());
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "split" => {
@@ -434,12 +477,12 @@ fn process_repl_command(input: &str, session: &mut Session) {
                         show_goal(session);
                     }
                     _ => {
-                        println!("{}", "Goal is not a conjunction.".red());
+                        eprintln!("{}", "Goal is not a conjunction.".red());
                         session.active_goals.push(goal);
                     }
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "left" => {
@@ -452,12 +495,12 @@ fn process_repl_command(input: &str, session: &mut Session) {
                         show_goal(session);
                     }
                     _ => {
-                        println!("{}", "Goal is not a disjunction.".red());
+                        eprintln!("{}", "Goal is not a disjunction.".red());
                         session.active_goals.push(goal);
                     }
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "right" => {
@@ -470,17 +513,17 @@ fn process_repl_command(input: &str, session: &mut Session) {
                         show_goal(session);
                     }
                     _ => {
-                        println!("{}", "Goal is not a disjunction.".red());
+                        eprintln!("{}", "Goal is not a disjunction.".red());
                         session.active_goals.push(goal);
                     }
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "apply" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: apply <hyp_name>".red());
+                eprintln!("{}", "Usage: apply <hyp_name>".red());
                 return;
             }
             let name = parts[1].to_string();
@@ -494,26 +537,37 @@ fn process_repl_command(input: &str, session: &mut Session) {
                             show_goal(session);
                         }
                         _ => {
-                            println!("{}", "Hypothesis is not an implication matching the target.".red());
+                            eprintln!(
+                                "{}",
+                                "Hypothesis is not an implication matching the target.".red()
+                            );
                             session.active_goals.push(goal);
                         }
                     }
                 } else {
-                    println!("{}", "Invalid hypothesis name.".red());
+                    eprintln!("{}", "Invalid hypothesis name.".red());
                     session.active_goals.push(goal);
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "destruct" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: destruct <hyp_name> [n1] [n2]".red());
+                eprintln!("{}", "Usage: destruct <hyp_name> [n1] [n2]".red());
                 return;
             }
             let name = parts[1].to_string();
-            let n1 = if parts.len() > 2 { parts[2].to_string() } else { format!("{}a", name) };
-            let n2 = if parts.len() > 3 { parts[3].to_string() } else { format!("{}b", name) };
+            let n1 = if parts.len() > 2 {
+                parts[2].to_string()
+            } else {
+                format!("{}a", name)
+            };
+            let n2 = if parts.len() > 3 {
+                parts[3].to_string()
+            } else {
+                format!("{}b", name)
+            };
 
             if let Some(mut goal) = session.active_goals.pop() {
                 if let Some(idx) = goal.context.iter().position(|(n, _)| n == &name) {
@@ -540,22 +594,22 @@ fn process_repl_command(input: &str, session: &mut Session) {
                             show_goal(session);
                         }
                         _ => {
-                            println!("{}", "Hypothesis cannot be destructed.".red());
+                            eprintln!("{}", "Hypothesis cannot be destructed.".red());
                             goal.context.insert(idx, (name, hyp_idx));
                             session.active_goals.push(goal);
                         }
                     }
                 } else {
-                    println!("{}", "Invalid hypothesis name.".red());
+                    eprintln!("{}", "Invalid hypothesis name.".red());
                     session.active_goals.push(goal);
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "focus_hyp" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: focus_hyp <hyp_name>".red());
+                eprintln!("{}", "Usage: focus_hyp <hyp_name>".red());
                 return;
             }
             let name = parts[1].to_string();
@@ -566,38 +620,39 @@ fn process_repl_command(input: &str, session: &mut Session) {
                     session.active_goals.push(goal);
                     show_goal(session);
                 } else {
-                    println!("{}", "Invalid hypothesis name.".red());
+                    eprintln!("{}", "Invalid hypothesis name.".red());
                     session.active_goals.push(goal);
                 }
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "defer" => {
             if session.active_goals.len() > 1 {
                 let goal = session.active_goals.pop().unwrap();
                 session.active_goals.insert(0, goal);
-                println!("{}", "Goal deferred.".green());
+                eprintln!("{}", "Goal deferred.".green());
                 show_goal(session);
             } else if session.active_goals.len() == 1 {
-                println!("{}", "Only one active goal.".yellow());
+                eprintln!("{}", "Only one active goal.".yellow());
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "cut" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: cut <formula>".red());
+                eprintln!("{}", "Usage: cut <formula>".red());
                 return;
             }
             let formula_str = parts[1..].join(" ");
-            let mut parser = Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
+            let mut parser =
+                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
             let cut_idx = parser.parse_formula();
 
-            if let Some(mut goal) = session.active_goals.pop() {
+            if let Some(goal) = session.active_goals.pop() {
                 let mut goal2 = goal.clone();
                 goal2.context.push(("Cut".to_string(), cut_idx));
-                
+
                 let mut goal1 = goal.clone();
                 goal1.target = cut_idx;
 
@@ -605,31 +660,35 @@ fn process_repl_command(input: &str, session: &mut Session) {
                 session.active_goals.push(goal1);
                 show_goal(session);
             } else {
-                println!("{}", "No active goals.".red());
+                eprintln!("{}", "No active goals.".red());
             }
         }
         "check_strat" => {
             if parts.len() < 2 {
-                println!("{}", "Usage: check_strat <formula>".red());
+                eprintln!("{}", "Usage: check_strat <formula>".red());
                 return;
             }
             let formula = parts[1..].join(" ");
-            
-            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
+
+            let mut parser =
+                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&session.arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
             match graph.bellman_ford() {
-                Ok(_) => println!("{}", "Stratification successful. Topologically sound.".green()),
-                Err(e) => println!("{}: {}", "Error: Negative-weight cycle detected".red(), e),
+                Ok((_, _)) => eprintln!(
+                    "{}",
+                    "Stratification successful. Topologically sound.".green()
+                ),
+                Err(e) => eprintln!("{}: {}", "Error: Negative-weight cycle detected".red(), e),
             }
         }
         "deff" => {
             if parts.len() < 3 || !parts.contains(&":=") {
-                println!("{}", "Usage: deff <name>(<args>) := <formula>".red());
+                eprintln!("{}", "Usage: deff <name>(<args>) := <formula>".red());
                 return;
             }
             let eq_idx = parts.iter().position(|&x| x == ":=").unwrap();
@@ -640,8 +699,8 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let sig_str = sig_str.replace(" ", "");
             let open_paren = sig_str.find('(');
             let close_paren = sig_str.find(')');
-            
-            let mut name = String::new();
+
+            let name;
             let mut params = Vec::new();
 
             if let (Some(op), Some(cp)) = (open_paren, close_paren) {
@@ -654,18 +713,19 @@ fn process_repl_command(input: &str, session: &mut Session) {
                 name = sig_str;
             }
 
-            let mut parser = Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
+            let mut parser =
+                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&session.arena, root_idx, 0);
+            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
-            
+
             session.macros.insert(name.clone(), (params, root_idx));
-            println!("Macro {} defined and SCC flattened.", name.cyan());
+            eprintln!("Macro {} defined and SCC flattened.", name.cyan());
         }
         _ => {
-            println!("{}: Unknown command '{}'", "Error".red(), parts[0]);
+            eprintln!("{}: Unknown command '{}'", "Error".red(), parts[0]);
         }
     }
 }
@@ -676,16 +736,48 @@ fn format_formula(arena: &FormulaArena, idx: usize, show_tags: bool) -> String {
         None => return format!("<?{}>", idx),
     };
     match formula {
-        Formula::Atom(Atomic::Eq(v1, v2)) => format!("{} = {}", format_var(v1, show_tags), format_var(v2, show_tags)),
-        Formula::Atom(Atomic::Mem(v1, v2)) => format!("{} in {}", format_var(v1, show_tags), format_var(v2, show_tags)),
+        Formula::Atom(Atomic::Eq(v1, v2)) => format!(
+            "{} = {}",
+            format_var(v1, show_tags),
+            format_var(v2, show_tags)
+        ),
+        Formula::Atom(Atomic::Mem(v1, v2)) => format!(
+            "{} in {}",
+            format_var(v1, show_tags),
+            format_var(v2, show_tags)
+        ),
         Formula::Atom(a) => format!("{:?}", a),
         Formula::Neg(i) => format!("~{}", format_formula(arena, *i, show_tags)),
-        Formula::Conj(l, r) => format!("({} /\\ {})", format_formula(arena, *l, show_tags), format_formula(arena, *r, show_tags)),
-        Formula::Disj(l, r) => format!("({} \\/ {})", format_formula(arena, *l, show_tags), format_formula(arena, *r, show_tags)),
-        Formula::Impl(l, r) => format!("({} -> {})", format_formula(arena, *l, show_tags), format_formula(arena, *r, show_tags)),
-        Formula::Univ(_, var, inner) => format!("forall {}. {}", var, format_formula(arena, *inner, show_tags)),
-        Formula::Exist(_, var, inner) => format!("exists {}. {}", var, format_formula(arena, *inner, show_tags)),
-        Formula::Comp(_, var, inner) => format!("{{ {} | {} }}", var, format_formula(arena, *inner, show_tags)),
+        Formula::Conj(l, r) => format!(
+            "({} /\\ {})",
+            format_formula(arena, *l, show_tags),
+            format_formula(arena, *r, show_tags)
+        ),
+        Formula::Disj(l, r) => format!(
+            "({} \\/ {})",
+            format_formula(arena, *l, show_tags),
+            format_formula(arena, *r, show_tags)
+        ),
+        Formula::Impl(l, r) => format!(
+            "({} -> {})",
+            format_formula(arena, *l, show_tags),
+            format_formula(arena, *r, show_tags)
+        ),
+        Formula::Univ(_, var, inner) => format!(
+            "forall {}. {}",
+            var,
+            format_formula(arena, *inner, show_tags)
+        ),
+        Formula::Exist(_, var, inner) => format!(
+            "exists {}. {}",
+            var,
+            format_formula(arena, *inner, show_tags)
+        ),
+        Formula::Comp(_, var, inner) => format!(
+            "{{ {} | {} }}",
+            var,
+            format_formula(arena, *inner, show_tags)
+        ),
     }
 }
 
@@ -697,7 +789,7 @@ fn format_var(v: &Var, show_tags: bool) -> String {
             } else {
                 name.clone()
             }
-        },
+        }
         Var::Bound(idx) => {
             if show_tags {
                 format!("^{}", idx)
@@ -710,13 +802,22 @@ fn format_var(v: &Var, show_tags: bool) -> String {
 
 fn show_goal(session: &Session) {
     if let Some(goal) = session.active_goals.last() {
-        println!("{}", "--- Context ---".yellow());
+        eprintln!("{}", "--- Context ---".yellow());
         for hyp in goal.context.iter() {
-            println!("{}: {}", hyp.0, format_formula(&session.arena, hyp.1, false));
+            eprintln!(
+                "{}: {}",
+                hyp.0,
+                format_formula(&session.arena, hyp.1, false)
+            );
         }
-        println!("{}", "--- Target ---".yellow());
-        println!("{}", format_formula(&session.arena, goal.target, false).cyan().bold());
+        eprintln!("{}", "--- Target ---".yellow());
+        eprintln!(
+            "{}",
+            format_formula(&session.arena, goal.target, false)
+                .cyan()
+                .bold()
+        );
     } else {
-        println!("No active goals.");
+        eprintln!("No active goals.");
     }
 }

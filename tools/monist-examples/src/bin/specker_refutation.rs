@@ -1,7 +1,7 @@
 use monist_core::ast::FormulaArena;
-use monist_parser::parser::Parser;
-use monist_core::graph::{GraphArena, extract_constraints_aux};
+use monist_core::graph::{extract_constraints_aux, GraphArena};
 use monist_core::smt::export_smt_lib;
+use monist_parser::parser::Parser;
 
 // Simulating the REPL Session engine programmatically
 struct Session {
@@ -17,19 +17,31 @@ impl Session {
         }
     }
 
-    fn eval(&mut self, formula: &str, test_name: &str) -> Result<Vec<i32>, String> {
+    fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>), String> {
         let mut parser = Parser::new(formula, &mut self.arena);
         let root_idx = parser.parse_formula();
 
-        let constraints = extract_constraints_aux(&self.arena, root_idx, 0);
+        let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false);
         self.graph = GraphArena::from_constraints(&constraints);
         self.graph.collapse_scc_0_weight();
 
-        println!("\n=== Stratification Witness (SMT-LIB format) for {} ===", test_name);
-        println!("{}", export_smt_lib(&self.graph, test_name));
+        let bf_result = self.graph.bellman_ford();
+
+        println!(
+            "\n=== Stratification Witness (SMT-LIB format) for {} ===",
+            test_name
+        );
+        match &bf_result {
+            Ok((dist, _)) => {
+                println!("{}", export_smt_lib(&self.graph, test_name, None, &[], Some(dist)));
+            }
+            Err(e) => {
+                println!("{}", export_smt_lib(&self.graph, test_name, Some(e), &[], None));
+            }
+        }
         println!("===============================================\n");
 
-        self.graph.bellman_ford()
+        bf_result
     }
 }
 
@@ -47,7 +59,7 @@ fn main() {
     println!("Evaluating Formula via REPL engine: {}", russell_formula);
 
     match session.eval(russell_formula, "russell_formula") {
-        Ok(_) => {
+        Ok((_, _)) => {
             panic!("Test Failed: Russell's paradox was incorrectly allowed to evaluate.");
         }
         Err(e) => {
@@ -66,7 +78,7 @@ fn main() {
     println!("\n--- Test 2: Specker's Theorem Check ---");
     println!("Simulating global choice function across distinct cardinal boundaries without a T-operator...");
     println!("Constructing a sequence of cardinal numbers: m, p1 (2^m), and p2 (2^{{2^m}}).");
-    
+
     // We formulate a choice function F bridging m, p1, and p2 directly.
     // The implication chains define the power set hierarchy natively via free variable scopes,
     // causing p1 to be mathematically typed at +1 above m, and p2 to be +1 above p1.
@@ -77,7 +89,7 @@ fn main() {
     // Resetting session for fresh graph
     let mut session = Session::new();
     match session.eval(specker_formula, "specker_formula") {
-        Ok(_) => {
+        Ok((_, _)) => {
             panic!("Test Failed: The unconstrained global choice function was incorrectly allowed to evaluate across cardinalities.");
         }
         Err(e) => {

@@ -1,5 +1,5 @@
-use std::time::Duration;
 use monist_comb::backend::GpuState;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct WgpuTelemetry {

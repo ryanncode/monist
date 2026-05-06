@@ -1,11 +1,11 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use ocl::{ProQue, Buffer, flags};
+use criterion::{Criterion, criterion_group, criterion_main};
+use ocl::{Buffer, ProQue, flags};
 
 fn bench_holographic_swarm(c: &mut Criterion) {
     // We simulate an O(1) Holographic Swarm Sieve (Absolute Complement query V \ A)
     // over a simulated dataset representing 10^8 elements to prove exclusion-first routing efficiency.
     // In OpenCL, we represent this conceptually via wave-parallel queries.
-    
+
     // We push the simulation size to the limit to demonstrate wave-parallel scaling
     let simulation_size: usize = 25_000_000; // Scaled to 2.5 * 10^7 for faster testing
 
@@ -25,16 +25,13 @@ fn bench_holographic_swarm(c: &mut Criterion) {
         }
     "#;
 
-    let pro_que_res = ProQue::builder()
-        .src(src)
-        .dims(simulation_size)
-        .build();
+    let pro_que_res = ProQue::builder().src(src).dims(simulation_size).build();
 
     if let Ok(pro_que) = pro_que_res {
         let mut group = c.benchmark_group("gpu_holographic_swarm");
         group.sample_size(10); // GPU allocations can be slow
         group.measurement_time(std::time::Duration::from_secs(1));
-        
+
         group.bench_function("sieve_10M", |b| {
             b.iter(|| {
                 let swarm_state = Buffer::<u64>::builder()
@@ -51,7 +48,8 @@ fn bench_holographic_swarm(c: &mut Criterion) {
                     .build()
                     .unwrap();
 
-                let kernel = pro_que.kernel_builder("holographic_sieve")
+                let kernel = pro_que
+                    .kernel_builder("holographic_sieve")
                     .arg(&swarm_state)
                     .arg(&query_results)
                     .arg(0xFF00FF00FF00FF00u64) // mock mask for V
@@ -61,11 +59,11 @@ fn bench_holographic_swarm(c: &mut Criterion) {
                 unsafe {
                     kernel.enq().unwrap();
                 }
-                
+
                 pro_que.queue().finish().unwrap();
             })
         });
-        
+
         group.finish();
     } else {
         println!("OpenCL not available. Skipping holographic_swarm benchmark.");

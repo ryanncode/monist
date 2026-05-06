@@ -1,5 +1,5 @@
 use monist_core::ast::FormulaArena;
-use monist_core::graph::{GraphArena, extract_constraints_aux};
+use monist_core::graph::{extract_constraints_aux, GraphArena};
 use monist_core::smt::export_smt_lib;
 use monist_parser::parser::Parser;
 
@@ -14,20 +14,33 @@ fn main() {
     let mut parser = Parser::new(formula_str, &mut arena);
     let root_idx = parser.parse_formula();
 
-    let constraints = extract_constraints_aux(&arena, root_idx, 0);
+    let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
     let mut graph = GraphArena::from_constraints(&constraints);
     graph.collapse_scc_0_weight();
 
     // Check with Bellman-Ford
-    match graph.bellman_ford() {
-        Ok(_) => println!("Result: Stratification successful (Unexpected for V \\in V!)."),
+    let bf_result = graph.bellman_ford();
+    match &bf_result {
+        Ok((_, _)) => println!("Result: Stratification successful (Unexpected for V \\in V!)."),
         Err(e) => println!("Result: Evaluation intercepted. {}", e),
     }
 
     println!("\nGenerating SMT-LIB Mathematical Trace:");
     println!("--------------------------------------");
-    let smt_output = export_smt_lib(&graph, "K_Iteration_V_in_V");
-    println!("{}", smt_output);
+    match &bf_result {
+        Ok((success_depths, sc_actions)) => {
+            println!(
+                "{}",
+                export_smt_lib(&graph, "K_Iteration_V_in_V", None, sc_actions, Some(success_depths))
+            );
+        }
+        Err(collision_trace) => {
+            println!(
+                "{}",
+                export_smt_lib(&graph, "K_Iteration_V_in_V", Some(collision_trace), &[], None)
+            );
+        }
+    }
     println!("--------------------------------------");
     println!("This generated SMT-LIB code can be passed to Lean 4, Z3, or CVC5 to independently verify the termination bound.");
 }
