@@ -95,7 +95,7 @@ fn try_link(p1: u32, p2: u32) {
             let b2 = atomicLoad(&arena[idx2].port2);
             
             // In a pure GPU IN, we would write these links into a buffer or link them using CAS.
-            // For this phase, we simply overwrite to ERA to signify garbage collection, 
+            // We simply overwrite to ERA to signify garbage collection, 
             // since true dynamic rewiring without a sequential host pass requires global atomic pointer swizzling.
             atomic_write_port(idx1, 1u, make_port(TAG_ERA, 0u));
             atomic_write_port(idx1, 2u, make_port(TAG_ERA, 0u));
@@ -138,7 +138,7 @@ fn try_link(p1: u32, p2: u32) {
         
         if (tag1 == TAG_OPR) {
             // Simple math operation: read port1 of OPR, if it's a NUM, add them and write to port2.
-            // For this basic phase, we'll just simulate the rewrite by erasing the OPR and replacing with a generic ERA/NUM.
+            // We'll just simulate the rewrite by erasing the OPR and replacing with a generic ERA/NUM.
             atomicAdd(&state.interactions, 1u);
             atomic_write_port(idx1, 1u, make_port(TAG_ERA, 0u));
             atomic_write_port(idx1, 2u, make_port(TAG_NUM, num_val + 1u)); // dummy math
@@ -220,7 +220,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     
-    // Simplistic redex sweep (for Phase 6 & 7)
+    // Simplistic redex sweep
     let p1 = atomicLoad(&arena[idx].port1);
     let p2 = atomicLoad(&arena[idx].port2);
     

@@ -2,6 +2,8 @@ use rand_distr::{Normal, Distribution};
 
 pub const D: usize = 10000;
 
+/// A High-Dimensional Computing (HDC) Vector used in the Holographic Co-processor.
+/// Provides base operations like superposition and binding in $D$-dimensional continuous space.
 #[derive(Debug, Clone)]
 pub struct HDCVector {
     pub values: Vec<f32>,
@@ -53,7 +55,7 @@ impl HDCVector {
         Self { values: result }
     }
 
-    /// Task 2: Instant-Time Negative Phase Cancellation (HRR Subtractor)
+    /// Instant-Time Negative Phase Cancellation (HRR Subtractor)
     /// Subtracts the target vector point-wise from the current superposed state.
     pub fn holographic_exclusion_query(&self, target: &Self) -> Self {
         let mut result = Vec::with_capacity(D);
@@ -68,7 +70,7 @@ impl HDCVector {
     }
 }
 
-/// Task 1: bind_nodes()
+/// bind_nodes()
 /// Takes two vectors (representing nodes) and a weight (0 or 1).
 /// If weight is 0 (Equality), returns self bound to other.
 /// If weight is 1 (Membership), returns self bound to permutation of other.
@@ -86,8 +88,8 @@ pub fn bind_nodes(node_a: &HDCVector, node_b: &HDCVector, weight: i32) -> HDCVec
 
 use std::collections::HashMap;
 
-/// Task 3: Successive Interference Cancellation (SIC) Recovery Bridge
-/// Associative Memory Codebook for recovering discrete combinators
+/// Successive Interference Cancellation (SIC) Recovery Bridge
+/// Associative Memory Codebook for recovering discrete combinators from superposed vector fields.
 pub struct Codebook {
     pub vectors: HashMap<String, HDCVector>,
 }

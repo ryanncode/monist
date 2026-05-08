@@ -109,6 +109,9 @@ pub fn extract_constraints_aux(
     constraints
 }
 
+/// The GraphArena represents the CPU Geometry Layer in the hybrid pipeline.
+/// It translates the semantic interactions (from the `FormulaArena`) into a weighted directed graph
+/// using De Bruijn indexing and lexical depths, enabling purely structural verification.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GraphArena {
     pub vars: Vec<ScopedVar>,
@@ -313,6 +316,9 @@ impl GraphArena {
         }
     }
 
+    /// Executes the Bellman-Ford algorithm to detect negative-weight cycles in the graph.
+    /// In the Monist Engine, a negative-weight cycle corresponds to an "Extensionality Collision" 
+    /// (an unstratifiable paradox or contradiction) in the underlying set theory formulas.
     pub fn bellman_ford(&mut self) -> Result<(Vec<i32>, Vec<String>), String> {
         // Run the continuous daemon to dynamically sever outgoing +1 offset edges from SC bedrock
         let sc_actions = self.isolate_sc_bedrock();

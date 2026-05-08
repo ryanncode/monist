@@ -177,5 +177,34 @@ cargo run -p monist-cli -- verify "x = y"
 Generates a `StratificationWitness` trace in standard SMT-LIB v2 format for external theorem provers (like Z3 or CVC5).
 
 ```bash
-
 cargo run -p monist-cli -- export-smt "x in y /\ y in z /\ z in x" > trace.smt2
+```
+
+---
+
+## Under the Hood: REPL Tactic Integration
+
+The interactive REPL is not just a semantic parser; it actively bridges Natural Deduction to the CPU Geometry layer. We can observe this programmatic handoff in `tools/monist-examples/src/bin/repl_tactic_integration.rs`. 
+
+When tactics are executed (`intro`, `rewrite`, `destruct`), the human interface manipulates an underlying `FormulaArena`.
+
+```rust
+let mut parser = Parser::new(formula, &mut self.arena);
+let root_idx = parser.parse_formula();
+
+// Extract the topological matrix
+let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false);
+self.graph = GraphArena::from_constraints(&constraints);
+```
+
+When you query for a diagnostic limit (`eval` or `step`), the engine collapses 0-weight sub-graphs (equalities) using Kosaraju's SCC algorithm and tests the geometry:
+
+```rust
+self.graph.collapse_scc_0_weight();
+
+if let Some(limits) = ExecutionLimits::compute_for_graph(&self.graph) {
+    println!("Execution Limits Computed: MCM = {:.2}", limits.mcm);
+}
+```
+
+This effectively translates abstract set properties—like `SC_Preservation`—into absolute mathematical bounds tracking typestate differentials, automatically rejecting invalid topological matrices before combinator compilation.

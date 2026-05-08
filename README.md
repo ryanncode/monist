@@ -1,4 +1,14 @@
-# The Monist Engine
+# <div align="center">The Monist Engine</div>
+
+<div align="center">
+  <br>
+  <a href="https://ryanncode.github.io/monist/"><strong>📚 Read the Docs</strong></a>
+  &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://firstsynth.dev/"><strong>🌐 First Synth</strong></a>
+  &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://ryanncode.github.io/monist/specs/monist_core/"><strong>⚙️ API Specs</strong></a>
+  <br><br>
+</div>
 
 This logic engine is a high-performance evaluator and bare-metal compilation pipeline designed exclusively to compute Quine's New Foundations (NF). By abandoning traditional hierarchical type-checking in favor of geometric shortest-path routing (Bellman-Ford), the project successfully compiles unstratified, self-referential paradoxes into executable Interaction Nets. 
 
@@ -47,7 +57,7 @@ To start the tactical theorem-proving environment:
 cargo run -p monist-cli -- repl
 ```
 
-Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x in x"`. For full details on available commands, axioms, and visualization options, see the [CLI Guide](docs/CLI_GUIDE.md).
+Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x in x"`. For full details on available commands, axioms, and visualization options, see the [CLI Guide](docs/02-cli-guide.qmd).
 
 ### Visual Demonstrations
 The Engine includes visual terminal simulations illustrating its unique performance boundaries:
@@ -85,6 +95,7 @@ lake exe parse-strat --ingest-smt < ../../monist/tools/monist-examples/out.smt
 ```
 
 Or run the full automated cross-language verification script from the root:
+
 ```bash
 ./scripts/run_differential_tests.sh
 ```
@@ -108,8 +119,8 @@ For bare-metal throughput execution tests bypassing the CLI:
 cargo bench -p monist-bench-gpu
 ```
 
-For an in-depth breakdown of lock-free atomic throughput and discrete execution bounds, see the [Reproducible Performance Benchmarks Matrix](docs/BENCHMARKS.md).
+For an in-depth breakdown of lock-free atomic throughput and discrete execution bounds, see the [Reproducible Performance Benchmarks Matrix](docs/06-benchmarks.qmd).
 
 ## Formal Theory Integration
 
-The mechanical systems defined in this codebase strictly adhere to the formal axioms outlined in the Lean proof architecture. For the formal verification of the Bellman-Ford geometric matrices, see [NF Sketches - AUDIT](https://github.com/ryanncode/nf-sketches/blob/main/AUDIT.md). For detailed instructions on running these proofs and understanding the theoretical bounds of our non-well-founded set implementation, see our [Lean Proofs Repository Integration](docs/PROOFS.md) document.
+The mechanical systems defined in this codebase strictly adhere to the formal axioms outlined in the Lean proof architecture. For the formal verification of the Bellman-Ford geometric matrices, see [NF Sketches - AUDIT](https://github.com/ryanncode/nf-sketches/blob/main/AUDIT.md). For detailed instructions on running these proofs and understanding the theoretical bounds of our non-well-founded set implementation, see our [Lean Proofs Repository Integration](docs/07-proofs.qmd) document. To dive deeper into the theoretical origins of this architecture, see [Theoretical Foundations](docs/09-theoretical-foundations.qmd) and [Mathematical Philosophy](docs/10-mathematical-philosophy.qmd).

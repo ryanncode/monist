@@ -1,0 +1,77 @@
+# Building Primitives and Programs: Canonical Examples
+
+The Monist Engine uses its hybrid synthetic pipeline to map complex paradoxes and mathematical programs down into topological constraints. By examining the canonical examples located in `tools/monist-examples/src/bin`, we can demonstrate how to build primitives, tests, and self-referential programs using this architecture.
+
+## 1. Russell's Paradox: Capturing Extensionality Collisions
+
+Russell's Paradox represents the most direct violation of typical topological bounds. The engine intercepts this before compiling into combinators by mapping the recursive self-membership constraint into a negative-weight geometric loop.
+
+### Primitives
+The core primitive here is the structural definition of membership (`in`), which mandates a `+1` type elevation, while a self-mapping creates a simultaneous `-1` constraint to bridge the gap.
+
+```rust
+// From tools/monist-examples/src/bin/russell.rs
+let mut arena = GraphArena::new();
+let r_var = ScopedVar(Var::Free("R".to_string()), 0);
+let u = arena.add_var(r_var.clone());
+
+// Add R in R boundaries
+arena.edges.push((u, u, 1, true));
+arena.edges.push((u, u, -1, true));
+```
+
+### Execution & Testing
+When passed to the `monist-core` geometry solver, the `ExecutionLimits::compute_for_graph` or `bellman_ford` routing immediately tracks the $K$-Iteration depth limits. The paradox halts structurally:
+
+```rust
+if let Some(limits) = ExecutionLimits::compute_for_graph(&arena) {
+    if limits.mcm < 0.0 {
+        println!("[SUCCESS] Extensionality Collision structurally intercepted!");
+    }
+}
+```
+
+## 2. Specker's Refutation of Global Choice
+
+A far more complex programmatic boundary is Specker's sequence, attempting to map global choice across a sequence of distinct cardinal topologies without stabilizing via a $T$-functor.
+
+### Primitives
+This requires parsing dense, nested implications into a unified geometric DAG. The CLI or Rust programmatic string bindings convert the human interface directly into the constraint mapping layer.
+
+```rust
+// From tools/monist-examples/src/bin/specker_refutation.rs
+let specker_formula = "{ F | (((m in F /\\ p1 in F) /\\ p2 in F) /\\ (z in p1 -> (w in z -> w in m))) /\\ (z2 in p2 -> (w2 in z2 -> w2 in p1)) }";
+```
+
+### Execution & Testing
+The AST string is parsed, producing structural bounds. The nodes are structurally evaluated until they collapse into an unstratified loop. The diagnostic framework generates an `SMT-LIB v2` witness, piping out the precise vertex graph to formally prove the failure across $m$, $2^m$, and $2^{2^m}$ cardinal spaces.
+
+## 3. Agentic Reflection & Principle of Least Syntactic Action
+
+When interacting with agentic loops, the architecture shifts towards the Interaction Net pipeline (`monist-comb`), leveraging the $S,K,I$ combinators inside a safe topological boundary (`SC_CUT`).
+
+### Primitives
+Using programmatic combinator definitions, we define the computational operation physically. The $Y$ combinator creates the unstratified self-reference, bypassing normal hierarchical scoping limits.
+
+```rust
+// From tools/monist-examples/src/bin/agentic_reflection.rs
+use monist_comb::comblib::encodings::{v, y_comb};
+use monist_comb::ir::Comb;
+
+// A self-referential agent loop constructed natively
+let self_referential_agent_loop = y_comb().app(v("agent_step"));
+```
+
+### Execution & Testing
+An `AgenticPlanningMatrix` is used to map alternative combinatory routes. By using the "Principle of Least Syntactic Action," the agent evaluates the paths statically prior to execution:
+
+```rust
+let selected_path = planning_matrix.principle_of_least_syntactic_action();
+```
+
+When handed off to the engine, it performs lock-free XOR collisions across parallel CPU/GPU threads (simulating the Holographic physics layer limit) ensuring the coreclusive interactions rapidly decay without mutating memory pointers globally.
+
+---
+
+## Conclusion
+By bridging Natural Deduction strings (Specker's) through `GraphArena` matrices (Russell's) and into unstratified combinatorial representations (Agentic loops), these primitives form the bedrock for robust, mathematical AI pipelines.

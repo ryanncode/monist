@@ -1,0 +1,46 @@
+# Theoretical Foundations
+
+The Monist Engine is engineered at the collision point of structural proof theory, untyped combinatory logic, and constructivist mathematics. By abandoning the view of formal logic as a static descriptive language and instead treating it as an executable, physical geometry of computation, the engine natively exposes the deep structural mechanics and topological boundaries of human reasoning.
+
+## Quine's New Foundations as a Diagnostic Tool
+
+W.V.O. Quine’s *New Foundations* (NF) was historically viewed as a streamlined alternative to Russell's *Principia Mathematica*. However, the Monist Engine reconceptualizes NF as a specialized laboratory for syntactic analysis. 
+
+Traditional Zermelo-Fraenkel (ZFC) set theory avoids paradoxes through the "limitation of size"—an ontological quarantine that pushes contradictions infinitely outward into higher cardinalities. Quine discarded this spatial intuition in favor of a purely grammatical restriction: **Stratification**. 
+
+By anchoring mathematical reality to the structural well-formedness of propositions, NF transforms set existence into linguistic geometry. Because NF features a Universal Set ($V$), it forms a closed topological loop. The paradoxes of naive set theory (like Russell's) are no longer mathematical disasters but diagnostic tools illuminating the boundaries of logical syntax. Within the Monist Engine, when algorithms like Bellman-Ford detect negative-weight cycles, they are identifying these exact "Extensionality Collisions" natively within the graph topology.
+
+### Weak Stratification & The Extensionality Collision
+
+Marcel Crabbé discovered that rigid global stratification breaks closure under substitution. By introducing **Weak Stratification**—which allows bound variables to dynamically re-level their relative integer weights based on local context—he restored the ability to perform cut-elimination. 
+
+However, as dynamically re-leveled sets resolve, they eventually collide with the Axiom of Extensionality. Extensionality acts as a rigid classical mandate forcing structurally distinct topological constructions into strict mathematical equivalence. This friction triggers a catastrophic failure of normalization—the **Extensionality Collision**. In the Monist Engine's CPU Geometry Layer, this phenomenon literally manifests as a negative-weight cycle, providing an exact geometric mapping of classical logic breaking down under impredicative tension.
+
+## The Power of Untyped Logic
+
+The Physics Backend of the Monist Engine fundamentally abandons hierarchical type-checking. It operates in the domain of untyped combinatory logic—a single, flattened domain of discourse. 
+
+In an untyped framework, functions, operators, and quantifiers can act upon any object, including themselves. This philosophical position closely mirrors Gilles Deleuze's concept of the "univocity of being," where everything exists on a single, immanent plane. 
+
+### Combinatory Logic as Bare-Metal Physics
+
+By stripping away variables, Haskell Curry and Moses Schönfinkel demonstrated that all of logic could be expressed as untyped combinators. The $S$, $K$, and $I$ combinators form a Turing-complete foundation:
+*   $K x y = x$
+*   $S x y z = x z (y z)$
+
+Because there are no type constraints, a combinator can freely apply to itself (e.g., $S(K)(S)$). This enables unrestricted recursion, represented famously by the $Y$ combinator in the untyped lambda calculus:
+*   $Y = \lambda f. (\lambda x. f(x x)) (\lambda x. f(x x))$
+
+Within the Monist Engine, these combinators are executed concurrently on the GPU as Interaction Nets. The raw untyped engine evaluates these topological graph reductions at thermodynamic limits, intentionally permitting infinite loops and self-referential paradoxes that rigid type checkers like Rust or Lean would block.
+
+## Constructivist Logic & The Nature of Evidence
+
+The Brouwer-Heyting-Kolmogorov (BHK) interpretation defines constructive truth computationally: a proof is an algorithm transforming evidence of a premise into evidence of a conclusion. However, "evidence" does not need to be grammatical or syntax-heavy. 
+
+The Monist Engine demonstrates that computational evidence can manifest in radical new forms:
+
+1.  **Geometric Evidence**: Proofs become continuous topological paths (like Bellman-Ford shortest paths) between objects. 
+2.  **Resource-Sensitive Evidence**: Linear and interaction logic treats propositions as exhaustible resources, mapped directly to physical GPU memory buffers.
+3.  **Holographic Superposition**: By embedding logic into high-dimensional vectors, evidence becomes a dense mathematical field rather than a brittle syntax tree.
+
+By divorcing truth from strict syntactical typing, the Monist Engine utilizes untyped physics and geometric constraints to realize computation natively on bare metal.

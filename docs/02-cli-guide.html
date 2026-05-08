@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>2&nbsp; Monist Engine CLI User Guide – Monist Engine: Documentation</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./03-examples-and-primitives.html" rel="next">
+<link href="./01-architecture.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-b266ed9d27445082f9b5bb49dc2b7903.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Monist Engine: Documentation</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://firstsynth.dev/"> 
+<span class="menu-text">First Synth</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://ryanncode.github.io/monist/specs/monist_core/"> 
+<span class="menu-text">API Specs</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <a href="https://github.com/ryanncode/monist" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./02-cli-guide.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Monist Engine CLI User Guide</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction and Setup</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Program Architecture and Primitives</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-cli-guide.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Monist Engine CLI User Guide</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-examples-and-primitives.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building Primitives and Programs: Canonical Examples</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-interaction-net.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">The Interaction Net Compiler</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-holographic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">The Holographic Co-processor</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-benchmarks.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Reproducible Performance Benchmarks Matrix</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-proofs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Lean Proofs Repository Integration</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-advanced-synthetic-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Advanced Hybrid Synthesis</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-theoretical-foundations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Theoretical Foundations</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-mathematical-philosophy.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Mathematical Philosophy</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link active" data-scroll-target="#getting-started"><span class="header-section-number">2.1</span> Getting Started</a></li>
+  <li><a href="#interactive-tutorial-proving-strong-cantorian-preservation" id="toc-interactive-tutorial-proving-strong-cantorian-preservation" class="nav-link" data-scroll-target="#interactive-tutorial-proving-strong-cantorian-preservation"><span class="header-section-number">2.2</span> Interactive Tutorial: Proving Strong Cantorian Preservation</a>
+  <ul class="collapse">
+  <li><a href="#defining-axioms" id="toc-defining-axioms" class="nav-link" data-scroll-target="#defining-axioms"><span class="header-section-number">2.2.1</span> 1. Defining Axioms</a></li>
+  <li><a href="#setting-a-goal" id="toc-setting-a-goal" class="nav-link" data-scroll-target="#setting-a-goal"><span class="header-section-number">2.2.2</span> 2. Setting a Goal</a></li>
+  <li><a href="#tactical-natural-deduction" id="toc-tactical-natural-deduction" class="nav-link" data-scroll-target="#tactical-natural-deduction"><span class="header-section-number">2.2.3</span> 3. Tactical Natural Deduction</a></li>
+  <li><a href="#rewriting" id="toc-rewriting" class="nav-link" data-scroll-target="#rewriting"><span class="header-section-number">2.2.4</span> 4. Rewriting</a></li>
+  <li><a href="#diagnostics-and-stratification" id="toc-diagnostics-and-stratification" class="nav-link" data-scroll-target="#diagnostics-and-stratification"><span class="header-section-number">2.2.5</span> 5. Diagnostics and Stratification</a></li>
+  <li><a href="#managing-the-session" id="toc-managing-the-session" class="nav-link" data-scroll-target="#managing-the-session"><span class="header-section-number">2.2.6</span> 6. Managing the Session</a></li>
+  </ul></li>
+  <li><a href="#unified-command-reference" id="toc-unified-command-reference" class="nav-link" data-scroll-target="#unified-command-reference"><span class="header-section-number">2.3</span> Unified Command Reference</a>
+  <ul class="collapse">
+  <li><a href="#core-proof-environment" id="toc-core-proof-environment" class="nav-link" data-scroll-target="#core-proof-environment"><span class="header-section-number">2.3.1</span> Core Proof Environment</a></li>
+  <li><a href="#axioms-proofs" id="toc-axioms-proofs" class="nav-link" data-scroll-target="#axioms-proofs"><span class="header-section-number">2.3.2</span> Axioms &amp; Proofs</a></li>
+  <li><a href="#interactive-tactics" id="toc-interactive-tactics" class="nav-link" data-scroll-target="#interactive-tactics"><span class="header-section-number">2.3.3</span> Interactive Tactics</a></li>
+  <li><a href="#diagnostic-evaluation" id="toc-diagnostic-evaluation" class="nav-link" data-scroll-target="#diagnostic-evaluation"><span class="header-section-number">2.3.4</span> Diagnostic Evaluation</a></li>
+  </ul></li>
+  <li><a href="#understanding-the-engine-constraints-and-tactics" id="toc-understanding-the-engine-constraints-and-tactics" class="nav-link" data-scroll-target="#understanding-the-engine-constraints-and-tactics"><span class="header-section-number">2.4</span> Understanding the Engine: Constraints and Tactics</a>
+  <ul class="collapse">
+  <li><a href="#geometric-constraints" id="toc-geometric-constraints" class="nav-link" data-scroll-target="#geometric-constraints"><span class="header-section-number">2.4.1</span> Geometric Constraints</a></li>
+  <li><a href="#the-tactical-workflow" id="toc-the-tactical-workflow" class="nav-link" data-scroll-target="#the-tactical-workflow"><span class="header-section-number">2.4.2</span> The Tactical Workflow</a></li>
+  </ul></li>
+  <li><a href="#one-shot-commands" id="toc-one-shot-commands" class="nav-link" data-scroll-target="#one-shot-commands"><span class="header-section-number">2.5</span> One-Shot Commands</a>
+  <ul class="collapse">
+  <li><a href="#verify-formula" id="toc-verify-formula" class="nav-link" data-scroll-target="#verify-formula"><span class="header-section-number">2.5.1</span> <code>verify &lt;formula&gt;</code></a></li>
+  <li><a href="#export-smt-formula" id="toc-export-smt-formula" class="nav-link" data-scroll-target="#export-smt-formula"><span class="header-section-number">2.5.2</span> <code>export-smt &lt;formula&gt;</code></a></li>
+  </ul></li>
+  <li><a href="#under-the-hood-repl-tactic-integration" id="toc-under-the-hood-repl-tactic-integration" class="nav-link" data-scroll-target="#under-the-hood-repl-tactic-integration"><span class="header-section-number">2.6</span> Under the Hood: REPL Tactic Integration</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Monist Engine CLI User Guide</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Welcome to the Monist Engine CLI! This guide will help you navigate the unified interactive REPL (Read-Eval-Print Loop) environment, which provides a modern, stateful experience for mathematical verification and Natural Deduction tactical proving.</p>
+<section id="getting-started" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="getting-started"><span class="header-section-number">2.1</span> Getting Started</h2>
+<p>To start the interactive session, simply run the CLI without any arguments:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> repl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>You will be greeted with a <code>monist&gt;</code> prompt, ready to accept your commands.</p>
+<hr>
+</section>
+<section id="interactive-tutorial-proving-strong-cantorian-preservation" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="interactive-tutorial-proving-strong-cantorian-preservation"><span class="header-section-number">2.2</span> Interactive Tutorial: Proving Strong Cantorian Preservation</h2>
+<p>The best way to understand the REPL is through a canonical, continuous example. Let’s walk through how a user would interactively prove that the Quine pair preserves Strongly Cantorian (SC) sets.</p>
+<section id="defining-axioms" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="defining-axioms"><span class="header-section-number">2.2.1</span> 1. Defining Axioms</h3>
+<p>First, we need to declare the foundational rules we are working with using <code>assume &lt;name&gt; &lt;formula&gt;</code>.</p>
+<pre class="text"><code>monist&gt; assume SC_Def forall x. SC(x) &lt;-&gt; (x = T(x))
+Assumed: SC_Def
+
+monist&gt; assume Quine_Flatness forall x y. typestate(Q(x,y)) == max(typestate(x), typestate(y))
+Assumed: Quine_Flatness</code></pre>
+<p><em>Note: The system globally registers these named axioms for later retrieval or constraint evaluation.</em></p>
+</section>
+<section id="setting-a-goal" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="setting-a-goal"><span class="header-section-number">2.2.2</span> 2. Setting a Goal</h3>
+<p>We declare the theorem we want to prove using <code>theorem &lt;name&gt; &lt;formula&gt;</code>. This transitions the REPL into tactical proof mode.</p>
+<pre class="text"><code>monist&gt; theorem SC_Preservation forall a b. (SC(a) /\ SC(b)) -&gt; SC(Q(a,b))
+[Goal Set] 1 unproven target.</code></pre>
+</section>
+<section id="tactical-natural-deduction" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="tactical-natural-deduction"><span class="header-section-number">2.2.3</span> 3. Tactical Natural Deduction</h3>
+<p>We can use <code>show_goal</code> at any time to inspect the local Context (hypotheses) and Target. Let’s break down the logic using standard Natural Deduction tactics.</p>
+<pre class="text"><code>monist&gt; intro a
+monist&gt; intro b
+monist&gt; intro H_SC
+monist&gt; destruct H_SC H1 H2
+monist&gt; show_goal
+
+--- Context ---
+H1: SC(a)
+H2: SC(b)
+--- Target ---
+SC(Q(a,b))</code></pre>
+<p><em>The <code>intro</code> command brought our variables and implication premise into the context, and <code>destruct</code> cleanly split the <code>H_SC</code> conjunction into <code>H1</code> and <code>H2</code>.</em></p>
+</section>
+<section id="rewriting" class="level3" data-number="2.2.4">
+<h3 data-number="2.2.4" class="anchored" data-anchor-id="rewriting"><span class="header-section-number">2.2.4</span> 4. Rewriting</h3>
+<p>We use <code>rewrite &lt;name&gt;</code> to perform symbolic substitution based on equalities.</p>
+<pre class="text"><code>monist&gt; rewrite SC_Def
+[Goal Rewritten] Target 1 is now: Q(a,b) = T(Q(a,b))
+
+monist&gt; rewrite H1
+monist&gt; rewrite H2
+[Goal Rewritten] Target 1 is now: Q(T(a), T(b)) = T(Q(a,b))</code></pre>
+</section>
+<section id="diagnostics-and-stratification" class="level3" data-number="2.2.5">
+<h3 data-number="2.2.5" class="anchored" data-anchor-id="diagnostics-and-stratification"><span class="header-section-number">2.2.5</span> 5. Diagnostics and Stratification</h3>
+<p>At this stage, we might want to hand off the topological heavy lifting to the internal geometric constraint engine. We can use the <code>eval</code> command to test if the formula successfully stratifies across the T-boundary!</p>
+<pre class="text"><code>monist&gt; eval ((((((a = Ta /\ b = Tb) /\ Qab = a) /\ Qab = b) /\ QTaTb = Ta) /\ QTaTb = Tb) /\ QTaTb = TQab) /\ Qab = TQab
+Stratification successful. Witness: {a@0 : 0, b@0 : 0, Ta@0 : 0, Tb@0 : 0, QTaTb@0 : 0, Qab@0 : 0, TQab@0 : 0}</code></pre>
+<p><em>The <code>eval</code> and <code>step</code> commands bypass the tactical proof state, instantly extracting topological constraints and running the Bellman-Ford cycle detection algorithm to verify mathematical consistency.</em></p>
+</section>
+<section id="managing-the-session" class="level3" data-number="2.2.6">
+<h3 data-number="2.2.6" class="anchored" data-anchor-id="managing-the-session"><span class="header-section-number">2.2.6</span> 6. Managing the Session</h3>
+<p>You can save your progress mid-proof and load it back later:</p>
+<pre class="text"><code>monist&gt; save_session my_proof.json
+Session saved to my_proof.json.
+
+monist&gt; qed
+Proof accepted.</code></pre>
+<hr>
+</section>
+</section>
+<section id="unified-command-reference" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="unified-command-reference"><span class="header-section-number">2.3</span> Unified Command Reference</h2>
+<section id="core-proof-environment" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="core-proof-environment"><span class="header-section-number">2.3.1</span> Core Proof Environment</h3>
+<ul>
+<li><code>help</code>: Show the help message.</li>
+<li><code>exit</code> / <code>quit</code>: Exit the REPL.</li>
+<li><code>save_session &lt;file.json&gt;</code>: Save the current session (axioms and active goals) to a JSON file.</li>
+<li><code>load_session &lt;file.json&gt;</code>: Load a previously saved session.</li>
+</ul>
+</section>
+<section id="axioms-proofs" class="level3" data-number="2.3.2">
+<h3 data-number="2.3.2" class="anchored" data-anchor-id="axioms-proofs"><span class="header-section-number">2.3.2</span> Axioms &amp; Proofs</h3>
+<ul>
+<li><code>assume &lt;name&gt; &lt;formula&gt;</code>: Register a named axiom into the global environment.</li>
+<li><code>theorem &lt;name&gt; &lt;formula&gt;</code>: Start a new proof with a target goal and enter tactical mode.</li>
+<li><code>deff &lt;name&gt;(&lt;args&gt;) := &lt;formula&gt;</code>: Define a macro with Kosaraju SCC pre-flattening, collapsing internal 0-weight edges into an optimized DAG to minimize topological evaluation overhead.</li>
+<li><code>show_goal</code>: Print the active target goal and its local context/hypotheses (with De Bruijn scope tags intentionally hidden to minimize UI clutter).</li>
+<li><code>qed</code>: Conclude an interactive proof if all goals are solved.</li>
+<li><code>abort</code>: Cancel the current interactive proof.</li>
+</ul>
+</section>
+<section id="interactive-tactics" class="level3" data-number="2.3.3">
+<h3 data-number="2.3.3" class="anchored" data-anchor-id="interactive-tactics"><span class="header-section-number">2.3.3</span> Interactive Tactics</h3>
+<ul>
+<li><code>intro [name]</code>: Introduce a premise or a universally quantified variable into the local context.</li>
+<li><code>exact &lt;name&gt;</code>: Close the current goal if it exactly matches the specified hypothesis.</li>
+<li><code>apply &lt;name&gt;</code>: Apply backward reasoning using an implication hypothesis.</li>
+<li><code>split</code>: Split a conjunction (<code>/\</code>) goal into two separate sub-goals.</li>
+<li><code>left</code> / <code>right</code>: Choose a side to prove for a disjunction (<code>\/</code>) goal.</li>
+<li><code>destruct &lt;name&gt; [n1] [n2]</code>: Break down a hypothesis (like a conjunction or disjunction) into smaller pieces in the context.</li>
+<li><code>rewrite &lt;name&gt;</code>: Substitute variables inside the goal based on an equality hypothesis.</li>
+<li><code>cut &lt;formula&gt;</code>: Diagnostic Cut Tactic. Introduces a highly saturated formula as a sub-goal, allowing you to explicitly trigger Extensionality bounds.</li>
+<li><code>focus_hyp &lt;name&gt;</code>: Pull a specific hypothesis to the top of your context array for easier visibility.</li>
+<li><code>defer</code>: Skip the current active goal, sending it to the back of the <code>ProofState</code> queue.</li>
+</ul>
+</section>
+<section id="diagnostic-evaluation" class="level3" data-number="2.3.4">
+<h3 data-number="2.3.4" class="anchored" data-anchor-id="diagnostic-evaluation"><span class="header-section-number">2.3.4</span> Diagnostic Evaluation</h3>
+<ul>
+<li><code>check_strat &lt;formula&gt;</code>: An alias/sandbox command to run the AST parser and Bellman-Ford algorithm on raw geometry instantly before proofs.</li>
+<li><code>eval &lt;formula&gt;</code>: Immediately test a formula for stratification loops and geometric friction without entering the tactical proof state.</li>
+<li><code>step &lt;formula&gt;</code>: Process a logical formula step-by-step, providing immediate, color-coded feedback on topological friction and geometric bounds.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="understanding-the-engine-constraints-and-tactics" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="understanding-the-engine-constraints-and-tactics"><span class="header-section-number">2.4</span> Understanding the Engine: Constraints and Tactics</h2>
+<p>To effectively use this dual-engine architecture, it is crucial to understand what the underlying Rust graph engine can “see,” and how to guide your tactical proofs to produce that specific geometry.</p>
+<section id="geometric-constraints" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="geometric-constraints"><span class="header-section-number">2.4.1</span> Geometric Constraints</h3>
+<p>The Bellman-Ford topological engine (<code>eval</code> / <code>step</code>) is incredibly fast, but its vocabulary is strictly limited to foundational set-theoretic boundaries. It translates formulas into a geometric Directed Acyclic Graph (DAG) using <strong>only</strong> the following atomic constraints:</p>
+<ul>
+<li><strong>Equality (<code>x = y</code>)</strong>: Generates a <strong><code>0</code> weight</strong> constraint. The engine mathematically locks the two variables at the exact same typestate level.</li>
+<li><strong>Membership (<code>x e y</code>)</strong>: Generates a <strong><code>+1</code> weight</strong> constraint. The set <code>y</code> must exist at a typestate level strictly higher than its element <code>x</code>.</li>
+<li><strong>Function Application (<code>z = u(v)</code>)</strong>: Generates a <strong><code>+1</code> weight</strong> constraint. The function <code>u</code> must be typed one level higher than the argument <code>v</code>.</li>
+<li><strong>Lambda Abstraction (<code>z = \lambda x. t</code>)</strong>: Generates a <strong><code>+1</code> weight</strong> constraint. The abstracted function body sits one level higher than the variable it binds.</li>
+<li><strong>Quine Pairs (<code>Q(a,b)</code>)</strong>: Generates <strong><code>0</code> weight</strong> constraints. Unlike standard Kuratowski pairs (which force a <code>+2</code> type shift), Quine pairs are geometrically “flat.”</li>
+<li><strong>Strict Typestate Offset (<code>x &lt; y</code>)</strong>: Generates a <strong><code>-1</code> weight</strong> constraint. The variable <code>x</code> must be strictly lower in typestate elevation than <code>y</code> (<span class="math inline">\(x \le y - 1\)</span>).</li>
+</ul>
+</section>
+<section id="the-tactical-workflow" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="the-tactical-workflow"><span class="header-section-number">2.4.2</span> The Tactical Workflow</h3>
+<p>When staring at a high-level mathematical theorem, your goal as the user is to act as the “compiler,” using tactics to translate human semantics down into the raw spatial constraints listed above.</p>
+<ol type="1">
+<li><strong>Strip the Logical Scaffolding</strong>: The geometric engine evaluates spatial structures, not conditional hypotheticals. Use <code>intro</code> to strip away <code>forall</code> quantifiers and pull <code>If</code> premises down into your local Context as usable facts. Use <code>destruct</code> to break complex conjunctions (<code>/\</code>) into isolated facts.</li>
+<li><strong>Unfold Semantic Definitions</strong>: The graph engine cannot read abstract properties like “Strongly Cantorian” or “Ordinal.” Use <code>rewrite</code> (alongside your global <code>assume</code> axioms) to unfold these abstractions into raw set theory (e.g., rewriting <code>SC(x)</code> to <code>x = T(x)</code>).</li>
+<li><strong>Isolate the Friction</strong>: Use <code>rewrite</code> to substitute variables across your equalities until the core components of your target goal are expressed purely in terms of raw variables connected by <code>=</code> or <code>e</code>. You want to find the exact boundary where the theorem forces a variable to cross a typestate level.</li>
+<li><strong>The Topological Handoff</strong>: Once your <code>ProofState</code> has been entirely stripped of implications, quantifiers, and abstract names, you gather the surviving structural equations and feed them into <code>eval</code>. The graph engine will instantly compute if that raw geometry can safely exist in finite computational space, or if it collapses into a negative-weight cycle (a paradox).</li>
+</ol>
+<hr>
+</section>
+</section>
+<section id="one-shot-commands" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="one-shot-commands"><span class="header-section-number">2.5</span> One-Shot Commands</h2>
+<p>You can still use the CLI in traditional one-shot mode for scripting or quick checks outside the REPL.</p>
+<section id="verify-formula" class="level3" data-number="2.5.1">
+<h3 data-number="2.5.1" class="anchored" data-anchor-id="verify-formula"><span class="header-section-number">2.5.1</span> <code>verify &lt;formula&gt;</code></h3>
+<p>Quickly evaluates a formula.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> verify <span class="st">"x = y"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="export-smt-formula" class="level3" data-number="2.5.2">
+<h3 data-number="2.5.2" class="anchored" data-anchor-id="export-smt-formula"><span class="header-section-number">2.5.2</span> <code>export-smt &lt;formula&gt;</code></h3>
+<p>Generates a <code>StratificationWitness</code> trace in standard SMT-LIB v2 format for external theorem provers (like Z3 or CVC5).</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> export-smt <span class="st">"x in y /\ y in z /\ z in x"</span> <span class="op">&gt;</span> trace.smt2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="under-the-hood-repl-tactic-integration" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="under-the-hood-repl-tactic-integration"><span class="header-section-number">2.6</span> Under the Hood: REPL Tactic Integration</h2>
+<p>The interactive REPL is not just a semantic parser; it actively bridges Natural Deduction to the CPU Geometry layer. We can observe this programmatic handoff in <code>tools/monist-examples/src/bin/repl_tactic_integration.rs</code>.</p>
+<p>When tactics are executed (<code>intro</code>, <code>rewrite</code>, <code>destruct</code>), the human interface manipulates an underlying <code>FormulaArena</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="kw">mut</span> parser <span class="op">=</span> <span class="pp">Parser::</span>new(formula<span class="op">,</span> <span class="op">&amp;</span><span class="kw">mut</span> <span class="kw">self</span><span class="op">.</span>arena)<span class="op">;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> root_idx <span class="op">=</span> parser<span class="op">.</span>parse_formula()<span class="op">;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">// Extract the topological matrix</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> constraints <span class="op">=</span> extract_constraints_aux(<span class="op">&amp;</span><span class="kw">self</span><span class="op">.</span>arena<span class="op">,</span> root_idx<span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="cn">false</span>)<span class="op">;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">self</span><span class="op">.</span>graph <span class="op">=</span> <span class="pp">GraphArena::</span>from_constraints(<span class="op">&amp;</span>constraints)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>When you query for a diagnostic limit (<code>eval</code> or <code>step</code>), the engine collapses 0-weight sub-graphs (equalities) using Kosaraju’s SCC algorithm and tests the geometry:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">self</span><span class="op">.</span>graph<span class="op">.</span>collapse_scc_0_weight()<span class="op">;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">let</span> <span class="cn">Some</span>(limits) <span class="op">=</span> <span class="pp">ExecutionLimits::</span>compute_for_graph(<span class="op">&amp;</span><span class="kw">self</span><span class="op">.</span>graph) <span class="op">{</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="pp">println!</span>(<span class="st">"Execution Limits Computed: MCM = {:.2}"</span><span class="op">,</span> limits<span class="op">.</span>mcm)<span class="op">;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This effectively translates abstract set properties—like <code>SC_Preservation</code>—into absolute mathematical bounds tracking typestate differentials, automatically rejecting invalid topological matrices before combinator compilation.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./01-architecture.html" class="pagination-link" aria-label="Program Architecture and Primitives">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Program Architecture and Primitives</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./03-examples-and-primitives.html" class="pagination-link" aria-label="Building Primitives and Programs: Canonical Examples">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Building Primitives and Programs: Canonical Examples</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

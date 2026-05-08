@@ -22,7 +22,7 @@ mod tests {
 
     #[test]
     fn test_numeric_primitives() {
-        // Phase 10: Test OPR + NUM rewrite rule
+        // Test OPR + NUM rewrite rule
         let mut gnet = GNet::new(100);
 
         // OPR node
@@ -46,7 +46,7 @@ mod tests {
 
     #[test]
     fn test_cycle_garbage_collection() {
-        // Phase 12: Test cyclic memory reclamation
+        // Test cyclic memory reclamation
         let mut gnet = GNet::new(100);
 
         // Allocate a node and manually make it point to itself

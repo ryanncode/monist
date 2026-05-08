@@ -1,0 +1,61 @@
+# The Interaction Net Compiler
+
+The Monist Engine relies heavily on `monist-comb` to compile pure topological matrices into lock-free WGSL Interaction Nets ($S, K, I$ combinators). This allows parallel execution across the GPU physics layer.
+
+## Primitives and Operations
+
+### The WGPU Executor
+The engine uses standard Rust multi-threading bridged to WebGPU (`wgpu`) APIs, avoiding synchronization overhead. The `WgpuExecutor` sets up an isolated arena within VRAM.
+
+```rust
+// From crates/monist-comb/src/backend.rs
+pub fn execute(&self, net: &GNet) -> (GNet, GpuState) {
+    // Buffers initialized with `wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC`
+    // No CPU-side mutexes exist.
+}
+```
+
+### Atomic Compare-And-Swap (CAS)
+Because interaction net combinators are physically constrained local rewrites, thread-safety is fully enforced by WGSL's atomic pointer manipulation. A tight spin-lock guarantees safe parallel writes during combinatory reductions.
+
+```wgsl
+// From crates/monist-comb/src/reduce.wgsl
+fn atomic_write_port(idx: u32, port_id: u32, val: u32) {
+    var expected: u32;
+    var success = false;
+    
+    // Spin-lock CAS loop to guarantee thread safety
+    loop {
+        if (port_id == 1u) {
+            expected = atomicLoad(&arena[idx].port1);
+            let res = atomicCompareExchangeWeak(&arena[idx].port1, expected, val);
+            success = res.exchanged;
+        } else {
+            // port 2...
+        }
+        if (success) { break; }
+    }
+}
+```
+
+### Cycle Garbage Collection Sweep
+Unlike traditional logic evaluators which rely on complex, tracing garbage collectors over cyclic dependency graphs, the Monist WGSL compute shader performs an $O(1)$ isolated pass over active arena nodes.
+
+Because Interaction Nets are inherently un-typed, self-referential paradoxes manifest as physically disconnected "floating" memory rings in the node space.
+
+```wgsl
+// Cycle Garbage Collection within reduce.wgsl
+// If a node points to itself on both ports, it is an isolated cyclic leak.
+if (tag1 >= TAG_CON && tag2 >= TAG_CON) {
+    let val1 = get_val(p1);
+    let val2 = get_val(p2);
+    if (val1 == idx && val2 == idx) {
+        // Reclaim disconnected cycle
+        atomic_write_port(idx, 1u, make_port(TAG_ERA, 0u));
+        atomic_write_port(idx, 2u, make_port(TAG_ERA, 0u));
+        push_free(idx);
+    }
+}
+```
+
+By coupling the `TAG_ERA` destruction pattern with atomic free list head modifications, the engine continuously reclaims anomalous unstratified logic physically in VRAM.

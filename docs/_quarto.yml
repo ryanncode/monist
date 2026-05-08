@@ -1,0 +1,33 @@
+project:
+  type: book
+  output-dir: .
+execute:
+  cache: true
+  freeze: auto
+format:
+  html:
+    theme: cosmo
+    code-link: true
+    toc: true
+    toc-location: left
+book:
+  title: "Monist Engine: Documentation"
+  repo-url: https://github.com/ryanncode/monist
+  navbar:
+    right:
+      - text: "First Synth"
+        href: "https://firstsynth.dev/"
+      - text: "API Specs"
+        href: "https://ryanncode.github.io/monist/specs/monist_core/"
+  chapters:
+    - index.qmd
+    - 01-architecture.qmd
+    - 02-cli-guide.qmd
+    - 03-examples-and-primitives.qmd
+    - 04-interaction-net.qmd
+    - 05-holographic.qmd
+    - 06-benchmarks.qmd
+    - 07-proofs.qmd
+    - 08-advanced-synthetic-applications.qmd
+    - 09-theoretical-foundations.qmd
+    - 10-mathematical-philosophy.qmd

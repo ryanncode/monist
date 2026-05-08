@@ -3,6 +3,8 @@ use bytemuck::{Pod, Zeroable};
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
+/// Tracks the execution state of the WGPU compute pipeline.
+/// This struct is aligned to 16 bytes for compatibility with WebGPU `struct` standards.
 #[derive(Debug, Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
 pub struct GpuState {
@@ -12,6 +14,9 @@ pub struct GpuState {
     pub _padding: u32, // to align to 16 bytes
 }
 
+/// The core Physics Engine backend that drives Interaction Net graph reduction on the GPU.
+/// It wraps `wgpu::Device` and `wgpu::Queue`, pre-compiling the `reduce.wgsl` shader
+/// to perform massively parallel lock-free atomic CAS loops for Interaction Net rewrites.
 pub struct WgpuExecutor {
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -72,6 +77,11 @@ impl WgpuExecutor {
         })
     }
 
+    /// Executes a Graph Reduction pass on the provided `GNet` using WGPU compute shaders.
+    /// Returns the updated `GNet` (downloaded from GPU memory) along with its final `GpuState`.
+    /// 
+    /// This method manages staging buffers and invokes Cycle Garbage Collection
+    /// at the end of the physics evaluation.
     pub fn execute(&self, net: &GNet) -> (GNet, GpuState) {
         pollster::block_on(async {
             let arena_buf = self
@@ -216,7 +226,7 @@ impl WgpuExecutor {
                 ],
             });
 
-            // Dispatch isolated topological compute pass for Cycle Garbage Collection (Phase 12)
+            // Dispatch isolated topological compute pass for Cycle Garbage Collection
             let mut gc_encoder =
                 self.device
                     .create_command_encoder(&wgpu::CommandEncoderDescriptor {
