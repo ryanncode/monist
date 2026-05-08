@@ -17,6 +17,7 @@ pub enum Token {
     Bar,
     Dot,
     Comma,
+    LessThan,
     EOF,
 }
 
@@ -82,6 +83,7 @@ impl<'a> Lexer<'a> {
                 '\\' if self.advance_if('/') => Token::Or,
                 '-' if self.advance_if('>') => Token::Impl,
                 '<' if self.advance_if('-') && self.advance_if('>') => Token::Iff,
+                '<' => Token::LessThan,
                 _ if c.is_alphabetic() => {
                     let mut ident = String::new();
                     ident.push(c);

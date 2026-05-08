@@ -161,6 +161,9 @@ impl<'a> Parser<'a> {
             } else if self.match_token(Token::In) {
                 let v2 = self.parse_var();
                 self.arena.add(Formula::Atom(Atomic::Mem(v1, v2)))
+            } else if self.match_token(Token::LessThan) {
+                let v2 = self.parse_var();
+                self.arena.add(Formula::Atom(Atomic::Lt(v1, v2)))
             } else if self.match_token(Token::LParen) {
                 if let Var::Free(name) = v1 {
                     let mut args = Vec::new();
@@ -210,7 +213,7 @@ impl<'a> Parser<'a> {
         match f {
             Formula::Atom(mut atomic) => {
                 match &mut atomic {
-                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) => {
+                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) | Atomic::Lt(v1, v2) => {
                         *v1 = map_var(v1);
                         *v2 = map_var(v2);
                     }

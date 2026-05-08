@@ -1,31 +1,35 @@
-use monist_comb::comblib::holographic::{exclusion_gate, holographic_search};
-use monist_comb::ir::Comb;
+use monist_comb::comblib::vsa_embed::{Codebook, HDCVector};
 
 fn main() {
     println!("=== Holographic Sieve Execution ===");
 
-    // We demonstrate holographic search
+    // Initialize the VSA environment
+    let mut codebook = Codebook::new();
+
+    // The Sieve generates massive amounts of data
+    let omega_node = HDCVector::random_basis();
+    let alpha_node = HDCVector::random_basis();
+    let beta_node = HDCVector::random_basis();
+    
+    codebook.insert("Omega".to_string(), omega_node.clone());
+    codebook.insert("Alpha".to_string(), alpha_node.clone());
+    codebook.insert("Beta".to_string(), beta_node.clone());
+
+    let mut swarm = omega_node.superpose(&alpha_node).superpose(&beta_node);
+
+    println!("Constructed Holographic Swarm (Omega, Alpha, Beta) mapped to 10,000-d phase space.\n");
+
     // Creating an exclusion gate for a specific target
-    let target = Comb::Terminal("Omega".to_string());
+    println!("Applying Search Instance (O(1) Absolute Complement Query to remove Omega)...\n");
+    let excluded_swarm = swarm.holographic_exclusion_query(&omega_node);
 
-    let ex_gate = exclusion_gate(target.clone());
-    println!(
-        "Constructed Exclusion Gate for {:?}: \n{:?}\n",
-        target, ex_gate
-    );
+    println!("Attempting SIC Recovery on the sieved space...");
+    let remaining_nodes = codebook.recover_discrete_combinators(excluded_swarm, 0.4);
 
-    // Create the holographic search combinator
-    let h_search = holographic_search();
-    println!("Holographic Search Combinator: \n{:?}\n", h_search);
+    println!("Nodes remaining in the swarm after O(1) exclusion gate:");
+    for node in remaining_nodes {
+        println!(" - {}", node);
+    }
 
-    // Apply holographic search to a mock swarm and target
-    let mock_swarm = Comb::Terminal("SwarmIndex".to_string());
-    let search_instance = h_search.app(mock_swarm).app(target);
-
-    println!(
-        "Applying Search Instance (O(1) Absolute Complement Query): \n{:?}\n",
-        search_instance
-    );
-
-    println!("[SUCCESS] Holographic O(1) Absolute Complement Query compiled to combinatory primitives successfully!");
+    println!("\n[SUCCESS] Holographic O(1) Absolute Complement Query computed using continuous VSA physics!");
 }

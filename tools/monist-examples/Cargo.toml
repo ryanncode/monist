@@ -10,6 +10,11 @@ monist-category = { path = "../../crates/monist-category" }
 monist-verify = { version = "0.1.0", path = "../../crates/monist-verify" }
 monist-parser = { version = "0.1.0", path = "../../crates/monist-parser" }
 indicatif = "0.18.4"
+wgpu = "0.19.4"
+bytemuck = "1.25.0"
+rand = "0.10.1"
+rand_distr = "0.6.0"
+pollster = "0.4.0"
 
 [[bin]]
 name = "russell"

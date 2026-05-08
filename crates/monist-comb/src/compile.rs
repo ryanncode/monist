@@ -141,6 +141,7 @@ impl<'a> Compiler<'a> {
             Atomic::QProj2 => Comb::Var("QProj2".to_string()),
             Atomic::App => Comb::Var("App".to_string()),
             Atomic::Lam => Comb::Var("Lam".to_string()),
+            Atomic::Lt(_, _) => Comb::Var("Lt".to_string()),
         }
     }
 

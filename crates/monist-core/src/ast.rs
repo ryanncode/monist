@@ -8,6 +8,7 @@ pub enum Var {
 pub enum Atomic {
     Eq(Var, Var),
     Mem(Var, Var),
+    Lt(Var, Var),
     QPair,
     QProj1,
     QProj2,

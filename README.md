@@ -23,6 +23,7 @@ The Monist Engine subverts this by bifurcating the computational stack:
 1. **The Oracle Layer (CPU/Geometry):** The frontend parser transforms standard first-order logic into an algebraic system of constraints. Instead of rejecting cyclic graphs, the `monist-core` executes Kosaraju's SCC algorithm to flatten 0-weight semantic cycles, and deploys the Bellman-Ford algorithm to map the thermodynamic weight between nodes. If a paradox forms, the engine dynamically calculates the $K$-Iteration depth boundary and intercepts the recursion mathematically.
 2. **The T-Functor Synthesis:** When dense impredicative recursion forms (like the Burali-Forti sequence), the engine dynamically synthesizes and injects a `T-operator` ($x \mapsto \iota"x$), acting as a topological stabilizer that absorbs the structural friction, preserving the weak stratification boundary.
 3. **The Interaction Net Backend (GPU/Physics):** Stripped of all types and hierarchical scaffolding, the validated logic is compiled into pure $S, K, I$ combinators (`monist-comb`). We bypass traditional substitution environments, feeding these localized atomic nodes directly to autonomous WGSL compute shaders. Operating entirely in WGPU without CPU synchronization overhead, the hardware natively folds self-reference topologically, scaling across millions of lock-free collisions per second.
+4. **Holographic Fast-Failing Oracle:** The runtime natively supports Vector Symbolic Architectures (VSA/HDC) to embed discrete graph logic into a continuous $10,000$-dimensional phase space. Enterprise systems (such as legacy SIEMs or computational biology pipelines) can use the Monist Engine as a massively parallel data sieve. By utilizing $O(1)$ destructive interference and a GPU-accelerated Successive Interference Cancellation (SIC) bridge, it violently drops valid data and snaps unresolvable anomalies back into discrete variables in milliseconds, shielding exact traditional databases from combinatorial explosion.
 
 ---
 
@@ -107,7 +108,7 @@ For bare-metal throughput execution tests bypassing the CLI:
 cargo bench -p monist-bench-gpu
 ```
 
-For an in-depth breakdown of lock-free atomic throughput and comparisons against state-of-the-art runtimes like HVM2/Bend, see the [Reproducible Performance Benchmarks Matrix](docs/BENCHMARKS.md).
+For an in-depth breakdown of lock-free atomic throughput and discrete execution bounds, see the [Reproducible Performance Benchmarks Matrix](docs/BENCHMARKS.md).
 
 ## Formal Theory Integration
 

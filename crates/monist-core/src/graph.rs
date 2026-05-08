@@ -78,6 +78,16 @@ pub fn extract_constraints_aux(
                     in_comp,
                 });
             }
+            Atomic::Lt(x, y) => {
+                let sx = ScopedVar(x.clone(), depth);
+                let sy = ScopedVar(y.clone(), depth);
+                constraints.push(Constraint {
+                    v1: sy.clone(),
+                    v2: sx.clone(),
+                    weight: -1,
+                    in_comp,
+                });
+            }
             _ => {}
         },
         Formula::Neg(f_idx) => {
@@ -392,5 +402,71 @@ impl GraphArena {
         }
 
         Ok((d, sc_actions))
+    }
+
+    /// Extract Minimal Conflict Clauses for Vector Superposition (IDL Masking)
+    /// When Bellman-Ford flags a negative-weight cycle, this identifies the nodes
+    /// involved so the upper ingestion layer can translate them into a hyperdimensional 
+    /// destructive interference mask.
+    pub fn extract_conflict_clauses(&mut self) -> Vec<Vec<usize>> {
+        let n = self.vars.len();
+        let mut d = vec![0; n];
+        let mut p: Vec<Option<(usize, i32)>> = vec![None; n];
+        
+        // Relax edges
+        for _ in 0..n {
+            for &(u, v, w, _) in &self.edges {
+                if d[u] + w < d[v] {
+                    d[v] = d[u] + w;
+                    p[v] = Some((u, w));
+                }
+            }
+        }
+        
+        let mut conflict_clauses = Vec::new();
+        // Detect cycle
+        for &(u, v, w, _) in &self.edges {
+            if d[u] + w < d[v] {
+                // We found a node 'v' in a negative weight cycle
+                let mut curr = v;
+                for _ in 0..n {
+                    if let Some((prev, _)) = p[curr] {
+                        curr = prev;
+                    }
+                }
+                
+                let cycle_start = curr;
+                let mut cycle = Vec::new();
+                
+                loop {
+                    if let Some((prev, _)) = p[curr] {
+                        cycle.push(curr);
+                        curr = prev;
+                        if curr == cycle_start {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                cycle.reverse();
+                
+                // Only add if not already present
+                let mut sorted_cycle = cycle.clone();
+                sorted_cycle.sort();
+                
+                let is_duplicate = conflict_clauses.iter().any(|c: &Vec<usize>| {
+                    let mut sc = c.clone();
+                    sc.sort();
+                    sc == sorted_cycle
+                });
+                
+                if !is_duplicate {
+                    conflict_clauses.push(cycle);
+                }
+            }
+        }
+        
+        conflict_clauses
     }
 }

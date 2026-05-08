@@ -150,6 +150,7 @@ The Bellman-Ford topological engine (`eval` / `step`) is incredibly fast, but it
 * **Function Application (`z = u(v)`)**: Generates a **`+1` weight** constraint. The function `u` must be typed one level higher than the argument `v`.
 * **Lambda Abstraction (`z = \lambda x. t`)**: Generates a **`+1` weight** constraint. The abstracted function body sits one level higher than the variable it binds.
 * **Quine Pairs (`Q(a,b)`)**: Generates **`0` weight** constraints. Unlike standard Kuratowski pairs (which force a `+2` type shift), Quine pairs are geometrically "flat." 
+* **Strict Typestate Offset (`x < y`)**: Generates a **`-1` weight** constraint. The variable `x` must be strictly lower in typestate elevation than `y` ($x \le y - 1$).
 
 ### The Tactical Workflow
 When staring at a high-level mathematical theorem, your goal as the user is to act as the "compiler," using tactics to translate human semantics down into the raw spatial constraints listed above.
