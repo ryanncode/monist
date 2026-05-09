@@ -15,7 +15,7 @@ fn main() {
     codebook.insert("Alpha".to_string(), alpha_node.clone());
     codebook.insert("Beta".to_string(), beta_node.clone());
 
-    let mut swarm = omega_node.superpose(&alpha_node).superpose(&beta_node);
+    let swarm = omega_node.superpose(&alpha_node).superpose(&beta_node);
 
     println!("Constructed Holographic Swarm (Omega, Alpha, Beta) mapped to 10,000-d phase space.\n");
 

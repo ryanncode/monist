@@ -319,7 +319,7 @@ window.Quarto = {
 <pre class="text"><code>assume Quine_Flatness forall x y. typestate(Q(x,y)) == max(typestate(x), typestate(y))</code></pre></li>
 <li><p><strong>Topological Handoff (<code>monist-core</code>)</strong>: Once the primitives are built, feed the logic through <code>eval</code> or the <code>check_strat</code> commands to ensure Bellman-Ford bounds are respected. If dense recursive structures form, rely on the engine’s automated <span class="math inline">\(T\)</span>-operator injection (<span class="math inline">\(x \mapsto \iota"x\)</span>).</p></li>
 <li><p><strong>Deploy via <code>monist-comb</code></strong>: Execute the validated structures locally using the interaction net compiler. The nodes are encoded into 32-bit pointers and dispatched autonomously to WGSL compute shaders.</p></li>
-<li><p><strong>Integration Testing (<code>monist-examples</code>)</strong>: Tests should strictly check the engine’s ability to halt negative-weight cycles (e.g.&nbsp;Specker’s Refutation) and safely navigate <span class="math inline">\(K\)</span>-Iteration depth boundaries. The outputs are verified by streaming standard <code>SMT-LIB v2</code> witnesses to Lean 4, establishing differential testing confidence.</p></li>
+<li><p><strong>Integration Testing (<code>monist-examples</code>)</strong>: Tests should strictly check the engine’s ability to halt negative-weight cycles (e.g.&nbsp;Specker’s Refutation) and safely navigate <span class="math inline">\(K\)</span>-Iteration depth boundaries. The outputs are verified by streaming standard <code>SMT-LIB</code> witnesses to Lean 4, establishing differential testing confidence.</p></li>
 </ol>
 
 

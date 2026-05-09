@@ -502,6 +502,7 @@ Proof accepted.</code></pre>
 <li><strong>Lambda Abstraction (<code>z = \lambda x. t</code>)</strong>: Generates a <strong><code>+1</code> weight</strong> constraint. The abstracted function body sits one level higher than the variable it binds.</li>
 <li><strong>Quine Pairs (<code>Q(a,b)</code>)</strong>: Generates <strong><code>0</code> weight</strong> constraints. Unlike standard Kuratowski pairs (which force a <code>+2</code> type shift), Quine pairs are geometrically “flat.”</li>
 <li><strong>Strict Typestate Offset (<code>x &lt; y</code>)</strong>: Generates a <strong><code>-1</code> weight</strong> constraint. The variable <code>x</code> must be strictly lower in typestate elevation than <code>y</code> (<span class="math inline">\(x \le y - 1\)</span>).</li>
+<li><strong>Set Comprehension (<code>{x | P(x)}</code>)</strong>: Generates a <strong><code>+1</code> weight</strong> constraint boundary. The internal formula <span class="math inline">\(P(x)\)</span> is forced to exist one topological level lower than the set defined by the comprehension. If a <span class="math inline">\(+1\)</span> shift topological cycle spans <em>across</em> this boundary (i.e.&nbsp;<code>in_comp == true</code>), it is recognized as a mathematical paradox and strictly rejected, whereas free-floating cycles outside of comprehensions may be isolated as Strongly Cantorian bedrock.</li>
 </ul>
 </section>
 <section id="the-tactical-workflow" class="level3" data-number="2.6.2">
@@ -526,7 +527,7 @@ Proof accepted.</code></pre>
 </section>
 <section id="export-smt-formula" class="level3" data-number="2.7.2">
 <h3 data-number="2.7.2" class="anchored" data-anchor-id="export-smt-formula"><span class="header-section-number">2.7.2</span> <code>export-smt &lt;formula&gt;</code></h3>
-<p>Generates a <code>StratificationWitness</code> trace in standard SMT-LIB v2 format for external theorem provers (like Z3 or CVC5).</p>
+<p>Generates a <code>StratificationWitness</code> trace in standard SMT-LIB format for external theorem provers (like Z3 or CVC5).</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> export-smt <span class="st">"x in y /\ y in z /\ z in x"</span> <span class="op">&gt;</span> trace.smt2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>

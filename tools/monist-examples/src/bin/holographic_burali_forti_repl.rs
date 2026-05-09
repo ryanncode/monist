@@ -1,12 +1,9 @@
-use indicatif::{ProgressBar, ProgressStyle};
 use monist_comb::comblib::vsa_embed::{Codebook, HDCVector};
 use monist_core::ast::FormulaArena;
 use monist_core::eval::ExecutionLimits;
 use monist_core::graph::{extract_constraints_aux, GraphArena};
 use monist_core::smt::export_smt_lib;
 use monist_parser::parser::Parser;
-use std::thread;
-use std::time::Duration;
 
 struct Session {
     graph: GraphArena,

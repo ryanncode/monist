@@ -50,7 +50,7 @@ impl Session {
             &sc_actions,
             success_depths.as_deref(),
         );
-        println!("\n=== SMT-LIB v2 Differential Export ({}) ===\n{}", test_name, smt_lib);
+        println!("\n=== SMT-LIB Differential Export ({}) ===\n{}", test_name, smt_lib);
     }
 }
 

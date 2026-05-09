@@ -114,11 +114,11 @@ cargo run -p monist-cli -- demo agentic
 
 ## Benchmarks & Mathematical Diagnostics
 
-The engine's validity is proven via a suite of automated diagnostic refutations located in `tools/monist-examples/src/bin/`. These execute the core paradoxes of modern set theory, outputting the mathematically verified topological boundaries and generating standard `SMT-LIB v2` witnesses for third-party prover ingestion.
+The engine's validity is proven via a suite of automated diagnostic refutations located in `tools/monist-examples/src/bin/`. These execute the core paradoxes of modern set theory, outputting the mathematically verified topological boundaries and generating standard `SMT-LIB` witnesses for third-party prover ingestion.
 
 ### SMT-LIB Differential to Lean Pipeline
 
-We have built a fully synchronized Differential Equivalence Testing pipeline linking the Rust implementation to our Lean formalization ([nf-sketches/parse-strat](https://github.com/ryanncode/nf-sketches/tree/main/parse-strat)). When a `monist-examples` mathematical test executes, the `monist-core` engine seamlessly generates an SMT-LIB v2 witness of the topological graph, explicitly capturing evaluation limits, bounds, and Extensionality Collisions. 
+We have built a fully synchronized Differential Equivalence Testing pipeline linking the Rust implementation to our Lean formalization ([nf-sketches/parse-strat](https://github.com/ryanncode/nf-sketches/tree/main/parse-strat)). When a `monist-examples` mathematical test executes, the `monist-core` engine seamlessly generates an SMT-LIB witness of the topological graph, explicitly capturing evaluation limits, bounds, and Extensionality Collisions. 
 
 This witness can then be natively piped into the Lean interpreter (`lake exe parse-strat --ingest-smt`), which uses its own completely independent topological Bellman-Ford implementation to trace the exact same SMT constraints. By proving 1-to-1 equivalence between Lean and Rust, we guarantee that the engine handles paradoxical scopes and Comprehension boundaries flawlessly.
 

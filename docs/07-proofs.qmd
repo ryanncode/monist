@@ -23,7 +23,7 @@ To locally verify the mathematical foundations of the Monist Engine, you will ne
 
 To guarantee absolute mathematical equivalence between the high-speed Rust evaluator and the formally verified Lean architecture, we employ a Differential Equivalence Testing pipeline linking `monist` to our Lean formalization ([nf-sketches/parse-strat](https://github.com/ryanncode/nf-sketches/tree/main/parse-strat)). 
 
-When a `monist-examples` mathematical test executes, the `monist-core` engine seamlessly generates an SMT-LIB v2 witness of the topological graph, explicitly capturing evaluation limits, bounds, and Extensionality Collisions. This witness is then piped directly into the Lean interpreter (`lake exe parse-strat --ingest-smt`), which uses its own completely independent topological Bellman-Ford implementation to trace the exact same SMT constraints.
+When a `monist-examples` mathematical test executes, the `monist-core` engine seamlessly generates an SMT-LIB witness of the topological graph, explicitly capturing evaluation limits, bounds, and Extensionality Collisions. This witness is then piped directly into the Lean interpreter (`lake exe parse-strat --ingest-smt`), which uses its own completely independent topological Bellman-Ford implementation to trace the exact same SMT constraints.
 
 To manually pipe a diagnostic test directly into the Lean 4 interpreter:
 

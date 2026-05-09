@@ -33,7 +33,7 @@ enum Commands {
     },
     /// Verify a single formula without entering REPL
     Verify { formula: String },
-    /// Export a StratificationWitness in SMT-LIB v2 format
+    /// Export a StratificationWitness in SMT-LIB format
     ExportSmt { formula: String },
     /// Run visual demonstrations
     Demo {

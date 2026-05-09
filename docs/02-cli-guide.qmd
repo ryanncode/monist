@@ -187,6 +187,7 @@ The Bellman-Ford topological engine (`eval` / `step`) is incredibly fast, but it
 * **Lambda Abstraction (`z = \lambda x. t`)**: Generates a **`+1` weight** constraint. The abstracted function body sits one level higher than the variable it binds.
 * **Quine Pairs (`Q(a,b)`)**: Generates **`0` weight** constraints. Unlike standard Kuratowski pairs (which force a `+2` type shift), Quine pairs are geometrically "flat." 
 * **Strict Typestate Offset (`x < y`)**: Generates a **`-1` weight** constraint. The variable `x` must be strictly lower in typestate elevation than `y` ($x \le y - 1$).
+* **Set Comprehension (`{x | P(x)}`)**: Generates a **`+1` weight** constraint boundary. The internal formula $P(x)$ is forced to exist one topological level lower than the set defined by the comprehension. If a $+1$ shift topological cycle spans *across* this boundary (i.e. `in_comp == true`), it is recognized as a mathematical paradox and strictly rejected, whereas free-floating cycles outside of comprehensions may be isolated as Strongly Cantorian bedrock.
 
 ### The Tactical Workflow
 When staring at a high-level mathematical theorem, your goal as the user is to act as the "compiler," using tactics to translate human semantics down into the raw spatial constraints listed above.
@@ -210,7 +211,7 @@ cargo run -p monist-cli -- verify "x = y"
 ```
 
 ### `export-smt <formula>`
-Generates a `StratificationWitness` trace in standard SMT-LIB v2 format for external theorem provers (like Z3 or CVC5).
+Generates a `StratificationWitness` trace in standard SMT-LIB format for external theorem provers (like Z3 or CVC5).
 
 ```bash
 cargo run -p monist-cli -- export-smt "x in y /\ y in z /\ z in x" > trace.smt2

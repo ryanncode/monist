@@ -46,7 +46,7 @@ let specker_formula = "{ F | (((m in F /\\ p1 in F) /\\ p2 in F) /\\ (z in p1 ->
 ```
 
 ### Execution & Testing
-The AST string is parsed, producing structural bounds. The nodes are structurally evaluated until they collapse into an unstratified loop. The diagnostic framework generates an `SMT-LIB v2` witness, piping out the precise vertex graph to formally prove the failure across $m$, $2^m$, and $2^{2^m}$ cardinal spaces.
+The AST string is parsed, producing structural bounds. The nodes are structurally evaluated until they collapse into an unstratified loop. The diagnostic framework generates an `SMT-LIB` witness, piping out the precise vertex graph to formally prove the failure across $m$, $2^m$, and $2^{2^m}$ cardinal spaces.
 
 ## 3. Agentic Reflection & Principle of Least Syntactic Action
 

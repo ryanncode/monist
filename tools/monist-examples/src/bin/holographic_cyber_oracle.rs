@@ -1,6 +1,5 @@
 use monist_comb::comblib::vsa_embed::{Codebook, HDCVector};
 use std::time::Instant;
-use rand::Rng;
 use rand::RngExt;
 use std::collections::HashSet;
 use std::borrow::Cow;
@@ -141,7 +140,7 @@ async fn run_gpu_pipeline() {
 
     // Output array: num_batches * num_codebook
     let output_size = num_batches * num_codebook;
-    let mut flat_output = vec![0.0f32; output_size];
+    let flat_output = vec![0.0f32; output_size];
 
     let codebook_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Codebook Buffer"),

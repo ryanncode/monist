@@ -51,4 +51,4 @@ To utilize this architecture, developers follow a specific sequence that aligns 
    Execute the validated structures locally using the interaction net compiler. The nodes are encoded into 32-bit pointers and dispatched autonomously to WGSL compute shaders.
 
 4. **Integration Testing (`monist-examples`)**:
-   Tests should strictly check the engine's ability to halt negative-weight cycles (e.g. Specker's Refutation) and safely navigate $K$-Iteration depth boundaries. The outputs are verified by streaming standard `SMT-LIB v2` witnesses to Lean 4, establishing differential testing confidence.
+   Tests should strictly check the engine's ability to halt negative-weight cycles (e.g. Specker's Refutation) and safely navigate $K$-Iteration depth boundaries. The outputs are verified by streaming standard `SMT-LIB` witnesses to Lean 4, establishing differential testing confidence.
