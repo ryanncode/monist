@@ -4,7 +4,9 @@ The Monist Engine relies heavily on `monist-comb` to compile pure topological ma
 
 ## Primitives and Operations
 
-### The WGPU Executor
+### 32-Bit Tagged Pointers & The WGPU Executor
+To maximize throughput and ensure complex topological graphs fit entirely within ultra-fast GPU cache, the Monist Engine compresses all node interactions into a native arena using **32-bit tagged pointers**, bypassing the overhead of standard 64-bit memory addressing. 
+
 The engine uses standard Rust multi-threading bridged to WebGPU (`wgpu`) APIs, avoiding synchronization overhead. The `WgpuExecutor` sets up an isolated arena within VRAM.
 
 ```rust

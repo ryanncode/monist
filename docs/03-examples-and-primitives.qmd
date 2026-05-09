@@ -2,6 +2,8 @@
 
 The Monist Engine uses its hybrid synthetic pipeline to map complex paradoxes and mathematical programs down into topological constraints. By examining the canonical examples located in `tools/monist-examples/src/bin`, we can demonstrate how to build primitives, tests, and self-referential programs using this architecture.
 
+*Note: While end-users typically will write high-level logic interactively via the CLI, developers building custom primitives or integrating Monist into larger distributed systems interact directly with the underlying `GraphArena` Rust API, as shown in these examples.*
+
 ## 1. Russell's Paradox: Capturing Extensionality Collisions
 
 Russell's Paradox represents the most direct violation of typical topological bounds. The engine intercepts this before compiling into combinators by mapping the recursive self-membership constraint into a negative-weight geometric loop.

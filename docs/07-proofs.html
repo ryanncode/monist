@@ -265,10 +265,11 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#instructions" id="toc-instructions" class="nav-link" data-scroll-target="#instructions"><span class="header-section-number">7.1.1</span> Instructions</a></li>
   </ul></li>
-  <li><a href="#axiomatic-foundations" id="toc-axiomatic-foundations" class="nav-link" data-scroll-target="#axiomatic-foundations"><span class="header-section-number">7.2</span> Axiomatic Foundations</a></li>
-  <li><a href="#non-well-founded-set-implementation" id="toc-non-well-founded-set-implementation" class="nav-link" data-scroll-target="#non-well-founded-set-implementation"><span class="header-section-number">7.3</span> Non-Well-Founded Set Implementation</a>
+  <li><a href="#smt-lib-differential-to-lean-pipeline" id="toc-smt-lib-differential-to-lean-pipeline" class="nav-link" data-scroll-target="#smt-lib-differential-to-lean-pipeline"><span class="header-section-number">7.2</span> SMT-LIB Differential to Lean Pipeline</a></li>
+  <li><a href="#axiomatic-foundations" id="toc-axiomatic-foundations" class="nav-link" data-scroll-target="#axiomatic-foundations"><span class="header-section-number">7.3</span> Axiomatic Foundations</a></li>
+  <li><a href="#non-well-founded-set-implementation" id="toc-non-well-founded-set-implementation" class="nav-link" data-scroll-target="#non-well-founded-set-implementation"><span class="header-section-number">7.4</span> Non-Well-Founded Set Implementation</a>
   <ul class="collapse">
-  <li><a href="#theoretical-bounds" id="toc-theoretical-bounds" class="nav-link" data-scroll-target="#theoretical-bounds"><span class="header-section-number">7.3.1</span> Theoretical Bounds</a></li>
+  <li><a href="#theoretical-bounds" id="toc-theoretical-bounds" class="nav-link" data-scroll-target="#theoretical-bounds"><span class="header-section-number">7.4.1</span> Theoretical Bounds</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -315,19 +316,31 @@ window.Quarto = {
 </ol>
 </section>
 </section>
-<section id="axiomatic-foundations" class="level2" data-number="7.2">
-<h2 data-number="7.2" class="anchored" data-anchor-id="axiomatic-foundations"><span class="header-section-number">7.2</span> Axiomatic Foundations</h2>
+<section id="smt-lib-differential-to-lean-pipeline" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="smt-lib-differential-to-lean-pipeline"><span class="header-section-number">7.2</span> SMT-LIB Differential to Lean Pipeline</h2>
+<p>To guarantee absolute mathematical equivalence between the high-speed Rust evaluator and the formally verified Lean architecture, we employ a Differential Equivalence Testing pipeline linking <code>monist</code> to our Lean formalization (<a href="https://github.com/ryanncode/nf-sketches/tree/main/parse-strat">nf-sketches/parse-strat</a>).</p>
+<p>When a <code>monist-examples</code> mathematical test executes, the <code>monist-core</code> engine seamlessly generates an SMT-LIB v2 witness of the topological graph, explicitly capturing evaluation limits, bounds, and Extensionality Collisions. This witness is then piped directly into the Lean interpreter (<code>lake exe parse-strat --ingest-smt</code>), which uses its own completely independent topological Bellman-Ford implementation to trace the exact same SMT constraints.</p>
+<p>To manually pipe a diagnostic test directly into the Lean 4 interpreter:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> tools/monist-examples</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">--bin</span> specker_refutation <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'/; === BEGIN STRATIFICATION WITNESS ===/{flag=1; print; next} /; === END STRATIFICATION WITNESS ===/{print; flag=0} flag'</span> <span class="op">&gt;</span> out.smt</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ../../../nf-sketches/parse-strat</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">lake</span> exe parse-strat <span class="at">--ingest-smt</span> <span class="op">&lt;</span> ../../monist/tools/monist-examples/out.smt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Alternatively, you can run the full automated cross-language verification script from the root of the <code>monist</code> directory:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./scripts/run_differential_tests.sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="axiomatic-foundations" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="axiomatic-foundations"><span class="header-section-number">7.3</span> Axiomatic Foundations</h2>
 <p>Our verification framework minimizes assumptions, strictly relying on a well-defined set of axioms and categorical constructs to bridge interaction combinators and physical hardware evaluation. This establishes the structural certainty required to formally verify deterministic execution models for scalable AI oversight:</p>
 <ul>
 <li><strong>Extensionality</strong>: Utilized extensively to prove the behavioral equivalence of compiled interaction net rewrites against high-level lambda calculus terms.</li>
 <li><strong>T-relative Adjunctions</strong>: The theoretical cornerstone establishing the correctness, safety, and deadlock-freedom of our lock-free concurrent traversals across asynchronous multi-GPU boundaries.</li>
 </ul>
 </section>
-<section id="non-well-founded-set-implementation" class="level2" data-number="7.3">
-<h2 data-number="7.3" class="anchored" data-anchor-id="non-well-founded-set-implementation"><span class="header-section-number">7.3</span> Non-Well-Founded Set Implementation</h2>
+<section id="non-well-founded-set-implementation" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="non-well-founded-set-implementation"><span class="header-section-number">7.4</span> Non-Well-Founded Set Implementation</h2>
 <p>The Monist Engine natively models cyclic, infinite, and self-referential data structures (such as Russell’s paradox variants and Quines) without the overhead of traditional garbage collection. We utilize a localized, affine-typed graph representation based on non-well-founded set theory.</p>
-<section id="theoretical-bounds" class="level3" data-number="7.3.1">
-<h3 data-number="7.3.1" class="anchored" data-anchor-id="theoretical-bounds"><span class="header-section-number">7.3.1</span> Theoretical Bounds</h3>
+<section id="theoretical-bounds" class="level3" data-number="7.4.1">
+<h3 data-number="7.4.1" class="anchored" data-anchor-id="theoretical-bounds"><span class="header-section-number">7.4.1</span> Theoretical Bounds</h3>
 <ul>
 <li><strong>Topological Acyclicity Profiles</strong>: By projecting interaction nets into topological pseudomanifolds, we can statically bound the evaluation complexity of corecursive types.</li>
 <li><strong>Time Complexity</strong>: The resolution of cyclic and potentially non-terminating interactions is strictly bounded to <span class="math inline">\(O(V \log V)\)</span>, where <span class="math inline">\(V\)</span> represents the number of active agent vertices. This guarantees termination of structural sharing limiters.</li>

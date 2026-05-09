@@ -11,7 +11,7 @@ The test matrix comprises several highly-parallel workloads designed to stress t
 - **Performance**: The Monist Engine demonstrates extreme throughput by coalescing redundant cloning operations and leveraging localized GPU warp-level communication to eliminate traditional VRAM memory-bandwidth bottlenecks.
 
 ### 2. Agentic Reflection
-- **Description**: Simulating self-referential lambda calculus terms (Quines) that infinitely expand and contract, generating massive intermediate graph structures. This execution profile serves as the deterministic bedrock necessary to audit and govern probabilistic AI agents.
+- **Description**: Simulating self-referential lambda calculus terms (Quines) that infinitely expand and contract, generating massive intermediate graph structures.
 - **Performance**: While standard evaluators often suffer from exponential memory explosion, the Monist Engine maintains a perfectly stable, flat memory profile, demonstrating the efficacy of our non-well-founded set memory reclaimers in delivering structural certainty.
 
 ### 3. Latbol Simulation

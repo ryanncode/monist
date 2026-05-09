@@ -31,4 +31,16 @@ Frank P. Ramsey and Moses Schönfinkel both realized that mathematical logic is 
 - **Ramsey Theory** analyzes the *static* geometry of graphs, proving that even in infinite chaos, bounded monochromatic sub-graphs must exist.
 - **Schönfinkel's Combinators** define the *dynamic* geometry. The $S$ combinator branches an edge; the $K$ combinator severs it.
 
-In the Monist Engine, Quine's Universal Set ($V \in V$) grants the $S$ and $K$ combinators absolute topological freedom, creating a combinatorial explosion. However, Ramsey's theory—operationalized via the Bellman-Ford cycle detection and Kosaraju's algorithm—acts as the mathematical net. Because the active graph vertices are finite, the combinatory expansion must inevitably hit a structural wall and fold back into a mathematically predictable cycle. Thus, the engine physically executes paradoxes while mathematically guaranteeing they remain structurally measurable.
+In the Monist Engine, Quine's Universal Set ($V \in V$) grants the $S$ and $K$ combinators absolute topological freedom, creating a combinatorial explosion. However, Ramsey's theory—operationalized via the Bellman-Ford cycle detection and Kosaraju's algorithm—acts as the mathematical net. Because the active graph vertices are finite, the combinatory expansion must inevitably hit a structural wall and fold back into a mathematically predictable cycle. 
+
+*(Note: While the exact combinatorial calculation of dynamic Ramsey bounds using Erdős-Szekeres approximations is still actively in development for the next engine iteration, the theoretical foundation provides the exact topological ceiling required to intercept non-well-founded expansions.)*
+
+Thus, the engine physically executes paradoxes while mathematically guaranteeing they remain structurally measurable.
+
+## The Speculative Frontier: Bio-Logical Computing
+
+The ultimate consequence of divorcing logic from hierarchical types and global substitution environments is that computation ceases to require silicon transistors entirely. 
+
+Because untyped Combinatory Logic (UCL) maps directly to localized interaction nets, the physical substrate of computation can be generalized to any medium that supports physical geometric collisions. The terminal phase of the Monist architecture is **Molecular Combinatory Logic**.
+
+By replacing silicon logic gates with DNA strand displacement (DSD) cascades, the abstract $S$ (duplication) and $K$ (erasure) combinators are physically represented as bio-chemical molecular complexes. In this paradigm, logical reduction ceases to be a sequential fetch-execute cycle processed by a von Neumann architecture. Instead, it becomes an autonomous, massively parallel bio-chemical reaction unfolding stochastically within a fluid medium. The topological constraints of the combinator graph dictate the spatial proximity and thermodynamic binding affinities of the DNA strands. This transforms the fluid suspension into a native computational arena, where billions of interacting molecular complexes physically rewire and reduce the logic to normal form simultaneously.

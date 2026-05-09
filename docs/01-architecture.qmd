@@ -30,7 +30,7 @@ Once the topology is verified as safe (or stabilized via the $T$-functor), the e
 These combinator graphs are handed off to WGPU compute shaders. Because interaction combinators are strictly local, the GPU doesn't need locks, mutexes, or a Garbage Collector. It just lets the nodes physically collide and annihilate each other in parallel across millions of lock-free cycles.
 
 ### 5. The Holographic Co-processor (Continuous Math)
-When the system encounters massive datasets (like cybersecurity telemetry), it bypasses discrete graph reduction entirely. It superposes the data into 10,000-dimensional continuous wave functions on the GPU, using destructive interference to physically cancel out noise in $O(1)$ time before snapping it back to discrete logic.
+When the system encounters massive datasets (like cybersecurity telemetry), it bypasses discrete graph reduction entirely. It superposes the data into 10,000-dimensional continuous wave functions on the GPU (utilizing Vector Symbolic Architectures / HDC). This uses destructive interference to physically cancel out noise in $O(1)$ time before snapping it back to discrete logic. *(See `tools/monist-examples/src/bin/holographic_cyber_oracle.rs` for the implemented working demo).*
 
 ---
 

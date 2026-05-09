@@ -272,6 +272,11 @@ window.Quarto = {
   <li><a href="#variable-free-synthesis" id="toc-variable-free-synthesis" class="nav-link" data-scroll-target="#variable-free-synthesis"><span class="header-section-number">8.2.1</span> Variable-Free Synthesis</a></li>
   <li><a href="#autonomous-gpu-dispatch" id="toc-autonomous-gpu-dispatch" class="nav-link" data-scroll-target="#autonomous-gpu-dispatch"><span class="header-section-number">8.2.2</span> Autonomous GPU Dispatch</a></li>
   </ul></li>
+  <li><a href="#the-stratified-yoneda-embedding-the-ultimate-litmus-test" id="toc-the-stratified-yoneda-embedding-the-ultimate-litmus-test" class="nav-link" data-scroll-target="#the-stratified-yoneda-embedding-the-ultimate-litmus-test"><span class="header-section-number">8.3</span> 3. The Stratified Yoneda Embedding (The Ultimate Litmus Test)</a>
+  <ul class="collapse">
+  <li><a href="#the-t-relative-adjunction" id="toc-the-t-relative-adjunction" class="nav-link" data-scroll-target="#the-t-relative-adjunction"><span class="header-section-number">8.3.1</span> The <span class="math inline">\(T\)</span>-Relative Adjunction</a></li>
+  <li><a href="#bypassing-the-catastrophe" id="toc-bypassing-the-catastrophe" class="nav-link" data-scroll-target="#bypassing-the-catastrophe"><span class="header-section-number">8.3.2</span> Bypassing the Catastrophe</a></li>
+  </ul></li>
   </ul>
 </nav>
 </nav>
@@ -323,20 +328,49 @@ window.Quarto = {
 </section>
 <section id="knaster-tarski-fixpoints-semantic---physics-bridge" class="level2" data-number="8.2">
 <h2 data-number="8.2" class="anchored" data-anchor-id="knaster-tarski-fixpoints-semantic---physics-bridge"><span class="header-section-number">8.2</span> 2. Knaster-Tarski Fixpoints (Semantic -&gt; Physics Bridge)</h2>
-<p>Evaluating infinitely recursive functions over set structures traditionally exhausts CPU call-stacks. In <code>tools/monist-examples/src/bin/knaster_tarski_data_exec.rs</code>, the Monist Engine solves this by compiling unstratified paradoxes entirely into localized physics.</p>
+<p>Evaluating infinitely recursive functions over set structures traditionally exhausts CPU call-stacks. In standard Type Theory, generating the Least Fixpoint of a function requires well-founded, inductive definitions. The Monist Engine subverts this entirely in <code>tools/monist-examples/src/bin/knaster_tarski_data_exec.rs</code> by compiling unstratified paradoxes entirely into localized physics.</p>
 <section id="variable-free-synthesis" class="level3" data-number="8.2.1">
 <h3 data-number="8.2.1" class="anchored" data-anchor-id="variable-free-synthesis"><span class="header-section-number">8.2.1</span> Variable-Free Synthesis</h3>
-<p>The user begins in the Semantic layer, synthesizing the Y-Combinator (Turing’s structural recursion engine) alongside a specific Set-Theoretic choice function <span class="math inline">\(C\)</span> and an operator <span class="math inline">\(F = \lambda f. C (f x)\)</span>.</p>
-<p>Because this structure represents the Least Fixpoint <span class="math inline">\(LFP(F)\)</span> applied to a database, it generates an infinite loop. The CPU Geometry layer mathematically bounds it, flattening it into a pure variable-free Interaction Net matrix via Kosaraju’s SCC.</p>
+<p>The Knaster-Tarski theorem guarantees that any monotonic function over a complete lattice has a least fixpoint. To calculate this dynamically without a global substitution environment, the user begins in the Semantic layer by synthesizing the <span class="math inline">\(Y\)</span>-Combinator (Turing’s structural recursion engine) alongside a specific Set-Theoretic choice function <span class="math inline">\(C\)</span> and an operator <span class="math inline">\(F = \lambda f. C (f x)\)</span>.</p>
+<p>Rather than writing iterative <code>while</code> loops, we express this as a pure, variable-free combinator graph:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// From tools/monist-examples/src/bin/knaster_tarski_data_exec.rs</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">monist_comb::comblib::encodings::</span><span class="op">{</span>v<span class="op">,</span> y_comb<span class="op">};</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">monist_comb::ir::</span>Comb<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">// F = \f. \x. C (f x)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">// The Y combinator forces F to self-apply, creating the infinite loop LFP(F)</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> fixpoint_evaluator <span class="op">=</span> y_comb()<span class="op">.</span>app(v(<span class="st">"F_operator"</span>))<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Because this structure represents the Least Fixpoint <span class="math inline">\(LFP(F)\)</span> applied to a database, it generates an infinite loop. The CPU Geometry layer mathematically bounds it, flattening the semantic definitions into a pure variable-free Interaction Net matrix via Kosaraju’s SCC algorithm.</p>
 </section>
 <section id="autonomous-gpu-dispatch" class="level3" data-number="8.2.2">
 <h3 data-number="8.2.2" class="anchored" data-anchor-id="autonomous-gpu-dispatch"><span class="header-section-number">8.2.2</span> Autonomous GPU Dispatch</h3>
 <p>This matrix is compiled down into the pure <span class="math inline">\(S, K, I\)</span> primitives and dropped into a massive 32-bit tagged-pointer VRAM Arena. The <code>WgpuExecutor</code> dispatches the logic autonomously.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// The unstratified Knaster-Tarski least fixpoint securely calculated natively on WGPU</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> gnet <span class="op">=</span> <span class="pp">GNet::</span>from_comb(<span class="op">&amp;</span>execution_graph<span class="op">,</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span>)<span class="op">;</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> executor <span class="op">=</span> <span class="pp">WgpuExecutor::</span>new()<span class="op">;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> (out_net<span class="op">,</span> state) <span class="op">=</span> executor<span class="op">.</span>execute(<span class="op">&amp;</span>gnet)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Variables are eradicated. The infinitely recursive logic simply evaluates as millions of localized, lock-free spatial collisions within VRAM. The WGSL shader iteratively collides nodes until <code>state.interactions</code> stabilizes to zero, successfully computing an unstratified fixpoint that would otherwise trigger a buffer overflow in standard software.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">// The unstratified Knaster-Tarski least fixpoint securely calculated natively on WGPU</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> gnet <span class="op">=</span> <span class="pp">GNet::</span>from_comb(<span class="op">&amp;</span>execution_graph<span class="op">,</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span>)<span class="op">;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> executor <span class="op">=</span> <span class="pp">WgpuExecutor::</span>new()<span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> (out_net<span class="op">,</span> state) <span class="op">=</span> executor<span class="op">.</span>execute(<span class="op">&amp;</span>gnet)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Variables are eradicated. The infinitely recursive logic simply evaluates as millions of localized, lock-free spatial collisions within VRAM. The WGSL shader iteratively collides nodes until <code>state.interactions</code> stabilizes to zero. By relying on topological bounds instead of call-stacks, the engine successfully computes an unstratified fixpoint that would otherwise trigger a stack-overflow or buffer exhaustion in standard software.</p>
+</section>
+</section>
+<section id="the-stratified-yoneda-embedding-the-ultimate-litmus-test" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="the-stratified-yoneda-embedding-the-ultimate-litmus-test"><span class="header-section-number">8.3</span> 3. The Stratified Yoneda Embedding (The Ultimate Litmus Test)</h2>
+<p>While untyped combinatory logic (UCL) can easily process physical collisions like <span class="math inline">\(V \in V\)</span>, raw combinators remain structurally blind to high-level functorial mapping. To definitively prove the Stratified Pseudo Elephant (SPE) architecture is operational, the Monist Engine must map functional relationships across topological boundaries over the entire logical space.</p>
+<p>The ultimate test is the native execution of the <strong>Stratified Yoneda Embedding on the Universal Set</strong>.</p>
+<section id="the-t-relative-adjunction" class="level3" data-number="8.3.1">
+<h3 data-number="8.3.1" class="anchored" data-anchor-id="the-t-relative-adjunction"><span class="header-section-number">8.3.1</span> The <span class="math inline">\(T\)</span>-Relative Adjunction</h3>
+<p>In orthodox category theory, evaluating the Yoneda Lemma over the Category of Sets using the universal set <span class="math inline">\(V\)</span> causes classical theories to shatter, demanding an ascent into an infinite hierarchy of Grothendieck universes. Within Monist, we execute the Stratified variant:</p>
+<p><span class="math display">\[Nat(\mathcal{C}(U,-), F) \cong T(F(U))\]</span></p>
+<p>This theorem establishes that the natural transformations correspond exactly to the <span class="math inline">\(T\)</span>-shifted evaluation of the functor. The execution sequence is as follows:</p>
+<ol type="1">
+<li><strong>Instantiate the Internal Subcategory</strong>: We construct the internal category of NF sets (<span class="math inline">\(\mathcal{N}\)</span>) natively within the <code>GraphArena</code>.</li>
+<li><strong>Define the Presheaf</strong>: We construct a covariant functor <span class="math inline">\(F\)</span> mapping <span class="math inline">\(\mathcal{N}\)</span> to itself.</li>
+<li><strong>Query the Transformation</strong>: We instruct the engine to compute <span class="math inline">\(Nat(\mathcal{N}(V, -), F)\)</span>.</li>
+</ol>
+</section>
+<section id="bypassing-the-catastrophe" class="level3" data-number="8.3.2">
+<h3 data-number="8.3.2" class="anchored" data-anchor-id="bypassing-the-catastrophe"><span class="header-section-number">8.3.2</span> Bypassing the Catastrophe</h3>
+<p>If the categorical semantics were flawed, the engine would attempt to naively expand the natural transformations across the saturated graph, triggering a massive topological level-shift. The Bellman-Ford algorithm would immediately flag this as a negative-weight cycle (a fatal Extensionality Collision).</p>
+<p>Instead, the compiler identifies the <span class="math inline">\(T\)</span>-relative adjunction connecting the mappings. It invokes the SCU (Strongly Cantorian Universe) axiom, verifying that the composition of the fibrewise small maps forms a Strongly Cantorian boundary. The system seals this execution inside an “island of classicality,” suspending the global cycle detectors, and safely returns the structurally isomorphic object <span class="math inline">\(T(F(V))\)</span> in constant time. This represents the absolute mathematical ceiling of Quine’s systemic ambiguity functioning as a physical execution environment.</p>
 
 
 </section>

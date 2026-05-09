@@ -14,6 +14,28 @@ You will be greeted with a `monist>` prompt, ready to accept your commands.
 
 ---
 
+## Logic Parsing & Syntax Cheatsheet
+
+Before diving into proofs, here is exactly how the `monist-parser` reads standard mathematical syntax:
+
+* **Variables & Predicates:** `x`, `y`, `P(x)`, `Q(a,b)`
+* **Logical Connectives:**
+  * AND: `/\` (e.g., `A /\ B`)
+  * OR: `\/` (e.g., `A \/ B`)
+  * IMPLIES: `->` (e.g., `A -> B`)
+  * NOT: `~` (e.g., `~A`)
+  * IFF: `<->` (e.g., `A <-> B`)
+* **Quantifiers:**
+  * For All: `forall x. P(x)`
+  * Exists: `exists y. Q(y)`
+* **Set Theory Operations:**
+  * Membership: `x in y`
+  * Equality: `x = y`
+  * Typestate Inequality: `x < y`
+  * Set Comprehension: `{x | P(x)}` (e.g., `{x | ~(x in x)}`)
+
+---
+
 ## Interactive Tutorial: Proving Strong Cantorian Preservation
 
 The best way to understand the REPL is through a canonical, continuous example. Let's walk through how a user would interactively prove that the Quine pair preserves Strongly Cantorian (SC) sets.
@@ -135,6 +157,20 @@ Proof accepted.
 * `check_strat <formula>`: An alias/sandbox command to run the AST parser and Bellman-Ford algorithm on raw geometry instantly before proofs.
 * `eval <formula>`: Immediately test a formula for stratification loops and geometric friction without entering the tactical proof state.
 * `step <formula>`: Process a logical formula step-by-step, providing immediate, color-coded feedback on topological friction and geometric bounds.
+
+---
+
+## Troubleshooting Paradoxes
+
+:::{.callout-warning title="Handling Extensionality Collisions"}
+If the engine suddenly halts with an `Extensionality Collision! Negative-weight cycle detected`, do not panic. You have not broken the engine; you have merely asked a set to swallow itself while enforcing an incompatible typestate shift.
+
+Here is how to untangle the structural topology of your proof:
+
+* **Kuratowski Cartesian Products:** Are you constructing Cartesian products using traditional Kuratowski ordered pairs ($\{\{x\}, \{x, y\}\}$)? Kuratowski pairs artificially force a $+2$ typestate shift on your variables, much like growing too tall for the room. The geometric engine will flag this friction instantly. To fix this, switch your definitions to flat **Quine pairs** ($Q(a,b)$), which maintain a rigid $0$-weight shift, allowing your variables to stay exactly the same size.
+* **Universal Set Boundaries:** If you are trying to map functions across the boundary of the Universal Set ($V$), you must step *through* the topological threshold. Attempting to bridge distinct integer typestate elevations without a stabilizer will cause the Bellman-Ford cycle detector to terminate your proof. You must explicitly invoke the $T$-operator ($x \mapsto \iota"x$) or rely on the engine's automated `T-Functor Synthesis` to gracefully absorb the topological friction.
+* **Saturated Loops:** If you are stuck in an infinite recursion, check if you accidentally defined an unstratified loop outside of a Strongly Cantorian boundary. Use the `step` command to visualize the $K$-Iteration depth bounds in real-time, observing exactly where the loop fails to terminate.
+:::
 
 ---
 

@@ -23,14 +23,28 @@ Only the specific anomalous vectors are then snapped back into the discrete `mon
 
 ## 2. Knaster-Tarski Fixpoints (Semantic -> Physics Bridge)
 
-Evaluating infinitely recursive functions over set structures traditionally exhausts CPU call-stacks. In `tools/monist-examples/src/bin/knaster_tarski_data_exec.rs`, the Monist Engine solves this by compiling unstratified paradoxes entirely into localized physics.
+Evaluating infinitely recursive functions over set structures traditionally exhausts CPU call-stacks. In standard Type Theory, generating the Least Fixpoint of a function requires well-founded, inductive definitions. The Monist Engine subverts this entirely in `tools/monist-examples/src/bin/knaster_tarski_data_exec.rs` by compiling unstratified paradoxes entirely into localized physics.
 
 ### Variable-Free Synthesis
-The user begins in the Semantic layer, synthesizing the Y-Combinator (Turing’s structural recursion engine) alongside a specific Set-Theoretic choice function $C$ and an operator $F = \lambda f. C (f x)$.
 
-Because this structure represents the Least Fixpoint $LFP(F)$ applied to a database, it generates an infinite loop. The CPU Geometry layer mathematically bounds it, flattening it into a pure variable-free Interaction Net matrix via Kosaraju's SCC.
+The Knaster-Tarski theorem guarantees that any monotonic function over a complete lattice has a least fixpoint. To calculate this dynamically without a global substitution environment, the user begins in the Semantic layer by synthesizing the $Y$-Combinator (Turing’s structural recursion engine) alongside a specific Set-Theoretic choice function $C$ and an operator $F = \lambda f. C (f x)$.
+
+Rather than writing iterative `while` loops, we express this as a pure, variable-free combinator graph:
+
+```rust
+// From tools/monist-examples/src/bin/knaster_tarski_data_exec.rs
+use monist_comb::comblib::encodings::{v, y_comb};
+use monist_comb::ir::Comb;
+
+// F = \f. \x. C (f x)
+// The Y combinator forces F to self-apply, creating the infinite loop LFP(F)
+let fixpoint_evaluator = y_comb().app(v("F_operator"));
+```
+
+Because this structure represents the Least Fixpoint $LFP(F)$ applied to a database, it generates an infinite loop. The CPU Geometry layer mathematically bounds it, flattening the semantic definitions into a pure variable-free Interaction Net matrix via Kosaraju's SCC algorithm.
 
 ### Autonomous GPU Dispatch
+
 This matrix is compiled down into the pure $S, K, I$ primitives and dropped into a massive 32-bit tagged-pointer VRAM Arena. The `WgpuExecutor` dispatches the logic autonomously. 
 
 ```rust
@@ -40,4 +54,26 @@ let executor = WgpuExecutor::new();
 let (out_net, state) = executor.execute(&gnet);
 ```
 
-Variables are eradicated. The infinitely recursive logic simply evaluates as millions of localized, lock-free spatial collisions within VRAM. The WGSL shader iteratively collides nodes until `state.interactions` stabilizes to zero, successfully computing an unstratified fixpoint that would otherwise trigger a buffer overflow in standard software.
+Variables are eradicated. The infinitely recursive logic simply evaluates as millions of localized, lock-free spatial collisions within VRAM. The WGSL shader iteratively collides nodes until `state.interactions` stabilizes to zero. By relying on topological bounds instead of call-stacks, the engine successfully computes an unstratified fixpoint that would otherwise trigger a stack-overflow or buffer exhaustion in standard software.
+
+## 3. The Stratified Yoneda Embedding (The Ultimate Litmus Test)
+
+While untyped combinatory logic (UCL) can easily process physical collisions like $V \in V$, raw combinators remain structurally blind to high-level functorial mapping. To definitively prove the Stratified Pseudo Elephant (SPE) architecture is operational, the Monist Engine must map functional relationships across topological boundaries over the entire logical space.
+
+The ultimate test is the native execution of the **Stratified Yoneda Embedding on the Universal Set**.
+
+### The $T$-Relative Adjunction
+In orthodox category theory, evaluating the Yoneda Lemma over the Category of Sets using the universal set $V$ causes classical theories to shatter, demanding an ascent into an infinite hierarchy of Grothendieck universes. Within Monist, we execute the Stratified variant:
+
+$$Nat(\mathcal{C}(U,-), F) \cong T(F(U))$$
+
+This theorem establishes that the natural transformations correspond exactly to the $T$-shifted evaluation of the functor. The execution sequence is as follows:
+
+1. **Instantiate the Internal Subcategory**: We construct the internal category of NF sets ($\mathcal{N}$) natively within the `GraphArena`.
+2. **Define the Presheaf**: We construct a covariant functor $F$ mapping $\mathcal{N}$ to itself.
+3. **Query the Transformation**: We instruct the engine to compute $Nat(\mathcal{N}(V, -), F)$.
+
+### Bypassing the Catastrophe
+If the categorical semantics were flawed, the engine would attempt to naively expand the natural transformations across the saturated graph, triggering a massive topological level-shift. The Bellman-Ford algorithm would immediately flag this as a negative-weight cycle (a fatal Extensionality Collision).
+
+Instead, the compiler identifies the $T$-relative adjunction connecting the mappings. It invokes the SCU (Strongly Cantorian Universe) axiom, verifying that the composition of the fibrewise small maps forms a Strongly Cantorian boundary. The system seals this execution inside an "island of classicality," suspending the global cycle detectors, and safely returns the structurally isomorphic object $T(F(V))$ in constant time. This represents the absolute mathematical ceiling of Quine's systemic ambiguity functioning as a physical execution environment.

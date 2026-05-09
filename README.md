@@ -10,23 +10,63 @@
   <br><br>
 </div>
 
+> **TL;DR:** A bare-metal, GPU-accelerated logic engine that safely evaluates self-referential paradoxes and cyclic graphs without crashing. It serves as a deterministic topological foundry for transfinite combinatorial computing, quantum-logical physics simulations, custom hardware synthesis, and formal AI verification.
+
 This logic engine is a high-performance evaluator and bare-metal compilation pipeline designed exclusively to compute Quine's New Foundations (NF). By abandoning traditional hierarchical type-checking in favor of geometric shortest-path routing (Bellman-Ford), the project successfully compiles unstratified, self-referential paradoxes into executable Interaction Nets. 
 
 It mathematically computes the precise topological weight of systemic ambiguity, catching extensionality collisions before offloading purely untyped combinator nodes to the GPU.
 
 ---
 
-## Scalable Oversight & Neuro-Symbolic Integration
+## Transfinite Computing & Speculative Frontiers
 
-The frontier of machine learning is overwhelmingly probabilistic. Neural architectures generate outputs that resist strict, structural verification. The Monist Engine provides the exact opposite: a deterministic execution layer capable of safely evaluating infinitely recursive or cyclical structures. 
+The standard computing industry enforces memory safety via strict Directed Acyclic Graphs (DAGs)—evidenced by Rust's borrow checker or Lean's dependent type hierarchy. This limits computation to well-founded, hierarchical structures. The Monist Engine abandons this completely, providing a deterministic execution layer capable of safely evaluating infinitely recursive or cyclical topological structures natively on the GPU.
 
-As the industry shifts its focus from experimental models toward scalable oversight, organizations require mathematical guarantees over black-box systems. The Monist Engine serves as the deterministic bedrock necessary to audit, govern, and formally verify probabilistic agents. Through Semantic Self-Verification (SSV) and active retrieve-generate-verify feedback loops, it structurally grounds LLMs to solve high-difficulty mathematical abstractions without hallucinatory semantic drift.
+This unlocks a highly speculative frontier where abstract combinatorial rewriting meets physical constraints, enabling:
+
+* **Transfinite Combinatorial Computing:** Native computation of transfinite cardinals without bottlenecking on the Axiom of Choice, utilizing Ramsey-theoretic bounds to calculate fixed points in self-referential systems.
+* **Hardware-Logic Co-Evolution:** Synthesizing custom Interaction Net FPGAs where logical reduction is performed via physical signal collisions, transforming processor spatial routing into execution logic without fetch-execute cycles.
+* **Quantum-Topos Logic Synthesis:** Treating logic as a geometric object to model quantum vacuums as "saturated computational boundaries," calculating measurable energy shifts based on the algorithmic friction of re-leveling variables.
+* **Scalable AI Oversight:** Providing mathematical guarantees over probabilistic black-box models. Organizations can use Monist as a deterministic bedrock to audit, govern, and formally verify neural network outputs, checking for hallucination via structural self-verification.
+
+---
+
+## Quickstart: The Paradox Engine
+
+Traditional type systems crash when fed cyclic self-reference. Monist executes it natively.
+
+```bash
+# 1. A standard proposition is evaluated normally
+$ cargo run -p monist-cli -- eval "forall x. x = x"
+> Stratification successful.
+
+# 2. Evaluating the Universal Set (V in V)
+$ cargo run -p monist-cli -- eval "V in V"
+> Stratification successful.
+> Neutralized SC defining self-loop on V_0
+
+# 3. Evaluating Russell's Paradox
+$ cargo run -p monist-cli -- eval "{x | ~(x in x)} in {x | ~(x in x)}"
+> Error: Extensionality Collision: Negative-weight cycle detected!
+> Summation: b0_1 -> b0_1 (-1) = -1
+```
+
+---
+
+## Repository Structure
+
+To help orient yourself within the codebase, here is how the architecture maps to the crates:
+
+- `crates/monist-core` - **The Oracle Layer**: The frontend AST, parser, and the CPU-bound geometric routing algorithms (Kosaraju SCC & Bellman-Ford) that detect extensionality collisions.
+- `crates/monist-comb` - **The Interaction Net Backend**: The purely untyped combinator nodes ($S, K, I$) and the WebGPU (`wgpu`) compute shaders that evaluate the logic dynamically.
+- `crates/monist-cli` - **The Interactive REPL**: The tactical theorem-proving interface and diagnostic visualizer.
+- `tools/monist-examples` - **Mathematical Diagnostics**: The automated mathematical refutations that prove the engine's theoretical boundaries.
 
 ---
 
 ## Capabilities & Architecture
 
-The standard computing industry enforces memory safety via strict Directed Acyclic Graphs (DAGs)—evidenced by Rust's borrow checker or Lean's dependent type hierarchy. If you attempt to feed a structurally dense, cyclic self-reference like the Universal Set ($V \in V$) into standard frameworks, they immediately crash, resulting in either a syntax error or a VRAM exhaustion (warp divergence).
+If you attempt to feed a structurally dense, cyclic self-reference like the Universal Set ($V \in V$) into standard frameworks, they immediately crash, resulting in either a syntax error or a VRAM exhaustion (warp divergence).
 
 The Monist Engine subverts this by bifurcating the computational stack:
 

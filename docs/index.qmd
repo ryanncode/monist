@@ -6,7 +6,7 @@ The `monist` repository provides a computationally verifiable, topologically-bou
 
 The Monist Engine is a deterministic execution layer designed exclusively to compute Quine's New Foundations (NF) unstratified, self-referential logic. By abandoning traditional hierarchical type-checking (Directed Acyclic Graphs) in favor of geometric shortest-path routing, the project successfully compiles structurally dense paradoxes into native, lock-free Interaction Nets.
 
-Its core mission is to provide absolute structural certainty, acting as the mathematical bedrock necessary to audit, govern, and formally verify probabilistic agents and infinitely recursive machine learning architectures.
+Its core mission is to serve as a deterministic topological foundry. By providing absolute structural certainty over non-well-founded datasets, it acts as the mathematical bedrock for transfinite combinatorial computing, quantum-logical physics simulations, custom hardware synthesis, and the formal verification of probabilistic AI agents.
 
 ---
 

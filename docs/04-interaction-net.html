@@ -263,7 +263,7 @@ window.Quarto = {
   <ul>
   <li><a href="#primitives-and-operations" id="toc-primitives-and-operations" class="nav-link active" data-scroll-target="#primitives-and-operations"><span class="header-section-number">4.1</span> Primitives and Operations</a>
   <ul class="collapse">
-  <li><a href="#the-wgpu-executor" id="toc-the-wgpu-executor" class="nav-link" data-scroll-target="#the-wgpu-executor"><span class="header-section-number">4.1.1</span> The WGPU Executor</a></li>
+  <li><a href="#bit-tagged-pointers-the-wgpu-executor" id="toc-bit-tagged-pointers-the-wgpu-executor" class="nav-link" data-scroll-target="#bit-tagged-pointers-the-wgpu-executor"><span class="header-section-number">4.1.1</span> 32-Bit Tagged Pointers &amp; The WGPU Executor</a></li>
   <li><a href="#atomic-compare-and-swap-cas" id="toc-atomic-compare-and-swap-cas" class="nav-link" data-scroll-target="#atomic-compare-and-swap-cas"><span class="header-section-number">4.1.2</span> Atomic Compare-And-Swap (CAS)</a></li>
   <li><a href="#cycle-garbage-collection-sweep" id="toc-cycle-garbage-collection-sweep" class="nav-link" data-scroll-target="#cycle-garbage-collection-sweep"><span class="header-section-number">4.1.3</span> Cycle Garbage Collection Sweep</a></li>
   </ul></li>
@@ -299,8 +299,9 @@ window.Quarto = {
 <p>The Monist Engine relies heavily on <code>monist-comb</code> to compile pure topological matrices into lock-free WGSL Interaction Nets (<span class="math inline">\(S, K, I\)</span> combinators). This allows parallel execution across the GPU physics layer.</p>
 <section id="primitives-and-operations" class="level2" data-number="4.1">
 <h2 data-number="4.1" class="anchored" data-anchor-id="primitives-and-operations"><span class="header-section-number">4.1</span> Primitives and Operations</h2>
-<section id="the-wgpu-executor" class="level3" data-number="4.1.1">
-<h3 data-number="4.1.1" class="anchored" data-anchor-id="the-wgpu-executor"><span class="header-section-number">4.1.1</span> The WGPU Executor</h3>
+<section id="bit-tagged-pointers-the-wgpu-executor" class="level3" data-number="4.1.1">
+<h3 data-number="4.1.1" class="anchored" data-anchor-id="bit-tagged-pointers-the-wgpu-executor"><span class="header-section-number">4.1.1</span> 32-Bit Tagged Pointers &amp; The WGPU Executor</h3>
+<p>To maximize throughput and ensure complex topological graphs fit entirely within ultra-fast GPU cache, the Monist Engine compresses all node interactions into a native arena using <strong>32-bit tagged pointers</strong>, bypassing the overhead of standard 64-bit memory addressing.</p>
 <p>The engine uses standard Rust multi-threading bridged to WebGPU (<code>wgpu</code>) APIs, avoiding synchronization overhead. The <code>WgpuExecutor</code> sets up an isolated arena within VRAM.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// From crates/monist-comb/src/backend.rs</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> execute(<span class="op">&amp;</span><span class="kw">self</span><span class="op">,</span> net<span class="op">:</span> <span class="op">&amp;</span>GNet) <span class="op">-&gt;</span> (GNet<span class="op">,</span> GpuState) <span class="op">{</span></span>

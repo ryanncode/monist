@@ -19,6 +19,27 @@ To locally verify the mathematical foundations of the Monist Engine, you will ne
    ```
    A successful build with no output indicates that all proofs have been formally verified by the Lean 4 kernel.
 
+## SMT-LIB Differential to Lean Pipeline
+
+To guarantee absolute mathematical equivalence between the high-speed Rust evaluator and the formally verified Lean architecture, we employ a Differential Equivalence Testing pipeline linking `monist` to our Lean formalization ([nf-sketches/parse-strat](https://github.com/ryanncode/nf-sketches/tree/main/parse-strat)). 
+
+When a `monist-examples` mathematical test executes, the `monist-core` engine seamlessly generates an SMT-LIB v2 witness of the topological graph, explicitly capturing evaluation limits, bounds, and Extensionality Collisions. This witness is then piped directly into the Lean interpreter (`lake exe parse-strat --ingest-smt`), which uses its own completely independent topological Bellman-Ford implementation to trace the exact same SMT constraints.
+
+To manually pipe a diagnostic test directly into the Lean 4 interpreter:
+
+```bash
+cd tools/monist-examples
+cargo run --bin specker_refutation | awk '/; === BEGIN STRATIFICATION WITNESS ===/{flag=1; print; next} /; === END STRATIFICATION WITNESS ===/{print; flag=0} flag' > out.smt
+cd ../../../nf-sketches/parse-strat
+lake exe parse-strat --ingest-smt < ../../monist/tools/monist-examples/out.smt
+```
+
+Alternatively, you can run the full automated cross-language verification script from the root of the `monist` directory:
+
+```bash
+./scripts/run_differential_tests.sh
+```
+
 ## Axiomatic Foundations
 
 Our verification framework minimizes assumptions, strictly relying on a well-defined set of axioms and categorical constructs to bridge interaction combinators and physical hardware evaluation. This establishes the structural certainty required to formally verify deterministic execution models for scalable AI oversight:

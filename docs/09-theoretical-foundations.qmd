@@ -8,7 +8,15 @@ W.V.O. Quine’s *New Foundations* (NF) was historically viewed as a streamlined
 
 Traditional Zermelo-Fraenkel (ZFC) set theory avoids paradoxes through the "limitation of size"—an ontological quarantine that pushes contradictions infinitely outward into higher cardinalities. Quine discarded this spatial intuition in favor of a purely grammatical restriction: **Stratification**. 
 
-By anchoring mathematical reality to the structural well-formedness of propositions, NF transforms set existence into linguistic geometry. Because NF features a Universal Set ($V$), it forms a closed topological loop. The paradoxes of naive set theory (like Russell's) are no longer mathematical disasters but diagnostic tools illuminating the boundaries of logical syntax. Within the Monist Engine, when algorithms like Bellman-Ford detect negative-weight cycles, they are identifying these exact "Extensionality Collisions" natively within the graph topology.
+By anchoring mathematical reality to the structural well-formedness of propositions, NF transforms set existence into linguistic geometry. 
+
+### The Mechanics of Stratification
+
+In standard type theory (like Russell's), every object is permanently bolted to an absolute, global hierarchical tier. Quine's stratification, however, is a *relative, local test* applied to formulas. A formula is "stratifiable" if you can assign an integer level (a "typestate") to each variable such that:
+1.  For every equality $x = y$, the variables must share the same level: $\text{level}(x) = \text{level}(y)$.
+2.  For every membership relation $x \in y$, the container must be exactly one level higher than the element: $\text{level}(x) + 1 = \text{level}(y)$.
+
+If these integer constraints can be satisfied without contradiction across the entire formula, the set defined by that formula is guaranteed to exist. Because NF features a Universal Set ($V$), it forms a closed topological loop. The paradoxes of naive set theory (like Russell's $x \notin x$, which forces $\text{level}(x) + 1 = \text{level}(x)$) are no longer mathematical disasters but diagnostic tools illuminating the boundaries of logical syntax. Within the Monist Engine, when algorithms like Bellman-Ford detect negative-weight cycles, they are identifying these exact "Extensionality Collisions" natively within the graph topology.
 
 ### Weak Stratification & The Extensionality Collision
 
