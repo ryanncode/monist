@@ -68,5 +68,10 @@ path = "src/bin/strongly_cantorian.rs"
 name = "knaster_tarski_data_exec"
 path = "src/bin/knaster_tarski_data_exec.rs"
 
+[[bin]]
+name = "proteomic_autocatalysis"
+path = "src/bin/proteomic_autocatalysis.rs"
 
-
+[[bin]]
+name = "holographic_genomic_sieve"
+path = "src/bin/holographic_genomic_sieve.rs"
