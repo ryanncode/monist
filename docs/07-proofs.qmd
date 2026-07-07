@@ -9,11 +9,15 @@ To locally verify the mathematical foundations of the Monist Engine, you will ne
 ### Instructions
 
 1. **Environment Setup**: Ensure `elan` is installed and up-to-date.
-2. **Retrieve Dependencies**: Navigate to the proofs module and fetch the required mathlib components:
+2. **Clone the Companion Repository**: The formal proofs reside in a separate repository. Clone it as a sibling directory to `monist`:
+   ```bash
+   git clone https://github.com/ryanncode/nf-sketches.git
+   ```
+3. **Retrieve Dependencies**: Navigate to the `nf-sketches` directory and fetch the required mathlib components:
    ```bash
    lake fetch
    ```
-3. **Execution**: Run the build command to compile and verify all theorems in the repository:
+4. **Execution**: Run the build command to compile and verify all theorems in the repository:
    ```bash
    lake build
    ```

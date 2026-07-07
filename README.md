@@ -12,6 +12,8 @@
 
 > **TL;DR:** A bare-metal, GPU-accelerated logic engine that safely evaluates self-referential paradoxes and cyclic graphs without crashing. It serves as a deterministic topological foundry for transfinite combinatorial computing, quantum-logical physics simulations, custom hardware synthesis, and formal AI verification.
 
+*For the mathematically verified Lean 4 companion project, see the [NF Sketches](https://github.com/ryanncode/nf-sketches) repository.*
+
 This logic engine is a high-performance evaluator and bare-metal compilation pipeline designed exclusively to compute Quine's New Foundations (NF). By abandoning traditional hierarchical type-checking in favor of geometric shortest-path routing (Bellman-Ford), the project successfully compiles unstratified, self-referential paradoxes into executable Interaction Nets. 
 
 It mathematically computes the precise topological weight of systemic ambiguity, catching extensionality collisions before offloading purely untyped combinator nodes to the GPU.
@@ -57,9 +59,15 @@ $ cargo run -p monist-cli -- eval "{x | ~(x in x)} in {x | ~(x in x)}"
 
 To help orient yourself within the codebase, here is how the architecture maps to the crates:
 
-- `crates/monist-core` - **The Oracle Layer**: The frontend AST, parser, and the CPU-bound geometric routing algorithms (Kosaraju SCC & Bellman-Ford) that detect extensionality collisions.
+- `crates/monist-parser` - **The Syntax Layer**: Parses raw text and ASCII constraints into standard logical syntax.
+- `crates/monist-core` - **The Oracle Layer**: The frontend AST, constraint algebra, and the CPU-bound geometric routing algorithms (Kosaraju SCC & Bellman-Ford) that detect extensionality collisions.
 - `crates/monist-comb` - **The Interaction Net Backend**: The purely untyped combinator nodes ($S, K, I$) and the WebGPU (`wgpu`) compute shaders that evaluate the logic dynamically.
-- `crates/monist-cli` - **The Interactive REPL**: The tactical theorem-proving interface and diagnostic visualizer.
+- `crates/monist-seq` - **Sequent Operations**: Sequent calculus evaluation mapping structural rules to combinatory embeddings.
+- `crates/monist-category` - **Categorical Structures**: The T-functor and relative adjunction definitions.
+- `crates/monist-psg` - **Phase Space Geometry**: Data structures for topological graphing and boundary checks.
+- `crates/monist-verify` - **Verification Layer**: Validates differential equivalence and Bellman-Ford limits prior to evaluation.
+- `crates/monist-macros` - **Engine Macros**: Syntactic procedural macros for seamless Rust testing and syntax.
+- `tools/monist-cli` - **The Interactive REPL**: The tactical theorem-proving interface and diagnostic visualizer.
 - `tools/monist-examples` - **Mathematical Diagnostics**: The automated mathematical refutations that prove the engine's theoretical boundaries.
 
 ---

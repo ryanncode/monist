@@ -1,5 +1,12 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ ! -d "$DIR/../../nf-sketches/parse-strat" ]; then
+    echo "Error: nf-sketches repository not found at ../../nf-sketches."
+    echo "Please clone https://github.com/ryanncode/nf-sketches as a sibling directory to this repository."
+    exit 1
+fi
+
 cd "$DIR/../../nf-sketches/parse-strat"
 
 tests=("strongly_cantorian" "incomparable_cardinals" "sc_daemon_proof" "ai_alignment_playbook" "smt_k_iteration" "extensionality_collision" "specker_refutation" "russell" "test_specker" "burali_forti" "transfinite" "frege_russell_numerals")
