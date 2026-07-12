@@ -2,35 +2,51 @@ import { useState, useEffect } from 'react';
 import init, { evaluate_formula, init_panic_hook } from 'monist-wasm';
 import './index.css';
 
-const QuartoNavbar = () => (
-  <header id="quarto-header" className="headroom fixed-top">
-    <nav className="navbar navbar-expand-lg" data-bs-theme="light">
-      <div className="navbar-container container-fluid px-3 px-lg-5">
-        <div className="navbar-brand-container mx-auto">
-          <a className="navbar-brand" href="../index.html">
-            <span className="navbar-title">First Synthesis</span>
-          </a>
+const QuartoNavbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <header id="quarto-header" className="headroom fixed-top">
+      <nav className="navbar navbar-expand-lg" data-bs-theme="light">
+        <div className="navbar-container container-fluid px-3 px-lg-5">
+          <button 
+            className="navbar-toggler" 
+            type="button" 
+            onClick={() => setIsOpen(!isOpen)}
+            aria-controls="navbarCollapse" 
+            aria-expanded={isOpen} 
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
+          <div className="navbar-brand-container mx-auto">
+            <a className="navbar-brand" href="../index.html">
+              <span className="navbar-title">First Synthesis</span>
+            </a>
+          </div>
+
+          <div className={`navbar-collapse collapse ${isOpen ? 'show' : ''}`} id="navbarCollapse">
+            <ul className="navbar-nav navbar-nav-scroll me-auto">
+              <li className="nav-item"><a className="nav-link" href="../monist.html"><span className="menu-text">Monist</span></a></li>
+              <li className="nav-item"><a className="nav-link active" href="./index.html"><span className="menu-text">Console</span></a></li>
+              <li className="nav-item"><a className="nav-link" href="../nf-sketches.html"><span className="menu-text">NF-Sketches</span></a></li>
+              <li className="nav-item"><a className="nav-link" href="../docs.html"><span className="menu-text">Docs</span></a></li>
+            </ul>
+            <ul className="navbar-nav navbar-nav-scroll ms-auto">
+              <li className="nav-item"><a className="nav-link" href="../whitepaper.html"><span className="menu-text">Whitepaper</span></a></li>
+              <li className="nav-item"><a className="nav-link" href="../usage.html"><span className="menu-text">Licensing</span></a></li>
+              <li className="nav-item"><a className="nav-link" href="../about.html"><span className="menu-text">About</span></a></li>
+              <li className="nav-item compact">
+                <a className="nav-link" href="https://github.com/ryanncode/first-synth"><i className="bi bi-github" role="img"></i><span className="menu-text"></span></a>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div className="navbar-collapse collapse show" id="navbarCollapse">
-          <ul className="navbar-nav navbar-nav-scroll me-auto">
-            <li className="nav-item"><a className="nav-link" href="../monist.html"><span className="menu-text">Monist</span></a></li>
-            <li className="nav-item"><a className="nav-link active" href="./index.html"><span className="menu-text">Console</span></a></li>
-            <li className="nav-item"><a className="nav-link" href="../nf-sketches.html"><span className="menu-text">NF-Sketches</span></a></li>
-            <li className="nav-item"><a className="nav-link" href="../docs.html"><span className="menu-text">Docs</span></a></li>
-          </ul>
-          <ul className="navbar-nav navbar-nav-scroll ms-auto">
-            <li className="nav-item"><a className="nav-link" href="../whitepaper.html"><span className="menu-text">Whitepaper</span></a></li>
-            <li className="nav-item"><a className="nav-link" href="../usage.html"><span className="menu-text">Licensing</span></a></li>
-            <li className="nav-item"><a className="nav-link" href="../about.html"><span className="menu-text">About</span></a></li>
-            <li className="nav-item compact">
-              <a className="nav-link" href="https://github.com/ryanncode/first-synth"><i className="bi bi-github" role="img"></i><span className="menu-text"></span></a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-  </header>
-);
+      </nav>
+    </header>
+  );
+};
 
 const CHALLENGES = [
   {
