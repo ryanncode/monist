@@ -67,6 +67,7 @@ To help orient yourself within the codebase, here is how the architecture maps t
 - `crates/monist-psg` - **Phase Space Geometry**: Data structures for topological graphing and boundary checks.
 - `crates/monist-verify` - **Verification Layer**: Validates differential equivalence and Bellman-Ford limits prior to evaluation.
 - `crates/monist-macros` - **Engine Macros**: Syntactic procedural macros for seamless Rust testing and syntax.
+- `bindings/monist-python` - **The Python ML Bridge**: Zero-cost PyO3 bindings for direct integration into PyTorch, JAX, and Neuro-symbolic LLM verification loops.
 - `tools/monist-cli` - **The Interactive REPL**: The tactical theorem-proving interface and diagnostic visualizer.
 - `tools/monist-examples` - **Mathematical Diagnostics**: The automated mathematical refutations that prove the engine's theoretical boundaries.
 
@@ -83,6 +84,24 @@ The Monist Engine subverts this by bifurcating the computational stack:
 3. **Variable Annihilation and Lock-Free Atomics:** Traditional software engineering binds logic to named variables, forcing processors to waste memory bandwidth navigating lookup tables, tracking scopes, and running tracing garbage collectors. Monist eliminates this overhead entirely. The `monist-comb` compiler destroys alphanumeric variables completely, replacing them with nameless de Bruijn levels and pure, untyped combinators. Parallel GPU threads execute graph transformations using atomic Compare-And-Swap (CAS) spin-loops directly accessing VRAM addresses without central synchronization.
 4. **Holographic Fast-Failing Oracle:** The runtime natively supports Vector Symbolic Architectures (VSA/HDC) to embed discrete graph logic into a continuous $10,000$-dimensional phase space. Enterprise systems (such as legacy SIEMs or computational biology pipelines) can use the Monist Engine as a massively parallel data sieve. By utilizing $O(1)$ destructive interference and a GPU-accelerated Successive Interference Cancellation (SIC) bridge, it violently drops valid data and snaps unresolvable anomalies back into discrete variables in milliseconds, shielding exact traditional databases from combinatorial explosion.
 5. **Topological Recursion Cost:** When the GPU executes a logic network, it outputs a precise, reproducible integer: the exact count of graph-rewrite collisions required to normalize a feedback topology into a stable fixpoint. This deterministic observable functions as a discrete topological analogue of free energy expenditure, providing an exact, distribution-free count of erasures versus rearrangements.
+
+---
+
+## Python Bindings (`monist-python`)
+
+To integrate Monist topological bounding directly into machine learning pipelines (such as PyTorch, JAX, or LLM inference loops), we provide zero-cost PyO3 bindings via the `monist-python` package. This unlocks **Semantic Self-Verification (SSV)**, allowing LLMs to rapidly query the Monist Oracle in parallel, instantly checking for paradoxical loops, hallucinated cycles, or geometric extensionality violations in $O(1)$ time.
+
+```python
+import monist_engine as monist
+
+# Initialize the topological bounds checker
+oracle = monist.Engine(enable_t_functor=True)
+
+# Evaluate an Extensionality Collision (Russell's Paradox)
+res = oracle.evaluate("{x | ~(x in x)} in {x | ~(x in x)}")
+print(res.is_stratified) # False
+print(res.collision_weight) # -1.0
+```
 
 ---
 
