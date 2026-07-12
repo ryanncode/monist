@@ -4,9 +4,33 @@ import './index.css';
 
 const QuartoNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false); // scrolling down
+      } else {
+        setIsVisible(true);  // scrolling up
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   return (
-    <header id="quarto-header" className="headroom fixed-top">
+    <header 
+      id="quarto-header" 
+      className="headroom fixed-top"
+      style={{
+        transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+        transition: 'transform 0.3s ease-in-out'
+      }}
+    >
       <nav className="navbar navbar-expand-lg" data-bs-theme="light">
         <div className="navbar-container container-fluid px-3 px-lg-5">
           <button 
