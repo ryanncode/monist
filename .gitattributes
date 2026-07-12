@@ -1,0 +1,4 @@
+# Ignore Quarto generated files and libraries from GitHub language stats
+docs/site_libs/** linguist-vendored
+docs/**/*.html linguist-generated
+docs/search.json linguist-generated
