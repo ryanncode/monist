@@ -6,7 +6,7 @@
   &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://firstsynth.dev/"><strong>🌐 First Synth</strong></a>
   &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://ryanncode.github.io/monist/specs/monist_core/"><strong>⚙️ API Specs</strong></a>
+  <a href="https://firstsynth.dev/console/"><strong>🖥️ Web Console</strong></a>
   <br><br>
 </div>
 
@@ -192,6 +192,12 @@ For an in-depth breakdown of lock-free atomic throughput and discrete execution 
 ## Formal Theory Integration
 
 The mechanical systems defined in this codebase strictly adhere to the formal axioms outlined in the Lean proof architecture. For the formal verification of the Bellman-Ford geometric matrices, see [NF Sketches - AUDIT](https://github.com/ryanncode/nf-sketches/blob/main/AUDIT.md). For detailed instructions on running these proofs and understanding the theoretical bounds of our non-well-founded set implementation, see our [Lean Proofs Repository Integration](docs/07-proofs.qmd) document. To dive deeper into the theoretical origins of this architecture, see [Theoretical Foundations](docs/09-theoretical-foundations.qmd) and [Mathematical Philosophy](docs/10-mathematical-philosophy.qmd).
+
+---
+
+## API Documentation
+
+For a complete technical breakdown of the Rust workspace and core engine functions, see the [Monist Core API Specs](https://ryanncode.github.io/monist/specs/monist_core/).
 
 ---
 
