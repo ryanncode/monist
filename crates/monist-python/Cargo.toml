@@ -1,0 +1,13 @@
+[package]
+name = "monist-python"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "monist_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.21.2", features = ["extension-module"] }
+monist-core = { path = "../monist-core" }
+monist-parser = { path = "../monist-parser" }

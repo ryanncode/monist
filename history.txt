@@ -1,0 +1,10 @@
+#V2
+assume id_def: id = { x, y | x = y }
+compile id_def
+help
+step { x | x = x }
+step { x | x = y }
+step { x | ~(x in x) }
+assume y_comb: Y = . (\\x. f (x x)) (\\x. f (x x))
+compile y_comb
+help

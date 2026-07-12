@@ -12,5 +12,5 @@ members = [
     "tools/monist-examples",
     "benches/monist-bench-cpu",
     "benches/monist-bench-gpu"
-]
+, "crates/monist-wasm", "crates/monist-python"]
 resolver = "2"
