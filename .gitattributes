@@ -2,3 +2,4 @@
 docs/site_libs/** linguist-vendored
 docs/**/*.html linguist-generated
 docs/search.json linguist-generated
+crates/monist-python/venv/** linguist-vendored
