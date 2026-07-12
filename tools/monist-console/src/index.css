@@ -289,6 +289,12 @@ body {
   padding-bottom: 0.5rem;
 }
 
+#quarto-search .nav-link {
+  border-bottom: none;
+  color: rgba(0, 0, 0, 0.9) !important;
+  padding-right: 0.5rem;
+}
+
 #quarto-header .navbar-nav .nav-link {
   color: rgba(0, 0, 0, 0.9) !important;
   font-family: 'Inter', sans-serif;

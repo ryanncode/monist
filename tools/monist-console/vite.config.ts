@@ -5,8 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: '../../../first-synth/interactive-console',
+    outDir: '../../../first-synth/console',
     emptyOutDir: true,
   },
-  base: '/interactive-console/',
+  base: '/console/',
 })

@@ -40,6 +40,9 @@ const QuartoNavbar = () => {
               <li className="nav-item compact">
                 <a className="nav-link" href="https://github.com/ryanncode/first-synth"><i className="bi bi-github" role="img"></i><span className="menu-text"></span></a>
               </li>
+              <li className="nav-item compact" style={{ visibility: 'hidden', cursor: 'default' }}>
+                <div className="nav-link"><i className="bi bi-search" role="img"></i><span className="menu-text"></span></div>
+              </li>
             </ul>
           </div>
         </div>
