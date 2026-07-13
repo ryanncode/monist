@@ -75,3 +75,7 @@ path = "src/bin/proteomic_autocatalysis.rs"
 [[bin]]
 name = "holographic_genomic_sieve"
 path = "src/bin/holographic_genomic_sieve.rs"
+
+[[bin]]
+name = "logit_space_sic_filter"
+path = "src/bin/logit_space_sic_filter.rs"
