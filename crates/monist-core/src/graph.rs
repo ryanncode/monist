@@ -501,8 +501,9 @@ impl GraphArena {
             cycle.reverse();
 
             let mut result = String::new();
-            result.push_str(&format!("Extensionality Collision: Negative-weight cycle detected (λ* = {:.4})!\n", lambda_star));
-            result.push_str("Summation: ");
+            result.push_str(&format!("Extensionality Collision: Negative-weight cycle detected (μ* = {:.4})!\n", lambda_star));
+            result.push_str("Engine halted safely (K_ITERATION_HALT)\n");
+            result.push_str("Topological Trace: ");
 
             let mut sum_str = Vec::new();
             let mut total_weight = 0;

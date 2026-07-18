@@ -1,5 +1,5 @@
 use indicatif::{ProgressBar, ProgressStyle};
-use monist_comb::comblib::frege_russell::{num0, num1};
+use monist_comb::comblib::frege_russell::{frege_zero, frege_succ};
 use monist_core::ast::{Atomic, Formula, FormulaArena, Var};
 use monist_core::graph::{Constraint, GraphArena, ScopedVar};
 use monist_core::smt::export_smt_lib;
@@ -61,7 +61,7 @@ fn main() {
     let mut session = Session::new();
     let mut arena = FormulaArena::new();
     
-    let _c_num0 = num0();
+    let _c_num0 = frege_zero();
     
     let n0_var = Var::Free("Num0".to_string());
     
@@ -78,7 +78,7 @@ fn main() {
     
     // Test 2: num1 geometry
     let mut session = Session::new();
-    let _c_num1 = num1();
+    let _c_num1 = frege_succ();
     
     let n1_var = Var::Free("Num1".to_string());
     let constraints1 = vec![
