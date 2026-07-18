@@ -1,4 +1,5 @@
 use crate::ast::{Atomic, Formula, FormulaArena, Var};
+use crate::eval::ExecutionLimits;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -149,7 +150,7 @@ impl GraphArena {
         arena
     }
 
-    /// Implement Kosaraju's SCC algorithm to locate and safely collapse 0-weight semantic cycles
+    /// Implement Tarjan's SCC algorithm to locate and safely collapse 0-weight semantic cycles
     pub fn collapse_scc_0_weight(&mut self) {
         let n = self.vars.len();
         if n == 0 {
@@ -157,34 +158,73 @@ impl GraphArena {
         }
 
         let mut adj = vec![Vec::new(); n];
-        let mut rev_adj = vec![Vec::new(); n];
-
         for &(u, v, w, _) in &self.edges {
             if w == 0 {
                 adj[u].push(v);
-                rev_adj[v].push(u);
             }
         }
 
-        let mut visited = vec![false; n];
-        let mut order = Vec::new();
+        struct Tarjan<'a> {
+            adj: &'a [Vec<usize>],
+            index: usize,
+            indices: Vec<Option<usize>>,
+            lowlinks: Vec<usize>,
+            on_stack: Vec<bool>,
+            stack: Vec<usize>,
+            scc_count: usize,
+            component: Vec<usize>,
+        }
+
+        impl<'a> Tarjan<'a> {
+            fn strongconnect(&mut self, v: usize) {
+                self.indices[v] = Some(self.index);
+                self.lowlinks[v] = self.index;
+                self.index += 1;
+                self.stack.push(v);
+                self.on_stack[v] = true;
+
+                for &w in &self.adj[v] {
+                    if self.indices[w].is_none() {
+                        self.strongconnect(w);
+                        self.lowlinks[v] = self.lowlinks[v].min(self.lowlinks[w]);
+                    } else if self.on_stack[w] {
+                        self.lowlinks[v] = self.lowlinks[v].min(self.indices[w].unwrap());
+                    }
+                }
+
+                if self.lowlinks[v] == self.indices[v].unwrap() {
+                    loop {
+                        let w = self.stack.pop().unwrap();
+                        self.on_stack[w] = false;
+                        self.component[w] = self.scc_count;
+                        if w == v {
+                            break;
+                        }
+                    }
+                    self.scc_count += 1;
+                }
+            }
+        }
+
+        let mut tarjan = Tarjan {
+            adj: &adj,
+            index: 0,
+            indices: vec![None; n],
+            lowlinks: vec![0; n],
+            on_stack: vec![false; n],
+            stack: Vec::new(),
+            scc_count: 0,
+            component: vec![0; n],
+        };
 
         for i in 0..n {
-            if !visited[i] {
-                self.dfs1(i, &adj, &mut visited, &mut order);
+            if tarjan.indices[i].is_none() {
+                tarjan.strongconnect(i);
             }
         }
 
-        visited.fill(false);
-        let mut component = vec![0; n];
-        let mut scc_count = 0;
-
-        for &i in order.iter().rev() {
-            if !visited[i] {
-                self.dfs2(i, &rev_adj, &mut visited, &mut component, scc_count);
-                scc_count += 1;
-            }
-        }
+        let scc_count = tarjan.scc_count;
+        let component = tarjan.component;
 
         // Map components to the smallest representative variable in that component
         let mut reps = vec![n; scc_count];
@@ -289,32 +329,6 @@ impl GraphArena {
         format!("{}_{}", name, var.1)
     }
 
-    fn dfs1(&self, u: usize, adj: &[Vec<usize>], visited: &mut [bool], order: &mut Vec<usize>) {
-        visited[u] = true;
-        for &v in &adj[u] {
-            if !visited[v] {
-                self.dfs1(v, adj, visited, order);
-            }
-        }
-        order.push(u);
-    }
-
-    fn dfs2(
-        &self,
-        u: usize,
-        rev_adj: &[Vec<usize>],
-        visited: &mut [bool],
-        component: &mut [usize],
-        comp_id: usize,
-    ) {
-        visited[u] = true;
-        component[u] = comp_id;
-        for &v in &rev_adj[u] {
-            if !visited[v] {
-                self.dfs2(v, rev_adj, visited, component, comp_id);
-            }
-        }
-    }
 
     pub fn topological_sort(&self) -> Option<Vec<usize>> {
         let n = self.vars.len();
@@ -463,6 +477,11 @@ impl GraphArena {
         }
 
         if let Some(mut curr) = collision_vertex {
+            let lambda_star = match ExecutionLimits::compute_for_graph(self) {
+                Some(limits) => limits.mcm,
+                None => f64::NEG_INFINITY,
+            };
+
             for _ in 0..n {
                 curr = p[curr].unwrap().0;
             }
@@ -482,7 +501,7 @@ impl GraphArena {
             cycle.reverse();
 
             let mut result = String::new();
-            result.push_str("Extensionality Collision: Negative-weight cycle detected!\n");
+            result.push_str(&format!("Extensionality Collision: Negative-weight cycle detected (λ* = {:.4})!\n", lambda_star));
             result.push_str("Summation: ");
 
             let mut sum_str = Vec::new();
