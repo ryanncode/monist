@@ -23,7 +23,7 @@ impl Session {
         &mut self,
         formula: &str,
         test_name: &str,
-    ) -> Result<(Vec<i32>, Vec<String>), String> {
+    ) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
         let mut parser = Parser::new(formula, &mut self.arena);
         let root_idx = parser.parse_formula();
 
@@ -35,14 +35,14 @@ impl Session {
         // and dynamically collapses them into singular topological islands.
         self.graph.collapse_scc_0_weight();
 
-        let bf_result = self.graph.bellman_ford();
+        let bf_result = self.graph.evaluate_topology();
 
         println!(
             "=== Stratification Witness (SMT-LIB format) for {} ===",
             test_name
         );
         match &bf_result {
-            Ok((success_depths, sc_actions)) => {
+            Ok((success_depths, sc_actions, _, _)) => {
                 println!(
                     "{}",
                     export_smt_lib(&self.graph, test_name, None, sc_actions, Some(success_depths))
@@ -96,7 +96,7 @@ fn main() {
     println!(">> Parsing Formula: {}", fixpoint_formula);
 
     match session_global.eval_organic(fixpoint_formula, "Global_NF_Failure") {
-        Ok((_, _)) => {
+        Ok((_, _, _, _)) => {
             println!("[FAIL] Engine incorrectly allowed the unstratified choice globally.")
         }
         Err(e) => {
@@ -141,7 +141,7 @@ fn main() {
     println!(">> Parsing Formula: {}", sc_fixpoint_formula);
 
     match session_sc.eval_organic(sc_fixpoint_formula, "SC_Knaster_Tarski_Fixpoint") {
-        Ok((_, _)) => {
+        Ok((_, _, _, _)) => {
             println!("[SUCCESS] The DAG stabilized perfectly within the SC island!");
             println!("The engine successfully reached the Knaster-Tarski least fixpoint lfp(F).");
             println!("By natively collapsing the 0-weight SCC loop, the engine proves that highly-volatile, self-referential ZFC-style computations can safely evaluate dynamically without shattering the universal macro-graph.");

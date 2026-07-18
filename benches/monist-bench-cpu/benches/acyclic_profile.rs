@@ -39,8 +39,8 @@ fn bench_acyclic_profile(c: &mut Criterion) {
             b.iter(|| {
                 let mut graph = generate_entangled_cycle_graph(size);
                 graph.collapse_scc_0_weight();
-                // Optionally run bellman_ford
-                let _ = graph.bellman_ford();
+                // Optionally run evaluate_topology
+                let _ = graph.evaluate_topology();
             });
         });
     }

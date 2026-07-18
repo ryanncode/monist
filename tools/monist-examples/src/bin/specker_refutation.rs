@@ -17,7 +17,7 @@ impl Session {
         }
     }
 
-    fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>), String> {
+    fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
         let mut parser = Parser::new(formula, &mut self.arena);
         let root_idx = parser.parse_formula();
 
@@ -25,14 +25,14 @@ impl Session {
         self.graph = GraphArena::from_constraints(&constraints);
         self.graph.collapse_scc_0_weight();
 
-        let bf_result = self.graph.bellman_ford();
+        let bf_result = self.graph.evaluate_topology();
 
         println!(
             "\n=== Stratification Witness (SMT-LIB format) for {} ===",
             test_name
         );
         match &bf_result {
-            Ok((dist, _)) => {
+            Ok((dist, _, _, _)) => {
                 println!("{}", export_smt_lib(&self.graph, test_name, None, &[], Some(dist)));
             }
             Err(e) => {
@@ -59,7 +59,7 @@ fn main() {
     println!("Evaluating Formula via REPL engine: {}", russell_formula);
 
     match session.eval(russell_formula, "russell_formula") {
-        Ok((_, _)) => {
+        Ok((_, _, _, _)) => {
             panic!("Test Failed: Russell's paradox was incorrectly allowed to evaluate.");
         }
         Err(e) => {
@@ -89,7 +89,7 @@ fn main() {
     // Resetting session for fresh graph
     let mut session = Session::new();
     match session.eval(specker_formula, "specker_formula") {
-        Ok((_, _)) => {
+        Ok((_, _, _, _)) => {
             panic!("Test Failed: The unconstrained global choice function was incorrectly allowed to evaluate across cardinalities.");
         }
         Err(e) => {

@@ -19,7 +19,7 @@ impl Session {
         }
     }
 
-    fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>), String> {
+    fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
         let mut parser = Parser::new(formula, &mut self.arena);
         let root_idx = parser.parse_formula();
 
@@ -27,14 +27,14 @@ impl Session {
         self.graph = GraphArena::from_constraints(&constraints);
         self.graph.collapse_scc_0_weight();
 
-        let bf_result = self.graph.bellman_ford();
+        let bf_result = self.graph.evaluate_topology();
 
         println!(
             "=== Stratification Witness (SMT-LIB format) for {} ===",
             test_name
         );
         match &bf_result {
-            Ok((success_depths, sc_actions)) => {
+            Ok((success_depths, sc_actions, _, _)) => {
                 println!(
                     "{}",
                     export_smt_lib(&self.graph, test_name, None, sc_actions, Some(success_depths))
@@ -103,7 +103,7 @@ fn main() {
     pb_synth.finish_with_message("[OK] Organic syntactic extraction complete.\n");
 
     match session.eval(comparability_formula, "Incomparable_Transfinite_Cardinals") {
-        Ok((_, _)) => println!("[FAIL] Engine incorrectly allowed universal comparability."),
+        Ok((_, _, _, _)) => println!("[FAIL] Engine incorrectly allowed universal comparability."),
         Err(e) => {
             println!("[SUCCESS] Bellman-Ford structurally rejected comparability!");
             println!("Extensionality Collision: {}", e);
@@ -145,7 +145,7 @@ fn main() {
     pb_specker.finish_with_message("[OK] Unstratified descent evaluated spatially.\n");
 
     match session_specker.eval(specker_tree_formula, "Specker_Tree_Infinite_Rank") {
-        Ok((_, _)) => {
+        Ok((_, _, _, _)) => {
             println!("[SUCCESS] The DAG stabilized at the K-Iteration bound without topological friction!");
             println!("This empirically proves the existence of a geometric spatial packing that accommodates an infinite-rank Specker tree natively in pure NF.");
         }

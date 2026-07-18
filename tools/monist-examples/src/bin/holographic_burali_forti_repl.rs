@@ -29,14 +29,14 @@ impl Session {
         
         self.graph.collapse_scc_0_weight();
 
-        let bf_result = self.graph.bellman_ford();
+        let bf_result = self.graph.evaluate_topology();
 
         println!(
             "\n=== Stratification Witness (SMT-LIB format) for {} ===",
             test_name
         );
         match &bf_result {
-            Ok((depths, sc_actions)) => {
+            Ok((depths, sc_actions, _, _)) => {
                 println!("{}", export_smt_lib(&self.graph, test_name, None, sc_actions, Some(depths)));
             }
             Err(trace) => {

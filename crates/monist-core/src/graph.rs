@@ -316,18 +316,124 @@ impl GraphArena {
         }
     }
 
-    /// Executes the Bellman-Ford algorithm to detect negative-weight cycles in the graph.
-    /// In the Monist Engine, a negative-weight cycle corresponds to an "Extensionality Collision" 
-    /// (an unstratifiable paradox or contradiction) in the underlying set theory formulas.
-    pub fn bellman_ford(&mut self) -> Result<(Vec<i32>, Vec<String>), String> {
+    pub fn topological_sort(&self) -> Option<Vec<usize>> {
+        let n = self.vars.len();
+        let mut in_degree = vec![0; n];
+        let mut adj = vec![Vec::new(); n];
+
+        for &(u, v, _, _) in &self.edges {
+            adj[u].push(v);
+            in_degree[v] += 1;
+        }
+
+        let mut queue = std::collections::VecDeque::new();
+        for i in 0..n {
+            if in_degree[i] == 0 {
+                queue.push_back(i);
+            }
+        }
+
+        let mut order = Vec::new();
+        while let Some(u) = queue.pop_front() {
+            order.push(u);
+            for &v in &adj[u] {
+                in_degree[v] -= 1;
+                if in_degree[v] == 0 {
+                    queue.push_back(v);
+                }
+            }
+        }
+
+        if order.len() == n {
+            Some(order)
+        } else {
+            None
+        }
+    }
+
+    pub fn classify_subsystems(&self, d: &[i32]) -> (bool, bool) {
+        let mut base_weight = i32::MIN;
+        for (i, var) in self.vars.iter().enumerate() {
+            if let crate::ast::Var::Free(_) = var.0 {
+                if d[i] > base_weight {
+                    base_weight = d[i];
+                }
+            }
+        }
+
+        if base_weight == i32::MIN {
+            for &w in d {
+                if w > base_weight {
+                    base_weight = w;
+                }
+            }
+            if base_weight == i32::MIN {
+                base_weight = 0;
+            }
+        }
+
+        let mut is_nfi = true;
+        let mut is_nfp = true;
+
+        for (i, var) in self.vars.iter().enumerate() {
+            let weight = d[i];
+            
+            if weight > base_weight + 1 {
+                is_nfi = false;
+            }
+
+            match var.0 {
+                crate::ast::Var::Free(_) => {
+                    if weight > base_weight + 1 {
+                        is_nfp = false;
+                    }
+                }
+                crate::ast::Var::Bound(_) => {
+                    if weight > base_weight {
+                        is_nfp = false;
+                    }
+                }
+            }
+        }
+
+        (is_nfp, is_nfi)
+    }
+
+    /// Evaluates the topological structure using a hybrid approach.
+    /// It attempts a fast O(V+E) DAG Shortest Path evaluation first. If the graph contains 
+    /// cycles, it falls back to the O(V*E) Bellman-Ford algorithm to detect negative-weight cycles
+    /// (Extensionality Collisions).
+    pub fn evaluate_topology(&mut self) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
         // Run the continuous daemon to dynamically sever outgoing +1 offset edges from SC bedrock
         let sc_actions = self.isolate_sc_bedrock();
 
         let n = self.vars.len();
         if n == 0 {
-            return Ok((Vec::new(), sc_actions));
+            return Ok((Vec::new(), sc_actions, true, true));
         }
 
+        // Fast-path: O(V+E) DAG Shortest Path
+        if let Some(order) = self.topological_sort() {
+            let mut d = vec![0; n];
+            
+            let mut adj = vec![Vec::new(); n];
+            for &(u, v, w, _) in &self.edges {
+                adj[u].push((v, w));
+            }
+            
+            for &u in &order {
+                for &(v, w) in &adj[u] {
+                    if d[u] + w < d[v] {
+                        d[v] = d[u] + w;
+                    }
+                }
+            }
+            
+            let (is_nfp, is_nfi) = self.classify_subsystems(&d);
+            return Ok((d, sc_actions, is_nfp, is_nfi));
+        }
+
+        // Fallback: O(V*E) Bellman-Ford
         let mut d = vec![0; n];
         let mut p: Vec<Option<(usize, i32)>> = vec![None; n];
 
@@ -407,7 +513,8 @@ impl GraphArena {
             return Err(result);
         }
 
-        Ok((d, sc_actions))
+        let (is_nfp, is_nfi) = self.classify_subsystems(&d);
+        Ok((d, sc_actions, is_nfp, is_nfi))
     }
 
     /// Extract Minimal Conflict Clauses for Vector Superposition (IDL Masking)

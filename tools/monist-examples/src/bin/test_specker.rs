@@ -28,11 +28,11 @@ fn main() {
     graph.collapse_scc_0_weight();
 
     println!(">> Running Bellman-Ford Shortest-Path Topology Check...");
-    let bf_result = graph.bellman_ford();
+    let bf_result = graph.evaluate_topology();
 
     println!("=== Stratification Witness (SMT-LIB format) ===");
     match &bf_result {
-        Ok((success_depths, sc_actions)) => {
+        Ok((success_depths, sc_actions, _, _)) => {
             println!(
                 "{}",
                 export_smt_lib(&graph, "Specker_Collision", None, sc_actions, Some(success_depths))
@@ -48,7 +48,7 @@ fn main() {
     println!("===============================================\n");
 
     match bf_result {
-        Ok((_, _)) => println!("[FAIL] The unstratified choice function was incorrectly allowed."),
+        Ok((_, _, _, _)) => println!("[FAIL] The unstratified choice function was evaluated successfully (it shouldn't)."),
         Err(e) => {
             println!("[SUCCESS] Native topological limits intercepted the paradox!");
             println!("Error: {}", e);

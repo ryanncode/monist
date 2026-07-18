@@ -91,8 +91,8 @@ fn main() -> RlResult<()> {
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
-            match graph.bellman_ford() {
-                Ok((_, actions)) => {
+            match graph.evaluate_topology() {
+                Ok((_, actions, _, _)) => {
                     eprintln!("{}", "Stratification successful.".green());
                     for action in actions {
                         eprintln!("{}", action.cyan());
@@ -111,8 +111,8 @@ fn main() -> RlResult<()> {
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
-            let (trace, sc_actions, success_depths) = match graph.bellman_ford() {
-                Ok((depths, actions)) => (None, actions, Some(depths)),
+            let (trace, sc_actions, success_depths) = match graph.evaluate_topology() {
+                Ok((depths, actions, _, _)) => (None, actions, Some(depths)),
                 Err(e) => (Some(e), Vec::new(), None),
             };
 
@@ -139,8 +139,8 @@ fn main() -> RlResult<()> {
             graph.collapse_scc_0_weight();
 
             if *export_smt {
-                let (trace, sc_actions, success_depths) = match graph.bellman_ford() {
-                    Ok((depths, actions)) => (None, actions, Some(depths)),
+                let (trace, sc_actions, success_depths) = match graph.evaluate_topology() {
+                    Ok((depths, actions, _, _)) => (None, actions, Some(depths)),
                     Err(e) => (Some(e), Vec::new(), None),
                 };
 
@@ -153,8 +153,8 @@ fn main() -> RlResult<()> {
                 );
                 println!("{}", smt_output);
             } else {
-                match graph.bellman_ford() {
-                    Ok((_, actions)) => {
+                match graph.evaluate_topology() {
+                    Ok((_, actions, _, _)) => {
                         eprintln!("{}", "Stratification successful.".green());
                         for action in actions {
                             eprintln!("{}", action.cyan());
@@ -358,8 +358,8 @@ fn process_repl_command(input: &str, session: &mut Session) {
             graph.collapse_scc_0_weight();
 
             // Merge with session graph? For now just evaluate independently
-            match graph.bellman_ford() {
-                Ok((_, _)) => eprintln!("{}", "Stratification successful.".green()),
+            match graph.evaluate_topology() {
+                Ok((_, _, _, _)) => eprintln!("{}", "Stratification successful.".green()),
                 Err(e) => eprintln!("{}: {}", "Error".red(), e),
             }
         }
@@ -400,8 +400,8 @@ fn process_repl_command(input: &str, session: &mut Session) {
             graph.collapse_scc_0_weight();
 
             eprintln!("{}", "--- Running Bellman-Ford ---".yellow());
-            match graph.bellman_ford() {
-                Ok((_, _)) => eprintln!("{}", "Stratification successful.".green()),
+            match graph.evaluate_topology() {
+                Ok((_, _, _, _)) => eprintln!("{}", "Stratification successful.".green()),
                 Err(e) => eprintln!("{}: {}", "Error".red(), e),
             }
         }
@@ -678,8 +678,8 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
-            match graph.bellman_ford() {
-                Ok((_, _)) => eprintln!(
+            match graph.evaluate_topology() {
+                Ok((_, _, _, _)) => eprintln!(
                     "{}",
                     "Stratification successful. Topologically sound.".green()
                 ),

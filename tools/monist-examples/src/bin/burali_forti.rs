@@ -76,8 +76,8 @@ fn main() {
         );
     }
 
-    match arena.bellman_ford() {
-        Ok((dist, _)) => {
+    match arena.evaluate_topology() {
+        Ok((dist, _, _, _)) => {
             println!(
                 "\n[SUCCESS] Engine successfully resolved dynamic typestates for Burali-Forti!"
             );
@@ -93,10 +93,10 @@ fn main() {
     }
 
     // Phase 4: SMT-LIB Witness Output
-    let bf_result = arena.bellman_ford();
+    let bf_result = arena.evaluate_topology();
     println!("\n=== Stratification Witness (SMT-LIB format) for Burali_Forti_T_Functor ===");
     match &bf_result {
-        Ok((success_depths, sc_actions)) => {
+        Ok((success_depths, sc_actions, _, _)) => {
             println!(
                 "{}",
                 export_smt_lib(&arena, "Burali_Forti_T_Functor", None, sc_actions, Some(success_depths))

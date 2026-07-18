@@ -20,7 +20,7 @@ impl Session {
         &mut self,
         formula: &str,
         test_name: &str,
-    ) -> Result<(Vec<i32>, Vec<String>), String> {
+    ) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
         let mut parser = Parser::new(formula, &mut self.arena);
         let root_idx = parser.parse_formula();
 
@@ -28,16 +28,16 @@ impl Session {
         self.graph = GraphArena::from_constraints(&constraints);
 
         self.graph.collapse_scc_0_weight();
-        // The continuous daemon autonomously operates here inside bellman_ford!
+        // The continuous daemon autonomously operates here inside evaluate_topology!
 
-        let bf_result = self.graph.bellman_ford();
+        let bf_result = self.graph.evaluate_topology();
 
         println!(
             "=== Stratification Witness (SMT-LIB format) for {} ===",
             test_name
         );
         match &bf_result {
-            Ok((success_depths, sc_actions)) => {
+            Ok((success_depths, sc_actions, _, _)) => {
                 println!(
                     "{}",
                     export_smt_lib(&self.graph, test_name, None, sc_actions, Some(success_depths))
@@ -69,7 +69,7 @@ fn main() {
     let baseline_formula = "(S in y /\\ y in S)";
 
     match session_baseline.eval_organic(baseline_formula, "Baseline_Paradox") {
-        Ok((_, _)) => panic!("[FAIL] The engine incorrectly allowed the 2-cycle loop."),
+        Ok((_, _, _, _)) => panic!("[FAIL] The engine incorrectly allowed the 2-cycle to compute without interference!"),
         Err(e) => {
             println!("[SUCCESS] Baseline intercepted the paradox!");
             println!("Error: {}\n", e);
@@ -90,7 +90,7 @@ fn main() {
     let sc_formula = "((S in y /\\ y in S) /\\ S in S)";
 
     match session_sc.eval_organic(sc_formula, "SC_Daemon_Isolation") {
-        Ok((_, _)) => {
+        Ok((_, _, _, _)) => {
             println!("[SUCCESS] The SC Daemon actively severed the outgoing +1 edge!");
             println!("The topological paradox was neutralized because S was recognized as ZFC-compliant bedrock.");
         }

@@ -17,7 +17,7 @@ impl Session {
         }
     }
 
-    fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>), String> {
+    fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
         let mut parser = Parser::new(formula, &mut self.arena);
         let root_idx = parser.parse_formula();
 
@@ -33,14 +33,14 @@ impl Session {
             );
         }
 
-        let bf_result = self.graph.bellman_ford();
+        let bf_result = self.graph.evaluate_topology();
 
         println!(
             "\n=== Stratification Witness (SMT-LIB format) for {} ===",
             test_name
         );
         match &bf_result {
-            Ok((dist, _)) => {
+            Ok((dist, _, _, _)) => {
                 println!("{}", export_smt_lib(&self.graph, test_name, None, &[], Some(dist)));
             }
             Err(e) => {
@@ -82,7 +82,7 @@ fn main() {
     println!("Evaluating Formula via Engine: {}", formula);
 
     match session.eval(formula, "base_extensionality_collision") {
-        Ok((dist, _)) => {
+        Ok((dist, _, _, _)) => {
             println!("[SUCCESS] Engine correctly tracked the differing topological weights (+2 vs 0) without a paradox halt!");
             println!("Distance vector: {:?}", dist);
 
@@ -118,7 +118,7 @@ fn main() {
 
             if let (Some(k), Some(q), Some(x), Some(a)) = (k_idx, q_idx, x_idx, a_idx) {
                 println!("Validating relative topological offsets in the collapsed DAG...");
-                // Distances computed by bellman_ford from arbitrary init 0
+                // Distances computed by evaluate_topology from arbitrary init 0
                 // We know dist[target] <= dist[source] + weight.
                 // It tracks the relative typestate boundaries correctly.
                 let dist_k = dist[k];
@@ -185,7 +185,7 @@ fn main() {
     println!("Evaluating Deep Hierarchy Formula via Engine...");
 
     match session2.eval(deep_formula, "deep_extensionality_collision") {
-        Ok((dist, _)) => {
+        Ok((dist, _, _, _)) => {
             println!("[SUCCESS] Engine correctly tracked deep geometric scaling (+4 vs 0) without a paradox halt!");
 
             let mut k3_idx = None;

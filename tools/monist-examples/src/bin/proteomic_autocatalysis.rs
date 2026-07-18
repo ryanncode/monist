@@ -82,7 +82,7 @@ fn main() {
     );
 
     // Confirm via Bellman-Ford detection
-    match arena.bellman_ford() {
+    match arena.evaluate_topology() {
         Ok(_) => panic!("Bellman-Ford should have detected negative-weight cycle in A->B->C->A"),
         Err(collision) => {
             println!("       Bellman-Ford: {}", collision.lines().next().unwrap_or(&collision));

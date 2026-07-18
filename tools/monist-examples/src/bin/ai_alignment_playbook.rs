@@ -101,7 +101,7 @@ fn main() {
         thread::sleep(Duration::from_millis(40));
     }
 
-    let bf_result = graph.bellman_ford();
+    let bf_result = graph.evaluate_topology();
     match &bf_result {
         Ok(_) => {
             pb_bellman.finish_with_message("Topological stability proven! Recursive reward formulation is valid without paradox halt.");
@@ -120,7 +120,7 @@ fn main() {
     println!("--------------------------------------------------------------------------------");
     
     match &bf_result {
-        Ok((success_depths, sc_actions)) => {
+        Ok((success_depths, sc_actions, _, _)) => {
             println!(
                 "{}\n",
                 export_smt_lib(&graph, "RecursiveRewardStability_NonWellFounded", None, sc_actions, Some(success_depths))

@@ -24,8 +24,8 @@ impl Session {
 
     fn eval_and_export(&mut self, graph: &mut GraphArena, test_name: &str) {
         self.pb.set_message(format!("Evaluating Frege-Russell {}", test_name));
-        let (trace, sc_actions, success_depths) = match graph.bellman_ford() {
-            Ok((depths, actions)) => {
+        let (trace, sc_actions, success_depths) = match graph.evaluate_topology() {
+            Ok((depths, actions, _, _)) => {
                 self.pb.finish_with_message(format!(
                     "{} topology resolved. Graph is coherent. SC bedrock bounds enforced.",
                     test_name

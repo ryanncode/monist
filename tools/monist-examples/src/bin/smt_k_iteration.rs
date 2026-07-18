@@ -19,16 +19,16 @@ fn main() {
     graph.collapse_scc_0_weight();
 
     // Check with Bellman-Ford
-    let bf_result = graph.bellman_ford();
+    let bf_result = graph.evaluate_topology();
     match &bf_result {
-        Ok((_, _)) => println!("Result: Stratification successful (Unexpected for V \\in V!)."),
+        Ok((_, _, _, _)) => println!("Result: Stratification successful (Unexpected for paradoxes, but checking topological bounding)."),
         Err(e) => println!("Result: Evaluation intercepted. {}", e),
     }
 
     println!("\nGenerating SMT-LIB Mathematical Trace:");
     println!("--------------------------------------");
     match &bf_result {
-        Ok((success_depths, sc_actions)) => {
+        Ok((success_depths, sc_actions, _, _)) => {
             println!(
                 "{}",
                 export_smt_lib(&graph, "K_Iteration_V_in_V", None, sc_actions, Some(success_depths))

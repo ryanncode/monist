@@ -106,7 +106,7 @@ async fn run_logit_sic_filter() {
     // Validate the invariant graph itself — it must NOT contain negative-weight
     // cycles.  If it does, the axioms are self-contradictory.
     invariant_graph.collapse_scc_0_weight();
-    let invariant_validation = invariant_graph.bellman_ford();
+    let invariant_validation = invariant_graph.evaluate_topology();
 
     match &invariant_validation {
         Ok(_) => {
@@ -684,7 +684,7 @@ async fn run_logit_sic_filter() {
         let mut proof_graph = GraphArena::from_constraints(&proof_constraints);
         proof_graph.collapse_scc_0_weight();
 
-        let bf_result = proof_graph.bellman_ford();
+        let bf_result = proof_graph.evaluate_topology();
 
         match &bf_result {
             Ok(_) => {

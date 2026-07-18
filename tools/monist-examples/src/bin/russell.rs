@@ -39,9 +39,9 @@ fn main() {
         }
     }
 
-    // Validate via bellman_ford
-    match arena.bellman_ford() {
-        Ok((_, _)) => panic!("Bellman-ford should have failed due to negative cycle"),
+    // Validate via evaluate_topology
+    match arena.evaluate_topology() {
+        Ok((_, _, _, _)) => panic!("Bellman-ford should have failed due to negative weight cycle!"),
         Err(e) => {
             println!("Bellman-Ford detection: {}", e);
             assert!(e.contains("Negative-weight cycle detected"));
