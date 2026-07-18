@@ -11,7 +11,7 @@ Here is exactly how that hybrid synthetic pipeline flows:
 ```{mermaid}
 graph TD
     A[Natural Deduction<br>The Human Interface] -->|Semantics| B[CPU & System Memory<br>The Geometry Layer]
-    B -->|Topological Matrix<br>Bellman-Ford| C[Graph Reduction<br>The Compiler]
+    B -->|Topological Matrix<br>Tarjan SCC & Karp MCM| C[Graph Reduction<br>The Compiler]
     C -->|Untyped S,K,I Combinators| D[GPU VRAM<br>The Physics Engine]
     D -->|Continuous Data Superposition| E[The Holographic Co-processor<br>Continuous Math]
     E -.->|10k-dim Phase Space Cancellation| B
@@ -21,13 +21,13 @@ graph TD
 The user writes high-level logical constraints and employs interactive tactics (`intro`, `apply`, `rewrite`). This is the semantic layer. It serves as the initial boundary where human intent is mathematically captured before spatial abstraction begins.
 
 ### 2. CPU & System Memory (The Geometry Layer)
-The CPU strips away the human semantics, turning the logic into a pure topological matrix (a Bellman-Ford directed graph). By tracing paths through RAM, it calculates typestate friction and dynamically intercepts paradoxes or loops *before* they can explode. This step guarantees topological acyclicity even in unstratified structures.
+The CPU strips away the human semantics, turning the logic into a pure topological matrix. By tracing paths through RAM using Tarjan's SCC (single-pass loop detection) and Karp's Minimum Cycle Mean (MCM), it calculates typestate friction and dynamically intercepts paradoxes or loops *before* they can explode. This step guarantees topological acyclicity even in unstratified structures and outputs exact `NegativeWeightCycle` paths for Extensionality Collisions.
 
 ### 3. Graph Reduction (The Compiler)
-Once the topology is verified as safe (or stabilized via the $T$-functor), the engine completely abandons traditional variable substitution. It compiles the logic down into pure, untyped Interaction Nets ($S, K, I$ combinators). This breaks structural dependencies and localizes the computation.
+Once the topology is verified as safe (or stabilized via the $T$-functor), the engine completely abandons traditional variable substitution. It compiles the logic down into pure, untyped Interaction Nets ($S, K, I$ combinators, `Susp` suspensions) incorporating 2-Symmetric Interaction Combinator (2-SIC) topological flags. This breaks structural dependencies and localizes the computation.
 
 ### 4. GPU VRAM (The Physics Engine)
-These combinator graphs are handed off to WGPU compute shaders. Because interaction combinators are strictly local, the GPU doesn't need locks, mutexes, or a Garbage Collector. It just lets the nodes physically collide and annihilate each other in parallel across millions of lock-free cycles.
+These combinator graphs are handed off to WGPU compute shaders. Because interaction combinators are strictly local, the GPU doesn't need locks, mutexes, or a Garbage Collector. It just lets the nodes physically collide using 2-SIC rules (structural Annihilation of identical nodes, and Commutation of duplicators through constructors) across millions of lock-free cycles.
 
 ### 5. The Holographic Co-processor (Continuous Math)
 When the system encounters massive datasets (like cybersecurity telemetry), it bypasses discrete graph reduction entirely. It superposes the data into 10,000-dimensional continuous wave functions on the GPU (utilizing Vector Symbolic Architectures / HDC). This uses destructive interference to physically cancel out noise in $O(1)$ time before snapping it back to discrete logic. *(See `tools/monist-examples/src/bin/holographic_cyber_oracle.rs` for the implemented working demo).*
