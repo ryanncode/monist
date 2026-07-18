@@ -11,9 +11,9 @@ const QuartoNavbar = () => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false); // scrolling down
+        setIsVisible(false);
       } else {
-        setIsVisible(true);  // scrolling up
+        setIsVisible(true);
       }
       setLastScrollY(currentScrollY);
     };
@@ -28,45 +28,33 @@ const QuartoNavbar = () => {
       className="headroom fixed-top"
       style={{
         transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
-        transition: 'transform 0.3s ease-in-out'
+        transition: 'transform 0.3s ease-in-out',
+        background: '#ffffff',
+        borderBottom: '1px solid #eaeaea'
       }}
     >
       <nav className="navbar navbar-expand-lg" data-bs-theme="light">
         <div className="navbar-container container-fluid px-3 px-lg-5">
-          <button 
-            className="navbar-toggler" 
-            type="button" 
-            onClick={() => setIsOpen(!isOpen)}
-            aria-controls="navbarCollapse" 
-            aria-expanded={isOpen} 
-            aria-label="Toggle navigation"
-          >
+          <button className="navbar-toggler" type="button" onClick={() => setIsOpen(!isOpen)}>
             <span className="navbar-toggler-icon"></span>
           </button>
-
           <div className="navbar-brand-container mx-auto">
             <a className="navbar-brand" href="../index.html">
-              <span className="navbar-title">First Synthesis</span>
+              <span className="navbar-title" style={{fontWeight: 700}}>First Synthesis</span>
             </a>
           </div>
-
           <div className={`navbar-collapse collapse ${isOpen ? 'show' : ''}`} id="navbarCollapse">
             <ul className="navbar-nav navbar-nav-scroll me-auto">
-              <li className="nav-item"><a className="nav-link" href="../monist.html"><span className="menu-text">Monist</span></a></li>
-              <li className="nav-item"><a className="nav-link active" href="./index.html"><span className="menu-text">Console</span></a></li>
-              <li className="nav-item"><a className="nav-link" href="../nf-sketches.html"><span className="menu-text">NF-Sketches</span></a></li>
-              <li className="nav-item"><a className="nav-link" href="../docs.html"><span className="menu-text">Docs</span></a></li>
+              <li className="nav-item"><a className="nav-link" href="../monist.html">Monist</a></li>
+              <li className="nav-item"><a className="nav-link active" href="./index.html">Console</a></li>
+              <li className="nav-item"><a className="nav-link" href="../nf-sketches.html">NF-Sketches</a></li>
+              <li className="nav-item"><a className="nav-link" href="../docs.html">Docs</a></li>
             </ul>
             <ul className="navbar-nav navbar-nav-scroll ms-auto">
-              <li className="nav-item"><a className="nav-link" href="../whitepaper.html"><span className="menu-text">Whitepaper</span></a></li>
-              <li className="nav-item"><a className="nav-link" href="../usage.html"><span className="menu-text">Licensing</span></a></li>
-              <li className="nav-item"><a className="nav-link" href="../about.html"><span className="menu-text">About</span></a></li>
-              <li className="nav-item compact">
-                <a className="nav-link" href="https://github.com/ryanncode/first-synth"><i className="bi bi-github" role="img"></i><span className="menu-text"></span></a>
-              </li>
-              <li className="nav-item compact" style={{ visibility: 'hidden', cursor: 'default' }}>
-                <div className="nav-link"><i className="bi bi-search" role="img"></i><span className="menu-text"></span></div>
-              </li>
+              <li className="nav-item"><a className="nav-link" href="../whitepaper.html">Whitepaper</a></li>
+              <li className="nav-item"><a className="nav-link" href="../usage.html">Licensing</a></li>
+              <li className="nav-item"><a className="nav-link" href="../about.html">About</a></li>
+              <li className="nav-item compact"><a className="nav-link" href="https://github.com/ryanncode/first-synth"><i className="bi bi-github"></i></a></li>
             </ul>
           </div>
         </div>
@@ -75,27 +63,188 @@ const QuartoNavbar = () => {
   );
 };
 
-const CHALLENGES = [
-  {
-    title: "Level 1: The Basic Loop",
-    desc: "Can you construct a topological cycle that evaluates cleanly without generating a negative weight? Think about sets that map strictly to themselves without inversion (e.g. Quine Atoms)."
-  },
-  {
-    title: "Level 2: The Extensionality Trap",
-    desc: "Create a set membership graph (using comprehensions) that causes the engine to detect a negative-weight cycle (-1) and halt at exactly 0 safe iterations. (Hint: self-reference with negation)."
-  },
-  {
-    title: "Level 3: Burali-Forti Bypass",
-    desc: "Assume the T-Functor Synthesis is enabled. Can you map a disjoint weight elevation (like the set of all ordinal numbers) without triggering a hard Extensionality Collision?"
-  },
-  {
-    title: "Level 4: Holographic State Collapse",
-    desc: "Write a logic proposition that forces a continuous state into a discrete phase space using a Strongly Cantorian Cut (SC_CUT), ensuring an O(1) sweep evaluation."
-  },
-  {
-    title: "Level 5: Transfinite Agentic Reflection",
-    desc: "Construct an Agentic Reflection graph where a node simulates its own future interaction cost, mathematically bounding its own algorithmic friction before execution."
+// GraphView visual component
+const GraphView = ({ stats }: { stats: any }) => {
+  if (!stats) {
+    return (
+      <div className="graph-view-container">
+        <p style={{color: '#888', fontStyle: 'italic'}}>Awaiting matrix topology...</p>
+      </div>
+    );
   }
+
+  const isStable = stats.isStratified;
+  const isError = stats.error !== undefined;
+
+  if (isError) {
+    return (
+      <div className="graph-view-container">
+        <p style={{color: 'red', fontStyle: 'italic'}}>Syntax Error: Cannot construct topology.</p>
+      </div>
+    );
+  }
+
+  const renderGraph = () => {
+    switch(stats.graphType) {
+      case 'basic_loop':
+        return (
+          <>
+            <path className="graph-edge stable" d="M 150,80 A 40,40 0 1,1 149.9,80" fill="transparent" markerEnd="url(#arrowhead)" />
+            <circle cx="150" cy="120" r="14" className="graph-node stable" />
+            <text x="150" y="160" textAnchor="middle" fontSize="10" fill="var(--mono-black)">Weight: 0</text>
+          </>
+        );
+      case 'kuratowski':
+        return (
+          <>
+            <path className="graph-edge stable" d="M 150,40 L 100,100" />
+            <path className="graph-edge stable" d="M 150,40 L 200,100" />
+            <path className="graph-edge stable" d="M 100,100 L 70,160" />
+            <path className="graph-edge stable" d="M 100,100 L 130,160" />
+            <path className="graph-edge stable" d="M 200,100 L 170,160" />
+            <path className="graph-edge stable" d="M 200,100 L 230,160" />
+            
+            <circle cx="150" cy="40" r="10" className="graph-node stable" />
+            <circle cx="100" cy="100" r="10" className="graph-node stable" />
+            <circle cx="200" cy="100" r="10" className="graph-node stable" />
+            <circle cx="70" cy="160" r="8" className="graph-node stable" />
+            <circle cx="130" cy="160" r="8" className="graph-node stable" />
+            <circle cx="170" cy="160" r="8" className="graph-node stable" />
+            <circle cx="230" cy="160" r="8" className="graph-node stable" />
+          </>
+        );
+      case 'specker_t_functor':
+        return (
+          <>
+            <path className="graph-edge stable" d="M 80,100 L 220,100" strokeWidth="4" markerEnd="url(#arrowhead)" />
+            <circle cx="80" cy="100" r="14" className="graph-node stable" />
+            <circle cx="220" cy="100" r="14" className="graph-node stable" />
+            <text x="150" y="90" textAnchor="middle" fontSize="12" fontWeight="bold" fill="var(--mono-black)">T-Functor [Stable]</text>
+          </>
+        );
+      case 'specker_erratic':
+        return (
+          <>
+            <path className="graph-edge erratic" d="M 80,100 C 120,50 180,50 220,100" fill="transparent" markerEnd="url(#arrowhead)" />
+            <path className="graph-edge erratic" d="M 220,100 C 180,150 120,150 80,100" fill="transparent" markerEnd="url(#arrowhead)" />
+            <circle cx="80" cy="100" r="14" className="graph-node erratic" />
+            <circle cx="220" cy="100" r="14" className="graph-node erratic" />
+            <text x="150" y="105" textAnchor="middle" fontSize="12" fontWeight="bold" fill="var(--mono-red)">-1 (Loop)</text>
+          </>
+        );
+      case 'agentic_reflection':
+        return (
+          <>
+            <path className="graph-edge stable" d="M 150,40 L 220,80 L 190,160 L 110,160 L 80,80 Z" fill="rgba(0,0,0,0.02)" />
+            <path className="graph-edge stable" d="M 150,40 L 190,160" />
+            <path className="graph-edge stable" d="M 150,40 L 110,160" />
+            <path className="graph-edge stable" d="M 220,80 L 110,160" />
+            <path className="graph-edge stable" d="M 220,80 L 80,80" />
+            <path className="graph-edge stable" d="M 190,160 L 80,80" />
+            
+            <circle cx="150" cy="40" r="8" className="graph-node stable" />
+            <circle cx="220" cy="80" r="8" className="graph-node stable" />
+            <circle cx="190" cy="160" r="8" className="graph-node stable" />
+            <circle cx="110" cy="160" r="8" className="graph-node stable" />
+            <circle cx="80" cy="80" r="8" className="graph-node stable" />
+          </>
+        );
+      case 'holographic_sieve':
+        return (
+          <>
+            <path className="graph-edge stable" d="M 150,100 L 80,30" strokeDasharray="2,2" />
+            <path className="graph-edge stable" d="M 150,100 L 220,30" strokeDasharray="2,2" />
+            <path className="graph-edge stable" d="M 150,100 L 260,100" strokeDasharray="2,2" />
+            <path className="graph-edge stable" d="M 150,100 L 220,170" strokeDasharray="2,2" />
+            <path className="graph-edge stable" d="M 150,100 L 80,170" strokeDasharray="2,2" />
+            <path className="graph-edge stable" d="M 150,100 L 40,100" strokeDasharray="2,2" />
+            
+            <circle cx="150" cy="100" r="20" className="graph-node stable" />
+            <circle cx="150" cy="100" r="16" fill="#fff" />
+            <circle cx="150" cy="100" r="6" className="graph-node stable" />
+            
+            <circle cx="80" cy="30" r="5" className="graph-node stable" />
+            <circle cx="220" cy="30" r="5" className="graph-node stable" />
+            <circle cx="260" cy="100" r="5" className="graph-node stable" />
+            <circle cx="220" cy="170" r="5" className="graph-node stable" />
+            <circle cx="80" cy="170" r="5" className="graph-node stable" />
+            <circle cx="40" cy="100" r="5" className="graph-node stable" />
+          </>
+        );
+      default:
+        return isStable ? (
+          <>
+            <path className="graph-edge stable" d="M 50,100 L 140,50" markerEnd="url(#arrowhead)" />
+            <path className="graph-edge stable" d="M 150,50 L 250,100" markerEnd="url(#arrowhead)" />
+            <path className="graph-edge stable" d="M 50,100 L 140,150" markerEnd="url(#arrowhead)" />
+            <path className="graph-edge stable" d="M 150,150 L 250,100" markerEnd="url(#arrowhead)" />
+            <circle cx="50" cy="100" r="12" className="graph-node stable" />
+            <circle cx="150" cy="50" r="12" className="graph-node stable" />
+            <circle cx="150" cy="150" r="12" className="graph-node stable" />
+            <circle cx="250" cy="100" r="12" className="graph-node stable" />
+          </>
+        ) : (
+          <>
+            <path className="graph-edge erratic" d="M 150,100 C 100,50 200,50 150,100" fill="transparent" markerEnd="url(#arrowhead)" />
+            <path className="graph-edge erratic" d="M 150,100 C 200,150 100,150 150,100" fill="transparent" markerEnd="url(#arrowhead)" />
+            <circle cx="150" cy="100" r="10" className="graph-node erratic" />
+          </>
+        );
+    }
+  };
+
+  return (
+    <div className="graph-view-container">
+      <svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill={isStable ? "rgba(0,0,0,1)" : "rgba(211,47,47,1)"} />
+          </marker>
+        </defs>
+        
+        {renderGraph()}
+      </svg>
+      {isStable ? (
+        <div style={{position: 'absolute', bottom: '10px', right: '15px', color: 'var(--mono-black)', fontSize: '0.8rem', fontWeight: 600}}>TOPOLOGY: STABLE</div>
+      ) : (
+        <div style={{position: 'absolute', bottom: '10px', right: '15px', color: 'var(--mono-red)', fontSize: '0.8rem', fontWeight: 600}}>EXTENSIONALITY COLLISION</div>
+      )}
+    </div>
+  );
+};
+
+const CHALLENGES = [
+  { title: "Level 1: The Basic Loop", desc: "Can you construct a topological cycle that evaluates cleanly without generating a negative weight? Think about sets that map strictly to themselves without inversion (e.g. Quine Atoms)." },
+  { title: "Level 2: The Extensionality Trap", desc: "Create a set membership graph (using comprehensions) that causes the engine to detect a negative-weight cycle (-1) and halt at exactly 0 safe iterations. (Hint: self-reference with negation)." },
+  { title: "Level 3: Burali-Forti Bypass", desc: "Assume the T-Functor Synthesis is enabled. Can you map a disjoint weight elevation (like the set of all ordinal numbers) without triggering a hard Extensionality Collision?" },
+  { title: "Level 4: Holographic State Collapse", desc: "Write a logic proposition that forces a continuous state into a discrete phase space using a Strongly Cantorian Cut (SC_CUT), ensuring an O(1) sweep evaluation." },
+  { title: "Level 5: Transfinite Agentic Reflection", desc: "Construct an Agentic Reflection graph where a node simulates its own future interaction cost, mathematically bounding its own algorithmic friction before execution." }
+];
+
+const SYNTAX_ITEMS = [
+  { code: 'forall x . P', desc: 'Universal Quantifier' },
+  { code: 'exists x . P', desc: 'Existential Quantifier' },
+  { code: '~P', desc: 'Logical NOT' },
+  { code: 'P & Q', desc: 'Logical AND' },
+  { code: 'P | Q', desc: 'Logical OR' },
+  { code: 'P -> Q', desc: 'Implication' },
+  { code: 'P <-> Q', desc: 'Biconditional' },
+  { code: 'x = y', desc: 'Equality' },
+  { code: 'x in y', desc: 'Set Membership' },
+  { code: 'x < y', desc: 'Strict Less-Than' },
+  { code: '{x | P(x)}', desc: 'Comprehension' },
+  { code: 'lam x . P', desc: 'Lambda Abstraction' },
+  { code: 'app(x, y)', desc: 'Combinator App' },
+  { code: 'QPair(x, y)', desc: 'Quine Pair' },
+  { code: 'QProj1(p)', desc: 'Quine 1st Proj' },
+  { code: 'QProj2(p)', desc: 'Quine 2nd Proj' },
+  { code: 'S x y z', desc: 'Substitution' },
+  { code: 'K x y', desc: 'Constant' },
+  { code: 'I x', desc: 'Identity' },
+  { code: 'Susp x', desc: 'Okasaki Suspension' },
+  { code: '2-SIC', desc: 'Interaction Node' },
+  { code: 'T_Funct(x)', desc: 'T-Functor Elevation' },
+  { code: 'SC_CUT(x)', desc: 'Cantorian Cut' }
 ];
 
 export default function App() {
@@ -103,8 +252,8 @@ export default function App() {
   const [query, setQuery] = useState('forall x . x = x');
   const [smtWitness, setSmtWitness] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
-  const [error, setError] = useState('');
   const [activeChallenge, setActiveChallenge] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'smt'|'stats'|'graph'>('smt');
 
   // Engine Settings State
   const [useTFunctor, setUseTFunctor] = useState(false);
@@ -121,36 +270,33 @@ export default function App() {
 
   const runEval = (q: string) => {
     try {
-      setError('');
-      
       let w = "";
       let s: any = null;
 
-      // Advanced demonstrations (ExPrograms & Comblib) bypass the basic parser
       if (q === "Omega = {Omega}") {
         w = "; === BEGIN STRATIFICATION WITNESS ===\n; Quine Atom Loop\n(assert (= topological_weight 0))\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 1, mcm: 0.0 };
+        s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'basic_loop' };
       }
       else if (q === "{{x}, {x, y}} = {{a}, {a, b}}") {
         w = "; === BEGIN STRATIFICATION WITNESS ===\n; Kuratowski Ordered Pair\n; Differential offset tracked (+2)\n(assert (<= (- depth_a depth_x) 0))\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 4, mcm: 0.0 };
+        s = { isStratified: true, iterations: 4, mcm: 0.0, graphType: 'kuratowski' };
       }
       else if (q === "Phi(m) = Phi(T(m))") {
         if (useTFunctor) {
           w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation (Stabilized by T-Functor)\n; Collision Absorbed\n(assert (= elevation elevation))\n; === END STRATIFICATION WITNESS ===";
-          s = { isStratified: true, iterations: 5, mcm: 0.0 };
+          s = { isStratified: true, iterations: 5, mcm: 0.0, graphType: 'specker_t_functor' };
         } else {
           w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation of Global Choice\n; Extensionality Collision Detected\n(assert (<= (- elevation elevation) -1))\n; === END STRATIFICATION WITNESS ===";
-          s = { isStratified: false, iterations: 0, mcm: -1.0 };
+          s = { isStratified: false, iterations: 0, mcm: -1.0, graphType: 'specker_erratic' };
         }
       }
       else if (q === "simulate_hypothetical(agent_core, action)") {
         w = "; === BEGIN STRATIFICATION WITNESS ===\n; Agentic Reflection Sandbox\n; Algorithmic Friction Cost: 14\n; SC_ISLAND_STABLE\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 14, mcm: 0.0 };
+        s = { isStratified: true, iterations: 14, mcm: 0.0, graphType: 'agentic_reflection' };
       }
       else if (q === "SC_CUT(exclusionIndex[isCorrupted, isExpired])") {
         w = "; === BEGIN STRATIFICATION WITNESS ===\n; Holographic Sieve Execution\n; O(1) Interference Sweep\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 1, mcm: 0.0 };
+        s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'holographic_sieve' };
       }
       else {
         const res = evaluate_formula(q);
@@ -162,12 +308,11 @@ export default function App() {
         };
       }
 
-      // Apply Metadata Headers based on Toggles
       let header = "";
       if (useTFunctor) header += "; [METADATA] T-Functor Synthesis: ACTIVE\n";
       if (useSCBedrock) header += "; [METADATA] SC-Bedrock Daemon: ACTIVE\n";
       if (overrideK) header += "; [METADATA] K-Iteration Bounds: OVERRIDDEN\n";
-      if (traceTopology) header += "; [METADATA] Bellman-Ford Trace: ENABLED\n";
+      if (traceTopology) header += "; [METADATA] Tarjan/Karp Trace (MCM): ENABLED\n";
       if (header !== "") header += "\n";
 
       if (overrideK && s && !s.isStratified) {
@@ -177,147 +322,153 @@ export default function App() {
       setSmtWitness(header + w);
       setStats(s);
     } catch (e: any) {
-      setError(e.toString());
       setSmtWitness(null);
-      setStats(null);
+      setStats({ error: e.toString() });
     }
   };
 
-  const handleRun = () => {
-    runEval(query);
-  };
+  const handleRun = () => runEval(query);
 
   const loadExample = (formula: string) => {
     setQuery(formula);
     runEval(formula);
   };
 
-  if (!ready) return <div style={{ padding: '2rem', fontFamily: 'Inter, sans-serif' }}>Loading Engine...</div>;
+  const insertSyntax = (code: string) => {
+    setQuery(prev => prev + (prev.endsWith(' ') || prev.length === 0 ? '' : ' ') + code);
+  };
+
+  if (!ready) return <div style={{ padding: '2rem', fontFamily: 'Inter, sans-serif' }}>Booting Engine...</div>;
 
   return (
     <>
       <QuartoNavbar />
       <div className="container">
-        <header className="header" style={{marginTop: '6rem'}}>
+        <header className="header" style={{marginTop: '5rem'}}>
           <h1>Monist Engine Console</h1>
-          <p>Interactive graph reduction and topological bounds checking.</p>
+          <p>Interactive spatial graph reduction and bounds checking.</p>
         </header>
 
-      <div className="main-layout">
-        <div className="query-section">
-          {activeChallenge !== null && (
-            <div className="active-challenge-box">
-              <h4>{CHALLENGES[activeChallenge].title}</h4>
-              <p>{CHALLENGES[activeChallenge].desc}</p>
-              <button className="btn-close-challenge" onClick={() => setActiveChallenge(null)}>Dismiss Challenge</button>
+        {activeChallenge !== null && (
+          <div className="active-challenge-box">
+            <h4>{CHALLENGES[activeChallenge].title}</h4>
+            <p>{CHALLENGES[activeChallenge].desc}</p>
+            <button className="btn-close-challenge" onClick={() => setActiveChallenge(null)}>Dismiss Challenge</button>
+          </div>
+        )}
+
+        <div className="ide-grid">
+          {/* Column 1: Editor, Settings & Syntax */}
+          <div className="editor-sidebar">
+            <div className="editor-section">
+              <textarea 
+                className="query-input"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Enter formal logic here..."
+                rows={6}
+                spellCheck={false}
+              />
+              
+              <div className="tools-bar">
+                <button className="btn-run" onClick={handleRun}>Evaluate Physics</button>
+                
+                <div className="engine-toggles">
+                  <label className="tool-toggle"><input type="checkbox" checked={useTFunctor} onChange={e => { setUseTFunctor(e.target.checked); setTimeout(() => runEval(query), 0); }} /> T-Functor Synthesis</label>
+                  <label className="tool-toggle"><input type="checkbox" checked={useSCBedrock} onChange={e => { setUseSCBedrock(e.target.checked); setTimeout(() => runEval(query), 0); }} /> SC-Bedrock Daemon</label>
+                  <label className="tool-toggle"><input type="checkbox" checked={overrideK} onChange={e => { setOverrideK(e.target.checked); setTimeout(() => runEval(query), 0); }} /> Override K-Limits</label>
+                  <label className="tool-toggle"><input type="checkbox" checked={traceTopology} onChange={e => { setTraceTopology(e.target.checked); setTimeout(() => runEval(query), 0); }} /> Trace Tarjan/Karp</label>
+                </div>
+              </div>
             </div>
-          )}
-          <textarea 
-            className="query-input"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Enter formal logic here..."
-            rows={4}
-            spellCheck={false}
-          />
-          <button className="btn-run" onClick={handleRun}>Evaluate</button>
-          {error && <div className="error-box">{error}</div>}
-        </div>
 
-        <div className="split-view">
-          <div className="panel">
-            <h2>Formal Witness (SMT-LIB)</h2>
-            <pre className="smt-output">{smtWitness || 'No evaluation yet.'}</pre>
+            <div className="syntax-sidebar panel-card">
+              <h3>Syntax Toolkit</h3>
+              <div className="syntax-grid">
+                {SYNTAX_ITEMS.map((item, idx) => (
+                  <button key={idx} className="syntax-btn" title={item.desc} onClick={() => insertSyntax(item.code)}>
+                    <code>{item.code}</code>
+                    <span>{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="panel">
-            <h2>Execution Stats</h2>
-            {stats ? (
-              stats.error ? (
-                <p className="stats-value error">{stats.error}</p>
-              ) : (
-                <ul className="stats-list">
-                  <li><strong>Stratified:</strong> {stats.isStratified ? 'Yes' : 'No'}</li>
-                  <li><strong>Max K-Iterations:</strong> {stats.iterations}</li>
-                  <li><strong>Minimum Cycle Mean (MCM):</strong> {stats.mcm.toFixed(4)}</li>
-                </ul>
-              )
-            ) : (
-              <p className="placeholder">Awaiting input.</p>
-            )}
-          </div>
-        </div>
 
-        <div className="syntax-sidebar">
-          <h3>Syntax Chart & Combinators</h3>
-          <ul className="syntax-list">
-            <li><code>forall x . P</code> <span>Universal Quantifier</span></li>
-            <li><code>exists x . P</code> <span>Existential Quantifier</span></li>
-            <li><code>~P</code> or <code>¬P</code> <span>Logical NOT</span></li>
-            <li><code>P & Q</code> or <code>/\</code> <span>Logical AND</span></li>
-            <li><code>P | Q</code> or <code>\/</code> <span>Logical OR</span></li>
-            <li><code>P -&gt; Q</code> <span>Implication</span></li>
-            <li><code>P &lt;-&gt; Q</code> <span>Biconditional</span></li>
-            <li><code>x in y</code> <span>Set Membership</span></li>
-            <li><code>&#123;x | P(x)&#125;</code> <span>Comprehension</span></li>
+          {/* Column 2: Output Panels */}
+          <div className="output-section panel-card">
+            <div className="tabs-header">
+              <button className={`tab-btn ${activeTab === 'smt' ? 'active' : ''}`} onClick={() => setActiveTab('smt')}>Formal Witness</button>
+              <button className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>Execution Stats</button>
+              <button className={`tab-btn ${activeTab === 'graph' ? 'active' : ''}`} onClick={() => setActiveTab('graph')}>Graph View</button>
+            </div>
             
-            {/* Combinatory Additions */}
-            <li><code>app(x, y)</code> <span>Combinator Application</span></li>
-            <li><code>S x y z</code> <span>Substitution: x z (y z)</span></li>
-            <li><code>K x y</code> <span>Constant: x</span></li>
-            <li><code>I x</code> <span>Identity: x</span></li>
-            <li><code>T_Funct(x)</code> <span>T-Functor Elevation</span></li>
-            <li><code>SC_CUT(x)</code> <span>Strongly Cantorian Cut</span></li>
-          </ul>
-        </div>
-      </div>
+            <div className="tab-content">
+              {activeTab === 'smt' && (
+                <pre className="smt-output">{smtWitness || 'Awaiting evaluation...'}</pre>
+              )}
+              
+              {activeTab === 'stats' && (
+                <div className="stats-list">
+                  {stats ? (
+                    stats.error ? (
+                      <div className="error-box">{stats.error}</div>
+                    ) : (
+                      <>
+                        <div className="stat-item">
+                          <span className="stat-label">Stratified Topology</span>
+                          <span className={`stat-value ${stats.isStratified ? 'success' : 'error'}`}>{stats.isStratified ? 'YES' : 'NO'}</span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="stat-label">Max K-Iterations <span className="tooltip-wrap" data-tooltip="Tracks recursive depth limits per Buss's Bounded Arithmetic to halt execution loops safely.">?</span></span>
+                          <span className="stat-value">{stats.iterations}</span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="stat-label">Minimum Cycle Mean (MCM) <span className="tooltip-wrap" data-tooltip="Karp's MCM identifies negative-weight cycles natively. Values &lt; 0 indicate an Extensionality Collision.">?</span></span>
+                          <span className={`stat-value ${stats.mcm < 0 ? 'error' : ''}`}>{stats.mcm.toFixed(4)}</span>
+                        </div>
+                      </>
+                    )
+                  ) : (
+                    <p style={{color: '#888', fontStyle: 'italic'}}>Awaiting evaluation...</p>
+                  )}
+                </div>
+              )}
 
-      <div className="dashboard-section">
-        <h2 className="dashboard-title">Interactive Exploration Dashboard</h2>
-        
+              {activeTab === 'graph' && (
+                <GraphView stats={stats} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Dashboard */}
         <div className="dashboard-grid">
-          {/* Column 1: Tutorials & Diagnostics */}
-          <div className="dashboard-card">
-            <h3>📖 Guided Tutorials & Diagnostics</h3>
+          <div className="dashboard-card panel-card">
+            <h3>📖 Guided Tutorials</h3>
             <div className="tutorial-list">
               <button className="btn-tut" onClick={() => loadExample("forall x . x = x")}>ZFC Well-Founded Identity</button>
-              <button className="btn-tut" onClick={() => loadExample("{x | ~(x in x)} in {x | ~(x in x)}")}>Russell's Paradox (Extensionality Collision)</button>
+              <button className="btn-tut" onClick={() => loadExample("{x | ~(x in x)} in {x | ~(x in x)}")}>Russell's Paradox</button>
               <button className="btn-tut" onClick={() => loadExample("Omega = {Omega}")}>The Quine Atom (0-weight loop)</button>
-              <button className="btn-tut" onClick={() => loadExample("V in V")}>Universal Set Validation</button>
               <button className="btn-tut" onClick={() => loadExample("{{x}, {x, y}} = {{a}, {a, b}}")}>Kuratowski Ordered Pair</button>
               <button className="btn-tut" onClick={() => loadExample("Phi(m) = Phi(T(m))")}>Specker's Refutation</button>
-              <button className="btn-tut" onClick={() => loadExample("simulate_hypothetical(agent_core, action)")}>Agentic Reflection (ExPrograms)</button>
-              <button className="btn-tut" onClick={() => loadExample("SC_CUT(exclusionIndex[isCorrupted, isExpired])")}>Holographic Sieve (O(1) Sweep)</button>
+              <button className="btn-tut" onClick={() => loadExample("simulate_hypothetical(agent_core, action)")}>Agentic Reflection</button>
+              <button className="btn-tut" onClick={() => loadExample("SC_CUT(exclusionIndex[isCorrupted, isExpired])")}>Holographic Sieve</button>
             </div>
           </div>
 
-          {/* Column 2: Tools & Settings */}
-          <div className="dashboard-card">
-            <h3>🛠️ Engine Settings & Tools</h3>
-            <div className="tools-list">
-              <label className="tool-toggle"><input type="checkbox" checked={useTFunctor} onChange={e => { setUseTFunctor(e.target.checked); setTimeout(() => runEval(query), 0); }} /> Enable T-Functor Synthesis (Stabilize recursion)</label>
-              <label className="tool-toggle"><input type="checkbox" checked={useSCBedrock} onChange={e => { setUseSCBedrock(e.target.checked); setTimeout(() => runEval(query), 0); }} /> SC-Bedrock Daemon</label>
-              <label className="tool-toggle"><input type="checkbox" checked={overrideK} onChange={e => { setOverrideK(e.target.checked); setTimeout(() => runEval(query), 0); }} /> Override K-Iteration Limits</label>
-              <label className="tool-toggle"><input type="checkbox" checked={traceTopology} onChange={e => { setTraceTopology(e.target.checked); setTimeout(() => runEval(query), 0); }} /> Trace Bellman-Ford Topology</label>
-            </div>
-            <p className="tool-note">*Note: Toggles instantly append metadata flags and alter graph boundaries.</p>
-          </div>
-
-          {/* Column 3: Challenges */}
-          <div className="dashboard-card">
-            <h3>💡 Challenges</h3>
-            <ul className="ideas-list">
+          <div className="dashboard-card panel-card">
+            <h3>💡 Tactical Challenges</h3>
+            <ul className="tutorial-list">
               {CHALLENGES.map((chal, i) => (
-                <li key={i}>
-                  <button className="btn-challenge" onClick={() => setActiveChallenge(i)}>
-                    {chal.title}
-                  </button>
-                </li>
+                <button key={i} className="btn-tut" onClick={() => { setActiveChallenge(i); window.scrollTo(0, 0); }}>
+                  {chal.title}
+                </button>
               ))}
             </ul>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 }
