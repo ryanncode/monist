@@ -453,9 +453,9 @@ export default function App() {
     <>
       <QuartoNavbar />
       <div className="container">
-        <div className="hero-section" style={{paddingTop: '2rem', paddingBottom: '2rem'}}>
+        <div className="hero-section">
           <h1>Monist Engine Console</h1>
-          <p className="lead" style={{fontSize: '1.4rem', fontWeight: 300, maxWidth: '800px', marginBottom: '2rem'}}>Interactive spatial graph reduction and bounds checking.</p>
+          <p className="lead" style={{fontSize: '1.15rem', fontWeight: 300, maxWidth: '800px', marginBottom: '2rem'}}>Interactive spatial graph reduction and bounds checking.</p>
         </div>
 
         {activeChallenge !== null && (
