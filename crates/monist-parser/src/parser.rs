@@ -1,5 +1,6 @@
 use crate::lexer::{Lexer, Token};
 use monist_core::ast::{Atomic, Formula, FormulaArena, Var};
+use monist_core::budget::ResourceBudget;
 
 use std::collections::HashMap;
 
@@ -9,18 +10,25 @@ pub struct Parser<'a> {
     current_token: Token,
     arena: &'a mut FormulaArena,
     bound_vars: Vec<String>,
+    budget: ResourceBudget,
+    current_depth: usize,
+    nodes_allocated: usize,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(input: &'a str, arena: &'a mut FormulaArena) -> Self {
-        Self::with_macros(input, arena, None)
+    pub fn new(input: &'a str, arena: &'a mut FormulaArena, budget: ResourceBudget) -> Self {
+        Self::with_macros(input, arena, None, budget)
     }
 
     pub fn with_macros(
         input: &'a str,
         arena: &'a mut FormulaArena,
         macros: Option<&'a HashMap<String, (Vec<String>, usize)>>,
+        budget: ResourceBudget,
     ) -> Self {
+        if input.len() > budget.max_bytes {
+            panic!("Input Too Large");
+        }
         let mut lexer = Lexer::new(input);
         let current_token = lexer.next_token();
         Self {
@@ -29,6 +37,19 @@ impl<'a> Parser<'a> {
             arena,
             bound_vars: Vec::new(),
             macros,
+            budget,
+            current_depth: 0,
+            nodes_allocated: 0,
+        }
+    }
+
+    fn check_budget(&mut self) {
+        if self.current_depth > self.budget.max_depth {
+            panic!("Nesting Limit Exceeded");
+        }
+        self.nodes_allocated += 1;
+        if self.nodes_allocated > self.budget.max_ast_nodes {
+            panic!("AST Node Limit Exceeded");
         }
     }
 
@@ -60,29 +81,41 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_formula(&mut self) -> usize {
-        self.parse_iff()
+        self.current_depth += 1;
+        self.check_budget();
+        let res = self.parse_iff();
+        self.current_depth -= 1;
+        res
     }
 
     fn parse_iff(&mut self) -> usize {
+        self.current_depth += 1;
+        self.check_budget();
         let left = self.parse_impl();
-        if self.match_token(Token::Iff) {
+        let res = if self.match_token(Token::Iff) {
             let right = self.parse_iff();
             let lr = self.arena.add(Formula::Impl(left, right));
             let rl = self.arena.add(Formula::Impl(right, left));
             self.arena.add(Formula::Conj(lr, rl))
         } else {
             left
-        }
+        };
+        self.current_depth -= 1;
+        res
     }
 
     fn parse_impl(&mut self) -> usize {
+        self.current_depth += 1;
+        self.check_budget();
         let left = self.parse_or();
-        if self.match_token(Token::Impl) {
+        let res = if self.match_token(Token::Impl) {
             let right = self.parse_impl();
             self.arena.add(Formula::Impl(left, right))
         } else {
             left
-        }
+        };
+        self.current_depth -= 1;
+        res
     }
 
     fn parse_or(&mut self) -> usize {
@@ -104,7 +137,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_unary(&mut self) -> usize {
-        if self.match_token(Token::Not) {
+        self.current_depth += 1;
+        self.check_budget();
+        let res = if self.match_token(Token::Not) {
             let inner = self.parse_unary();
             self.arena.add(Formula::Neg(inner))
         } else if self.match_token(Token::Forall) {
@@ -131,11 +166,15 @@ impl<'a> Parser<'a> {
             }
         } else {
             self.parse_primary()
-        }
+        };
+        self.current_depth -= 1;
+        res
     }
 
     fn parse_primary(&mut self) -> usize {
-        if self.match_token(Token::LParen) {
+        self.current_depth += 1;
+        self.check_budget();
+        let res = if self.match_token(Token::LParen) {
             let inner = self.parse_formula();
             self.match_token(Token::RParen);
             inner
@@ -177,7 +216,9 @@ impl<'a> Parser<'a> {
                     if let Some(macros) = self.macros {
                         if let Some((params, formula_idx)) = macros.get(&name) {
                             if params.len() == args.len() {
-                                return self.expand_macro(*formula_idx, params, &args);
+                                let expanded = self.expand_macro(*formula_idx, params, &args);
+                                self.current_depth -= 1;
+                                return expanded;
                             }
                         }
                     }
@@ -188,13 +229,20 @@ impl<'a> Parser<'a> {
             } else {
                 self.arena.add(Formula::Atom(Atomic::Eq(v1.clone(), v1))) // fallback
             }
-        }
+        };
+        self.current_depth -= 1;
+        res
     }
 
     fn expand_macro(&mut self, root: usize, params: &[String], args: &[Var]) -> usize {
+        self.current_depth += 1;
+        self.check_budget();
         let f = match self.arena.get(root) {
             Some(f) => f.clone(),
-            None => return root,
+            None => {
+                self.current_depth -= 1;
+                return root;
+            }
         };
 
         let map_var = |v: &Var| -> Var {
@@ -210,7 +258,7 @@ impl<'a> Parser<'a> {
             }
         };
 
-        match f {
+        let res = match f {
             Formula::Atom(mut atomic) => {
                 match &mut atomic {
                     Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) | Atomic::Lt(v1, v2) => {
@@ -252,6 +300,8 @@ impl<'a> Parser<'a> {
                 let ninner = self.expand_macro(inner, params, args);
                 self.arena.add(Formula::Comp(b, s, ninner))
             }
-        }
+        };
+        self.current_depth -= 1;
+        res
     }
 }

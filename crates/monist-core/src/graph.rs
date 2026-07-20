@@ -1,5 +1,6 @@
 use crate::ast::{Atomic, Formula, FormulaArena, Var};
 use crate::eval::ExecutionLimits;
+use crate::budget::ResourceBudget;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -37,7 +38,12 @@ pub fn extract_constraints_aux(
     formula_idx: usize,
     depth: usize,
     in_comp: bool,
+    budget: &ResourceBudget,
+    edge_count: &mut usize,
 ) -> Vec<Constraint> {
+    if depth > budget.max_depth {
+        panic!("Graph Extraction Nesting Limit Exceeded");
+    }
     let mut constraints = Vec::new();
 
     let formula = match arena.get(formula_idx) {
@@ -62,6 +68,7 @@ pub fn extract_constraints_aux(
                     weight: 0,
                     in_comp,
                 });
+                *edge_count += 2;
             }
             Atomic::Mem(x, y) => {
                 let sx = ScopedVar(x.clone(), depth);
@@ -78,6 +85,7 @@ pub fn extract_constraints_aux(
                     weight: -1,
                     in_comp,
                 });
+                *edge_count += 2;
             }
             Atomic::Lt(x, y) => {
                 let sx = ScopedVar(x.clone(), depth);
@@ -88,24 +96,28 @@ pub fn extract_constraints_aux(
                     weight: -1,
                     in_comp,
                 });
+                *edge_count += 1;
             }
             _ => {}
         },
         Formula::Neg(f_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f_idx, depth, in_comp));
+            constraints.extend(extract_constraints_aux(arena, *f_idx, depth, in_comp, budget, edge_count));
         }
         Formula::Conj(f1_idx, f2_idx)
         | Formula::Disj(f1_idx, f2_idx)
         | Formula::Impl(f1_idx, f2_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth, in_comp));
-            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth, in_comp));
+            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth, in_comp, budget, edge_count));
+            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth, in_comp, budget, edge_count));
         }
         Formula::Univ(_, _, f_idx) | Formula::Exist(_, _, f_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1, in_comp));
+            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1, in_comp, budget, edge_count));
         }
         Formula::Comp(_, _, f_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1, true));
+            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1, true, budget, edge_count));
         }
+    }
+    if *edge_count > budget.max_graph_edges {
+        panic!("Graph Edge Limit Exceeded");
     }
     constraints
 }

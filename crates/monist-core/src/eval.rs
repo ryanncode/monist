@@ -4,6 +4,7 @@ use crate::graph::{Edge, GraphArena, ScopedVar};
 pub enum EvalResult {
     Success(Vec<(ScopedVar, i32)>),
     NegativeCycle,
+    NumericOverflow,
 }
 
 pub fn evaluate_clause(edges: &[Edge]) -> EvalResult {
@@ -22,20 +23,24 @@ pub fn evaluate_clause(edges: &[Edge]) -> EvalResult {
         return EvalResult::Success(Vec::new());
     }
 
-    let mut dist = vec![0; v_count];
+    let mut dist: Vec<i64> = vec![0; v_count];
     let get_idx = |v: &ScopedVar| vertices.iter().position(|x| x == v).unwrap();
 
-    let indexed_edges: Vec<(usize, usize, i32)> = edges
+    let indexed_edges: Vec<(usize, usize, i64)> = edges
         .iter()
-        .map(|e| (get_idx(&e.source), get_idx(&e.target), e.weight))
+        .map(|e| (get_idx(&e.source), get_idx(&e.target), e.weight as i64))
         .collect();
 
     for _ in 0..(v_count - 1) {
         let mut updated = false;
         for &(u, v, weight) in &indexed_edges {
-            if dist[u] + weight < dist[v] {
-                dist[v] = dist[u] + weight;
-                updated = true;
+            if let Some(new_dist) = dist[u].checked_add(weight) {
+                if new_dist < dist[v] {
+                    dist[v] = new_dist;
+                    updated = true;
+                }
+            } else {
+                return EvalResult::NumericOverflow;
             }
         }
         if !updated {
@@ -44,12 +49,16 @@ pub fn evaluate_clause(edges: &[Edge]) -> EvalResult {
     }
 
     for &(u, v, weight) in &indexed_edges {
-        if dist[u] + weight < dist[v] {
-            return EvalResult::NegativeCycle;
+        if let Some(new_dist) = dist[u].checked_add(weight) {
+            if new_dist < dist[v] {
+                return EvalResult::NegativeCycle;
+            }
+        } else {
+            return EvalResult::NumericOverflow;
         }
     }
 
-    let final_dist = vertices.into_iter().zip(dist.into_iter()).collect();
+    let final_dist = vertices.into_iter().zip(dist.into_iter().map(|d| d as i32)).collect();
     EvalResult::Success(final_dist)
 }
 
@@ -66,17 +75,26 @@ impl ExecutionLimits {
             return None;
         }
 
+        const INF: i64 = i64::MAX / 2;
+
         // Karp's Minimum Cycle Mean (MCM) Algorithm
         // DP array: dp[k][v] = min weight of path of length k to v
-        let mut dp = vec![vec![i32::MAX / 2; n]; n + 1];
+        let mut dp = vec![vec![INF; n]; n + 1];
         for v in 0..n {
             dp[0][v] = 0;
         }
 
         for k in 1..=n {
             for &(u, v, w, _) in &graph.edges {
-                if dp[k - 1][u] + w < dp[k][v] {
-                    dp[k][v] = dp[k - 1][u] + w;
+                if dp[k - 1][u] == INF {
+                    continue;
+                }
+                if let Some(new_dist) = dp[k - 1][u].checked_add(w as i64) {
+                    if new_dist < dp[k][v] {
+                        dp[k][v] = new_dist;
+                    }
+                } else {
+                    return None; // numeric overflow
                 }
             }
         }
@@ -85,12 +103,12 @@ impl ExecutionLimits {
         let mut has_cycle = false;
 
         for v in 0..n {
-            if dp[n][v] >= i32::MAX / 4 {
+            if dp[n][v] == INF {
                 continue;
             }
             let mut min_val: f64 = f64::NEG_INFINITY;
             for k in 0..n {
-                if dp[k][v] >= i32::MAX / 4 {
+                if dp[k][v] == INF {
                     continue;
                 }
                 let val = (dp[n][v] - dp[k][v]) as f64 / (n - k) as f64;

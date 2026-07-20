@@ -25,7 +25,7 @@ pub fn export_smt_lib(
     if let Some(depths) = success_depths {
         let mut depth_str = String::new();
         for (i, d) in depths.iter().enumerate() {
-            let var_name = var_to_smt_name(&arena.vars[i]);
+            let var_name = format!("v{}", i);
             depth_str.push_str(&format!("{} -> {}\n", var_name, d));
         }
         out.push_str(&format!("(set-info :stratification-success-depths \"{}\")\n", escape_smt_string(depth_str.trim_end())));
@@ -34,8 +34,14 @@ pub fn export_smt_lib(
     out.push_str("(set-logic QF_LIA)\n\n");
 
     // Declare variables
-    for var in &arena.vars {
-        let name = var_to_smt_name(var);
+    for (i, var) in arena.vars.iter().enumerate() {
+        let name = format!("v{}", i);
+        let ScopedVar(v, depth) = var;
+        let orig_name = match v {
+            Var::Free(s) => s.clone(),
+            Var::Bound(idx) => format!("b{}", idx),
+        };
+        out.push_str(&format!("; original variable: {} depth: {}\n", escape_smt_string(&orig_name), depth));
         out.push_str(&format!("(declare-fun {} () Int)\n", name));
     }
     out.push_str("\n");
@@ -43,8 +49,8 @@ pub fn export_smt_lib(
     // Assert constraints
     // Edge (u, v, w) means d[v] <= d[u] + w
     for &(u, v, w, _) in &arena.edges {
-        let u_name = var_to_smt_name(&arena.vars[u]);
-        let v_name = var_to_smt_name(&arena.vars[v]);
+        let u_name = format!("v{}", u);
+        let v_name = format!("v{}", v);
         out.push_str(&format!("(assert (<= (- {} {}) {}))\n", v_name, u_name, w));
     }
 
@@ -53,15 +59,6 @@ pub fn export_smt_lib(
     out.push_str("; === END STRATIFICATION WITNESS ===\n");
 
     out
-}
-
-fn var_to_smt_name(var: &ScopedVar) -> String {
-    let ScopedVar(v, depth) = var;
-    let base_name = match v {
-        Var::Free(s) => s.clone(),
-        Var::Bound(idx) => format!("b{}", idx),
-    };
-    format!("{}_d{}", base_name, depth)
 }
 
 fn escape_smt_string(s: &str) -> String {

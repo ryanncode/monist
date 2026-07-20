@@ -4,6 +4,7 @@ use monist_core::ast::FormulaArena;
 use monist_core::graph::GraphArena;
 use monist_core::eval::{ExecutionLimits, evaluate_clause, EvalResult};
 use monist_core::smt::export_smt_lib;
+use monist_core::budget::ResourceBudget;
 
 #[wasm_bindgen]
 pub fn init_panic_hook() {
@@ -29,15 +30,17 @@ impl EvaluationResult {
 #[wasm_bindgen]
 pub fn evaluate_formula(input: &str) -> Result<EvaluationResult, JsValue> {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let budget = ResourceBudget::default();
         let mut arena = FormulaArena::new();
-        let mut parser = Parser::new(input, &mut arena);
+        let mut parser = Parser::new(input, &mut arena, budget);
         let formula_idx = parser.parse_formula();
 
-        let constraints = monist_core::graph::extract_constraints_aux(&arena, formula_idx, 0, false);
+        let mut edge_count = 0;
+        let constraints = monist_core::graph::extract_constraints_aux(&arena, formula_idx, 0, false, &budget, &mut edge_count);
         let mut graph = GraphArena::from_constraints(&constraints);
 
         let limits = ExecutionLimits::compute_for_graph(&graph)
-            .ok_or_else(|| JsValue::from_str("Graph is empty or unevaluable"))?;
+            .ok_or_else(|| JsValue::from_str("Numeric Overflow in Execution Limits DP"))?;
 
         let is_stratified = limits.mcm >= 0.0;
         
@@ -54,6 +57,7 @@ pub fn evaluate_formula(input: &str) -> Result<EvaluationResult, JsValue> {
         let eval_res = evaluate_clause(&edges);
         let (collision_trace, success_depths) = match eval_res {
             EvalResult::NegativeCycle => (Some("Negative Cycle Detected"), None),
+            EvalResult::NumericOverflow => panic!("Numeric Overflow during evaluation"),
             EvalResult::Success(depths) => {
                 let just_depths: Vec<i32> = depths.iter().map(|(_, d)| *d).collect();
                 (None, Some(just_depths))

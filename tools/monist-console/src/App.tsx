@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import init, { evaluate_formula, init_panic_hook } from 'monist-wasm';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import EvaluationWorker from './worker?worker';
 import './index.css';
 
 const QuartoNavbar = () => {
@@ -248,12 +248,16 @@ const SYNTAX_ITEMS = [
 ];
 
 export default function App() {
-  const [ready, setReady] = useState(false);
   const [query, setQuery] = useState('forall x . x = x');
   const [smtWitness, setSmtWitness] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
   const [activeChallenge, setActiveChallenge] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'smt'|'stats'|'graph'>('smt');
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+  const workerRef = useRef<Worker | null>(null);
+  const reqIdRef = useRef<number>(0);
+  const debounceTimerRef = useRef<number | null>(null);
 
   // Engine Settings State
   const [useTFunctor, setUseTFunctor] = useState(false);
@@ -262,70 +266,112 @@ export default function App() {
   const [traceTopology, setTraceTopology] = useState(false);
 
   useEffect(() => {
-    init().then(() => {
-      init_panic_hook();
-      setReady(true);
-    });
+    workerRef.current = new EvaluationWorker();
+    return () => workerRef.current?.terminate();
   }, []);
 
-  const runEval = (q: string) => {
-    try {
-      let w = "";
-      let s: any = null;
+  const finishEval = useCallback((s: any, w: string) => {
+    let header = "";
+    if (useTFunctor) header += "; [METADATA] T-Functor Synthesis: ACTIVE\n";
+    if (useSCBedrock) header += "; [METADATA] SC-Bedrock Daemon: ACTIVE\n";
+    if (overrideK) header += "; [METADATA] K-Iteration Bounds: OVERRIDDEN (Simulation Only)\n";
+    if (traceTopology) header += "; [METADATA] Tarjan/Karp Trace (MCM): ENABLED\n";
+    if (header !== "") header += "\n";
 
-      if (q === "Omega = {Omega}") {
-        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Quine Atom Loop\n(assert (= topological_weight 0))\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'basic_loop' };
-      }
-      else if (q === "{{x}, {x, y}} = {{a}, {a, b}}") {
-        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Kuratowski Ordered Pair\n; Differential offset tracked (+2)\n(assert (<= (- depth_a depth_x) 0))\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 4, mcm: 0.0, graphType: 'kuratowski' };
-      }
-      else if (q === "Phi(m) = Phi(T(m))") {
-        if (useTFunctor) {
-          w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation (Stabilized by T-Functor)\n; Collision Absorbed\n(assert (= elevation elevation))\n; === END STRATIFICATION WITNESS ===";
-          s = { isStratified: true, iterations: 5, mcm: 0.0, graphType: 'specker_t_functor' };
-        } else {
-          w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation of Global Choice\n; Extensionality Collision Detected\n(assert (<= (- elevation elevation) -1))\n; === END STRATIFICATION WITNESS ===";
-          s = { isStratified: false, iterations: 0, mcm: -1.0, graphType: 'specker_erratic' };
-        }
-      }
-      else if (q === "simulate_hypothetical(agent_core, action)") {
-        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Agentic Reflection Sandbox\n; Algorithmic Friction Cost: 14\n; SC_ISLAND_STABLE\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 14, mcm: 0.0, graphType: 'agentic_reflection' };
-      }
-      else if (q === "SC_CUT(exclusionIndex[isCorrupted, isExpired])") {
-        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Holographic Sieve Execution\n; O(1) Interference Sweep\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'holographic_sieve' };
-      }
-      else {
-        const res = evaluate_formula(q);
-        w = res.smt_witness || 'No witness generated.';
-        s = {
-          isStratified: res.is_stratified,
-          iterations: res.max_k_iterations,
-          mcm: res.mcm
-        };
-      }
-
-      let header = "";
-      if (useTFunctor) header += "; [METADATA] T-Functor Synthesis: ACTIVE\n";
-      if (useSCBedrock) header += "; [METADATA] SC-Bedrock Daemon: ACTIVE\n";
-      if (overrideK) header += "; [METADATA] K-Iteration Bounds: OVERRIDDEN\n";
-      if (traceTopology) header += "; [METADATA] Tarjan/Karp Trace (MCM): ENABLED\n";
-      if (header !== "") header += "\n";
-
-      if (overrideK && s && !s.isStratified) {
-        s.iterations = "∞ (UNSAFE)";
-      }
-
-      setSmtWitness(header + w);
-      setStats(s);
-    } catch (e: any) {
-      setSmtWitness(null);
-      setStats({ error: e.toString() });
+    if (overrideK && s && !s.isStratified) {
+      s.iterations = "∞ (UNSAFE)";
     }
-  };
+
+    setSmtWitness(header + w);
+    setStats(s);
+    setIsEvaluating(false);
+  }, [useTFunctor, useSCBedrock, overrideK, traceTopology]);
+
+  const scheduleEval = useCallback((q: string) => {
+    reqIdRef.current += 1;
+    const currentReqId = reqIdRef.current;
+    
+    let w = "";
+    let s: any = null;
+
+    if (q === "Omega = {Omega}") {
+      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Quine Atom Loop\n(assert (= topological_weight 0))\n; === END STRATIFICATION WITNESS ===";
+      s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'basic_loop' };
+      finishEval(s, w);
+    }
+    else if (q === "{{x}, {x, y}} = {{a}, {a, b}}") {
+      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Kuratowski Ordered Pair\n; Differential offset tracked (+2)\n(assert (<= (- depth_a depth_x) 0))\n; === END STRATIFICATION WITNESS ===";
+      s = { isStratified: true, iterations: 4, mcm: 0.0, graphType: 'kuratowski' };
+      finishEval(s, w);
+    }
+    else if (q === "Phi(m) = Phi(T(m))") {
+      if (useTFunctor) {
+        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation (Stabilized by T-Functor)\n; Collision Absorbed\n(assert (= elevation elevation))\n; === END STRATIFICATION WITNESS ===";
+        s = { isStratified: true, iterations: 5, mcm: 0.0, graphType: 'specker_t_functor' };
+      } else {
+        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation of Global Choice\n; Extensionality Collision Detected\n(assert (<= (- elevation elevation) -1))\n; === END STRATIFICATION WITNESS ===";
+        s = { isStratified: false, iterations: 0, mcm: -1.0, graphType: 'specker_erratic' };
+      }
+      finishEval(s, w);
+    }
+    else if (q === "simulate_hypothetical(agent_core, action)") {
+      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Agentic Reflection Sandbox\n; Algorithmic Friction Cost: 14\n; SC_ISLAND_STABLE\n; === END STRATIFICATION WITNESS ===";
+      s = { isStratified: true, iterations: 14, mcm: 0.0, graphType: 'agentic_reflection' };
+      finishEval(s, w);
+    }
+    else if (q === "SC_CUT(exclusionIndex[isCorrupted, isExpired])") {
+      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Holographic Sieve Execution\n; O(1) Interference Sweep\n; === END STRATIFICATION WITNESS ===";
+      s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'holographic_sieve' };
+      finishEval(s, w);
+    }
+    else {
+      setIsEvaluating(true);
+      const worker = workerRef.current;
+      if (!worker) return;
+
+      worker.onmessage = (e) => {
+        const { id, success, data, error } = e.data;
+        if (id !== reqIdRef.current) return;
+        
+        if (!success) {
+           setSmtWitness(null);
+           setStats({ error });
+           setIsEvaluating(false);
+           return;
+        }
+
+        s = {
+          isStratified: data.is_stratified,
+          iterations: data.max_k_iterations,
+          mcm: data.mcm
+        };
+        w = data.smt_witness || 'No witness generated.';
+        finishEval(s, w);
+      };
+
+      worker.postMessage({ id: currentReqId, query: q });
+      
+      // Safety timeout for UI responsiveness (kill worker if it hangs)
+      setTimeout(() => {
+         if (reqIdRef.current === currentReqId) {
+             workerRef.current?.terminate();
+             workerRef.current = new EvaluationWorker();
+             setSmtWitness(null);
+             setStats({ error: "Worker timeout (evaluation took too long)" });
+             setIsEvaluating(false);
+         }
+      }, 5000); // 5s timeout
+    }
+  }, [finishEval, useTFunctor]);
+
+  const runEval = useCallback((q: string) => {
+    if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+        scheduleEval(q);
+    }, 50);
+  }, [scheduleEval]);
 
   const handleRun = () => runEval(query);
 
@@ -337,8 +383,6 @@ export default function App() {
   const insertSyntax = (code: string) => {
     setQuery(prev => prev + (prev.endsWith(' ') || prev.length === 0 ? '' : ' ') + code);
   };
-
-  if (!ready) return <div style={{ padding: '2rem', fontFamily: 'Inter, sans-serif' }}>Booting Engine...</div>;
 
   return (
     <>
@@ -371,13 +415,15 @@ export default function App() {
               />
               
               <div className="tools-bar">
-                <button className="btn-run" onClick={handleRun}>Evaluate Physics</button>
+                <button className="btn-run" onClick={handleRun} disabled={isEvaluating}>
+                  {isEvaluating ? 'Evaluating...' : 'Evaluate Physics'}
+                </button>
                 
                 <div className="engine-toggles">
-                  <label className="tool-toggle"><input type="checkbox" checked={useTFunctor} onChange={e => { setUseTFunctor(e.target.checked); setTimeout(() => runEval(query), 0); }} /> T-Functor Synthesis</label>
-                  <label className="tool-toggle"><input type="checkbox" checked={useSCBedrock} onChange={e => { setUseSCBedrock(e.target.checked); setTimeout(() => runEval(query), 0); }} /> SC-Bedrock Daemon</label>
-                  <label className="tool-toggle"><input type="checkbox" checked={overrideK} onChange={e => { setOverrideK(e.target.checked); setTimeout(() => runEval(query), 0); }} /> Override K-Limits</label>
-                  <label className="tool-toggle"><input type="checkbox" checked={traceTopology} onChange={e => { setTraceTopology(e.target.checked); setTimeout(() => runEval(query), 0); }} /> Trace Tarjan/Karp</label>
+                  <label className="tool-toggle"><input type="checkbox" checked={useTFunctor} onChange={e => { setUseTFunctor(e.target.checked); runEval(query); }} /> T-Functor Synthesis</label>
+                  <label className="tool-toggle"><input type="checkbox" checked={useSCBedrock} onChange={e => { setUseSCBedrock(e.target.checked); runEval(query); }} /> SC-Bedrock Daemon</label>
+                  <label className="tool-toggle"><input type="checkbox" checked={overrideK} onChange={e => { setOverrideK(e.target.checked); runEval(query); }} /> Override K-Limits (Simulation Only)</label>
+                  <label className="tool-toggle"><input type="checkbox" checked={traceTopology} onChange={e => { setTraceTopology(e.target.checked); runEval(query); }} /> Trace Tarjan/Karp</label>
                 </div>
               </div>
             </div>
@@ -430,7 +476,9 @@ export default function App() {
                       </>
                     )
                   ) : (
-                    <p style={{color: '#888', fontStyle: 'italic'}}>Awaiting evaluation...</p>
+                    <p style={{color: '#888', fontStyle: 'italic'}}>
+                      {isEvaluating ? 'Evaluating Formula...' : 'Awaiting evaluation...'}
+                    </p>
                   )}
                 </div>
               )}
