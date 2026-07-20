@@ -95,7 +95,7 @@ async fn run_logit_sic_filter() {
     let invariant_formula = type_separation;
 
     // Extract constraints and build the Graph Arena
-    let invariant_constraints = extract_constraints_aux(&f_arena, invariant_formula, 0, false);
+    let invariant_constraints = extract_constraints_aux(&f_arena, invariant_formula, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
     let mut invariant_graph = GraphArena::from_constraints(&invariant_constraints);
 
     for _ in 0..10 {
@@ -680,7 +680,7 @@ async fn run_logit_sic_filter() {
             idx
         }).unwrap_or(0);
 
-        let proof_constraints = extract_constraints_aux(&proof_arena, last_idx, 0, false);
+        let proof_constraints = extract_constraints_aux(&proof_arena, last_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
         let mut proof_graph = GraphArena::from_constraints(&proof_constraints);
         proof_graph.collapse_scc_0_weight();
 

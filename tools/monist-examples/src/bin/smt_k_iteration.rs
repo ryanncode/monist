@@ -11,10 +11,11 @@ fn main() {
     println!("Input Formula: {}", formula_str);
 
     let mut arena = FormulaArena::new();
-    let mut parser = Parser::new(formula_str, &mut arena);
+    let mut parser = Parser::new(formula_str, &mut arena, monist_core::budget::ResourceBudget::default());
     let root_idx = parser.parse_formula();
 
-    let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
+    // 2. Extract into Constraints
+    let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
     let mut graph = GraphArena::from_constraints(&constraints);
     graph.collapse_scc_0_weight();
 

@@ -125,6 +125,11 @@ export const GuidedTutorialBox: React.FC<GuidedTutorialBoxProps> = ({ lastComman
   const [stepCompleted, setStepCompleted] = useState(false);
 
   useEffect(() => {
+    setCurrentStep(0);
+    setStepCompleted(false);
+  }, [tutorial]);
+
+  useEffect(() => {
     if (stepCompleted || currentStep >= tutorial.length) return;
     
     const step = tutorial[currentStep];

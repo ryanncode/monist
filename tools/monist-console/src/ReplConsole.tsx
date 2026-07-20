@@ -18,6 +18,13 @@ export function ReplConsole({ workerRef, onCommandExecuted }: ReplConsoleProps) 
   const [isEvaluating, setIsEvaluating] = useState(false);
   const historyRef = useRef<HTMLDivElement>(null);
   const endOfLogRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isEvaluating && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEvaluating]);
 
   useEffect(() => {
     if (historyRef.current) {
@@ -141,6 +148,7 @@ export function ReplConsole({ workerRef, onCommandExecuted }: ReplConsoleProps) 
         <form onSubmit={onSubmit} className="repl-input-form">
           <span className="repl-prompt">ITP&gt;</span>
           <input 
+            ref={inputRef}
             type="text" 
             className="repl-input" 
             value={inputValue}

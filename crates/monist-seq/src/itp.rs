@@ -257,4 +257,51 @@ impl ReplSession {
             Err(format!("destruct: hypothesis {} not found.", name))
         }
     }
+
+    pub fn tactic_cut(&mut self, formula_str: &str) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+
+        // Parse formula_str into a formula
+        let mut parser = monist_parser::parser::Parser::new(formula_str, &mut self.arena, monist_core::budget::ResourceBudget::default());
+        let cut_formula_idx = parser.parse_formula();
+
+        // 1. Evaluate topology! 
+        let constraints = monist_core::graph::extract_constraints_aux(
+            &self.arena,
+            cut_formula_idx,
+            0,
+            false,
+            &monist_core::budget::ResourceBudget::default(),
+            &mut 0
+        );
+        let mut graph = monist_core::graph::GraphArena::from_constraints(&constraints);
+        graph.collapse_scc_0_weight();
+        match graph.evaluate_topology() {
+            Err(_) => {
+                return Err("Extensionality Collision! The cut formula violently collides with Extensionality bounds (MCM < 0).".to_string());
+            }
+            Ok(_) => {} // Cut formula is geometrically valid
+        }
+
+        let mut current_goal = state.goals.remove(0);
+
+        // We split the proof state into two goals:
+        // Goal 1: Prove the cut formula from the current context
+        // Goal 2: Prove the original target, with the cut formula added to the context as hypothesis 'H'
+        
+        let mut g1 = current_goal.clone();
+        g1.target = cut_formula_idx; // Prove the cut formula
+        
+        let mut g2 = current_goal.clone();
+        g2.ctx.push(("H".to_string(), cut_formula_idx)); // Assume cut formula
+
+        // g1 goes first, then g2
+        state.goals.insert(0, g2);
+        state.goals.insert(0, g1);
+
+        Ok(())
+    }
 }

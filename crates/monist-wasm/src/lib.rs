@@ -140,6 +140,10 @@ impl ReplWasmSession {
                 let n2 = args.get(2).cloned().unwrap_or_default();
                 self.inner.tactic_destruct(&name, n1, n2)
             }
+            "cut" => {
+                let formula_str = args.join(" ");
+                self.inner.tactic_cut(&formula_str)
+            }
             _ => Err("Unknown tactic.".to_string()),
         };
 

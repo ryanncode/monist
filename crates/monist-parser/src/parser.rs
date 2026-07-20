@@ -143,27 +143,43 @@ impl<'a> Parser<'a> {
             let inner = self.parse_unary();
             self.arena.add(Formula::Neg(inner))
         } else if self.match_token(Token::Forall) {
-            if let Token::Ident(var) = self.current_token.clone() {
+            let mut vars = Vec::new();
+            while let Token::Ident(var) = self.current_token.clone() {
+                vars.push(var);
                 self.advance();
-                self.match_token(Token::Dot);
-                self.bound_vars.push(var.clone());
-                let inner = self.parse_formula();
-                self.bound_vars.pop();
-                self.arena.add(Formula::Univ(0, var, inner)) // dummy binder level 0 for now
-            } else {
+            }
+            if vars.is_empty() {
                 panic!("Expected identifier after forall");
             }
-        } else if self.match_token(Token::Exists) {
-            if let Token::Ident(var) = self.current_token.clone() {
-                self.advance();
-                self.match_token(Token::Dot);
+            self.match_token(Token::Dot);
+            for var in &vars {
                 self.bound_vars.push(var.clone());
-                let inner = self.parse_formula();
+            }
+            let mut inner = self.parse_formula();
+            for var in vars.iter().rev() {
                 self.bound_vars.pop();
-                self.arena.add(Formula::Exist(0, var, inner)) // dummy binder level 0 for now
-            } else {
+                inner = self.arena.add(Formula::Univ(0, var.clone(), inner));
+            }
+            inner
+        } else if self.match_token(Token::Exists) {
+            let mut vars = Vec::new();
+            while let Token::Ident(var) = self.current_token.clone() {
+                vars.push(var);
+                self.advance();
+            }
+            if vars.is_empty() {
                 panic!("Expected identifier after exists");
             }
+            self.match_token(Token::Dot);
+            for var in &vars {
+                self.bound_vars.push(var.clone());
+            }
+            let mut inner = self.parse_formula();
+            for var in vars.iter().rev() {
+                self.bound_vars.pop();
+                inner = self.arena.add(Formula::Exist(0, var.clone(), inner));
+            }
+            inner
         } else {
             self.parse_primary()
         };
