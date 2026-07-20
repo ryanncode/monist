@@ -290,9 +290,9 @@ body {
 }
 
 .syntax-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
 .syntax-btn {
@@ -300,10 +300,10 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.35rem;
+  gap: 0.2rem;
   background: transparent;
   border: 1px solid var(--mono-border);
-  padding: 0.4rem 0.5rem;
+  padding: 0.15rem 0.3rem;
   cursor: pointer;
   text-align: left;
   transition: all 0.1s;

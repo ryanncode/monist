@@ -221,34 +221,79 @@ const CHALLENGES = [
   { title: "Level 5: Transfinite Agentic Reflection", desc: "Construct an Agentic Reflection graph where a node simulates its own future interaction cost, mathematically bounding its own algorithmic friction before execution." }
 ];
 
-const SYNTAX_ITEMS = [
-  { code: 'forall x . P', desc: 'Universal Quantifier' },
-  { code: 'exists x . P', desc: 'Existential Quantifier' },
-  { code: '~P', desc: 'Logical NOT' },
-  { code: 'P & Q', desc: 'Logical AND' },
-  { code: 'P | Q', desc: 'Logical OR' },
-  { code: 'P -> Q', desc: 'Implication' },
-  { code: 'P <-> Q', desc: 'Biconditional' },
-  { code: 'x = y', desc: 'Equality' },
-  { code: 'x in y', desc: 'Set Membership' },
-  { code: 'x < y', desc: 'Strict Less-Than' },
-  { code: '{x | P(x)}', desc: 'Comprehension' },
-  { code: 'lam x . P', desc: 'Lambda Abstraction' },
-  { code: 'app(x, y)', desc: 'Combinator App' },
-  { code: 'QPair(x, y)', desc: 'Quine Pair' },
-  { code: 'QProj1(p)', desc: 'Quine 1st Proj' },
-  { code: 'QProj2(p)', desc: 'Quine 2nd Proj' },
-  { code: 'S x y z', desc: 'Substitution' },
-  { code: 'K x y', desc: 'Constant' },
-  { code: 'I x', desc: 'Identity' },
-  { code: 'Susp x', desc: 'Okasaki Suspension' },
-  { code: '2-SIC', desc: 'Interaction Node' },
-  { code: 'T_Funct(x)', desc: 'T-Functor Elevation' },
-  { code: 'SC_CUT(x)', desc: 'Cantorian Cut' }
+const SYNTAX_GROUPS = [
+  {
+    label: 'Quantifiers',
+    items: [
+      { code: 'forall', desc: 'Universal Quantifier' },
+      { code: 'exists', desc: 'Existential Quantifier' },
+    ]
+  },
+  {
+    label: 'Core Logic',
+    items: [
+      { code: '~', desc: 'Logical NOT' },
+      { code: '&', desc: 'Logical AND' },
+      { code: '|', desc: 'Logical OR / Bar' },
+      { code: '->', desc: 'Implication' },
+      { code: '<->', desc: 'Biconditional' },
+    ]
+  },
+  {
+    label: 'Relations',
+    items: [
+      { code: '=', desc: 'Equality' },
+      { code: 'in', desc: 'Set Membership' },
+      { code: '<', desc: 'Strict Less-Than' },
+    ]
+  },
+  {
+    label: 'Punctuation & Brackets',
+    items: [
+      { code: '.', desc: 'Separator' },
+      { code: ',', desc: 'Comma' },
+      { code: '(', desc: 'Left Paren' },
+      { code: ')', desc: 'Right Paren' },
+      { code: '{', desc: 'Left Brace' },
+      { code: '}', desc: 'Right Brace' },
+    ]
+  },
+  {
+    label: 'Variables',
+    items: [
+      { code: 'x', desc: 'Variable' },
+      { code: 'y', desc: 'Variable' },
+      { code: 'z', desc: 'Variable' },
+      { code: 'P', desc: 'Predicate' },
+    ]
+  },
+  {
+    label: 'Lambda & Combinators',
+    items: [
+      { code: 'lam', desc: 'Lambda' },
+      { code: 'app', desc: 'Combinator App' },
+      { code: 'S', desc: 'Substitution' },
+      { code: 'K', desc: 'Constant' },
+      { code: 'I', desc: 'Identity' },
+    ]
+  },
+  {
+    label: 'Advanced Macros',
+    items: [
+      { code: 'QPair', desc: 'Quine Pair' },
+      { code: 'QProj1', desc: 'Quine 1st Proj' },
+      { code: 'QProj2', desc: 'Quine 2nd Proj' },
+      { code: 'Susp', desc: 'Okasaki Suspension' },
+      { code: '2-SIC', desc: 'Interaction Node' },
+      { code: 'T_Funct', desc: 'T-Functor Elevation' },
+      { code: 'SC_CUT', desc: 'Cantorian Cut' }
+    ]
+  }
 ];
 
 export default function App() {
-  const [query, setQuery] = useState('forall x . x = x');
+  const [tokens, setTokens] = useState<string[]>(['forall', 'x', '.', 'x', '=', 'x']);
+  const query = tokens.join(' ');
   const [smtWitness, setSmtWitness] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
   const [activeChallenge, setActiveChallenge] = useState<number | null>(null);
@@ -287,7 +332,12 @@ export default function App() {
     setIsEvaluating(false);
   }, [useTFunctor, useSCBedrock, overrideK, traceTopology]);
 
+  useEffect(() => {
+    runEval(tokens.join(' '));
+  }, [tokens]);
+
   const scheduleEval = useCallback((q: string) => {
+    if (!workerRef.current) return;
     reqIdRef.current += 1;
     const currentReqId = reqIdRef.current;
     
@@ -329,10 +379,14 @@ export default function App() {
       const worker = workerRef.current;
       if (!worker) return;
 
+      let timeoutId: number;
+
       worker.onmessage = (e) => {
         const { id, success, data, error } = e.data;
         if (id !== reqIdRef.current) return;
         
+        clearTimeout(timeoutId);
+
         if (!success) {
            setSmtWitness(null);
            setStats({ error });
@@ -352,7 +406,7 @@ export default function App() {
       worker.postMessage({ id: currentReqId, query: q });
       
       // Safety timeout for UI responsiveness (kill worker if it hangs)
-      setTimeout(() => {
+      timeoutId = window.setTimeout(() => {
          if (reqIdRef.current === currentReqId) {
              workerRef.current?.terminate();
              workerRef.current = new EvaluationWorker();
@@ -376,22 +430,33 @@ export default function App() {
   const handleRun = () => runEval(query);
 
   const loadExample = (formula: string) => {
-    setQuery(formula);
-    runEval(formula);
+    setTokens([formula]);
   };
 
   const insertSyntax = (code: string) => {
-    setQuery(prev => prev + (prev.endsWith(' ') || prev.length === 0 ? '' : ' ') + code);
+    setTokens(prev => [...prev, code]);
+  };
+
+  const backspaceSyntax = () => {
+    setTokens(prev => prev.slice(0, -1));
+  };
+
+  const clearSyntax = () => {
+    setTokens([]);
+  };
+
+  const handleQueryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setTokens([e.target.value]);
   };
 
   return (
     <>
       <QuartoNavbar />
       <div className="container">
-        <header className="header" style={{marginTop: '5rem'}}>
+        <div className="hero-section" style={{paddingTop: '2rem', paddingBottom: '2rem'}}>
           <h1>Monist Engine Console</h1>
-          <p>Interactive spatial graph reduction and bounds checking.</p>
-        </header>
+          <p className="lead" style={{fontSize: '1.4rem', fontWeight: 300, maxWidth: '800px', marginBottom: '2rem'}}>Interactive spatial graph reduction and bounds checking.</p>
+        </div>
 
         {activeChallenge !== null && (
           <div className="active-challenge-box">
@@ -408,34 +473,34 @@ export default function App() {
               <textarea 
                 className="query-input"
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={handleQueryChange}
                 placeholder="Enter formal logic here..."
                 rows={6}
                 spellCheck={false}
               />
-              
-              <div className="tools-bar">
-                <button className="btn-run" onClick={handleRun} disabled={isEvaluating}>
+              <div className="tools-bar" style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'stretch' }}>
+                <button className="btn-secondary rounded-0" style={{ flex: 1, padding: '0.4rem 1rem', borderRadius: 0 }} onClick={backspaceSyntax}>&#9003; Backspace</button>
+                <button className="btn-secondary rounded-0" style={{ flex: 1, padding: '0.4rem 1rem', borderRadius: 0 }} onClick={clearSyntax}>Clear</button>
+                <button className="btn-primary rounded-0" onClick={handleRun} disabled={isEvaluating} style={{ flex: 1, padding: '0.4rem 1rem', margin: 0, width: 'auto', borderRadius: 0 }}>
                   {isEvaluating ? 'Evaluating...' : 'Evaluate Physics'}
                 </button>
-                
-                <div className="engine-toggles">
-                  <label className="tool-toggle"><input type="checkbox" checked={useTFunctor} onChange={e => { setUseTFunctor(e.target.checked); runEval(query); }} /> T-Functor Synthesis</label>
-                  <label className="tool-toggle"><input type="checkbox" checked={useSCBedrock} onChange={e => { setUseSCBedrock(e.target.checked); runEval(query); }} /> SC-Bedrock Daemon</label>
-                  <label className="tool-toggle"><input type="checkbox" checked={overrideK} onChange={e => { setOverrideK(e.target.checked); runEval(query); }} /> Override K-Limits (Simulation Only)</label>
-                  <label className="tool-toggle"><input type="checkbox" checked={traceTopology} onChange={e => { setTraceTopology(e.target.checked); runEval(query); }} /> Trace Tarjan/Karp</label>
-                </div>
               </div>
             </div>
 
             <div className="syntax-sidebar panel-card">
               <h3>Syntax Toolkit</h3>
-              <div className="syntax-grid">
-                {SYNTAX_ITEMS.map((item, idx) => (
-                  <button key={idx} className="syntax-btn" title={item.desc} onClick={() => insertSyntax(item.code)}>
-                    <code>{item.code}</code>
-                    <span>{item.desc}</span>
-                  </button>
+              <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '10px', marginTop: '0.5rem' }}>
+                {SYNTAX_GROUPS.map((group, gIdx) => (
+                  <div key={gIdx} className="syntax-group">
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--mono-black, #333)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{group.label}</div>
+                    <div className="syntax-grid">
+                      {group.items.map((item, idx) => (
+                        <button key={idx} className="btn btn-outline-secondary btn-sm rounded-0" style={{ padding: '0.15rem 0.4rem', fontSize: '0.85rem', borderRadius: 0 }} title={item.desc} onClick={() => insertSyntax(item.code)}>
+                          {item.code}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -443,6 +508,12 @@ export default function App() {
 
           {/* Column 2: Output Panels */}
           <div className="output-section panel-card">
+            <div className="engine-toggles" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '10px' }}>
+              <label className="tool-toggle" style={{ whiteSpace: 'nowrap' }}><input type="checkbox" checked={useTFunctor} onChange={e => setUseTFunctor(e.target.checked)} /> T-Functor Synthesis</label>
+              <label className="tool-toggle" style={{ whiteSpace: 'nowrap' }}><input type="checkbox" checked={useSCBedrock} onChange={e => setUseSCBedrock(e.target.checked)} /> SC-Bedrock Daemon</label>
+              <label className="tool-toggle" style={{ whiteSpace: 'nowrap' }}><input type="checkbox" checked={overrideK} onChange={e => setOverrideK(e.target.checked)} /> Sim Override K-Limits</label>
+              <label className="tool-toggle" style={{ whiteSpace: 'nowrap' }}><input type="checkbox" checked={traceTopology} onChange={e => setTraceTopology(e.target.checked)} /> Trace Tarjan/Karp</label>
+            </div>
             <div className="tabs-header">
               <button className={`tab-btn ${activeTab === 'smt' ? 'active' : ''}`} onClick={() => setActiveTab('smt')}>Formal Witness</button>
               <button className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>Execution Stats</button>
