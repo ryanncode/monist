@@ -5,3 +5,6 @@ edition = "2024"
 
 [dependencies]
 monist-comb = { path = "../monist-comb" }
+monist-core = { path = "../monist-core" }
+monist-parser = { path = "../monist-parser" }
+serde = { version = "1.0.229", features = ["derive"] }

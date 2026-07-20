@@ -21,10 +21,10 @@ impl Session {
     }
 
     fn eval_graph(&mut self, formula: &str, test_name: &str) {
-        let mut parser = Parser::new(formula, &mut self.arena);
+        let mut parser = Parser::new(formula, &mut self.arena, monist_core::budget::ResourceBudget::default());
         let root_idx = parser.parse_formula();
 
-        let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false);
+        let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
         self.graph = GraphArena::from_constraints(&constraints);
 
         println!(

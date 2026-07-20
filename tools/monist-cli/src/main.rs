@@ -84,10 +84,10 @@ fn main() -> RlResult<()> {
         Some(Commands::Repl) | None => run_repl(),
         Some(Commands::Verify { formula }) => {
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::with_macros(formula, &mut arena, None);
+            let mut parser = Parser::with_macros(formula, &mut arena, None, monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
@@ -104,10 +104,10 @@ fn main() -> RlResult<()> {
         }
         Some(Commands::ExportSmt { formula }) => {
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::with_macros(formula, &mut arena, None);
+            let mut parser = Parser::with_macros(formula, &mut arena, None, monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
@@ -131,10 +131,10 @@ fn main() -> RlResult<()> {
             export_smt,
         }) => {
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::with_macros(formula, &mut arena, None);
+            let mut parser = Parser::with_macros(formula, &mut arena, None, monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
@@ -261,7 +261,7 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let _name = parts[1].to_string();
             let formula = parts[2..].join(" ");
             let mut parser =
-                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
+                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
             let goal = Goal {
@@ -350,10 +350,10 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let formula = parts[1..].join(" ");
 
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::with_macros(&formula, &mut arena, None);
+            let mut parser = Parser::with_macros(&formula, &mut arena, None, monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
@@ -371,10 +371,10 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let formula = parts[1..].join(" ");
 
             let mut arena = FormulaArena::new();
-            let mut parser = Parser::with_macros(&formula, &mut arena, None);
+            let mut parser = Parser::with_macros(&formula, &mut arena, None, monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
+            let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
 
             eprintln!("{}", "--- Extracting Constraints ---".yellow());
@@ -646,7 +646,7 @@ fn process_repl_command(input: &str, session: &mut Session) {
             }
             let formula_str = parts[1..].join(" ");
             let mut parser =
-                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
+                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
             let cut_idx = parser.parse_formula();
 
             if let Some(goal) = session.active_goals.pop() {
@@ -671,10 +671,10 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let formula = parts[1..].join(" ");
 
             let mut parser =
-                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros));
+                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false);
+            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 
@@ -714,10 +714,10 @@ fn process_repl_command(input: &str, session: &mut Session) {
             }
 
             let mut parser =
-                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros));
+                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
 
-            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false);
+            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
 

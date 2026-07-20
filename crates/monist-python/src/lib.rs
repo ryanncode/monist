@@ -19,7 +19,7 @@ fn evaluate_formula(input: &str) -> PyResult<PyEvaluationResult> {
     let mut arena = FormulaArena::new();
     
     let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let mut parser = Parser::new(input, &mut arena);
+        let mut parser = Parser::new(input, &mut arena, monist_core::budget::ResourceBudget::default());
         parser.parse_formula()
     }));
 
@@ -32,7 +32,7 @@ fn evaluate_formula(input: &str) -> PyResult<PyEvaluationResult> {
         return Err(pyo3::exceptions::PyValueError::new_err("Failed to parse formula"));
     }
 
-    let constraints = monist_core::graph::extract_constraints_aux(&arena, id, 0, false);
+    let constraints = monist_core::graph::extract_constraints_aux(&arena, id, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
     let graph = GraphArena::from_constraints(&constraints);
 
     let limits = ExecutionLimits::compute_for_graph(&graph)

@@ -18,10 +18,10 @@ fn main() {
     println!("evaluating this should autonomously trigger a Negative-Weight Cycle.\n");
 
     let mut arena = FormulaArena::new();
-    let mut parser = Parser::new(formula, &mut arena);
+    let mut parser = Parser::new(formula, &mut arena, monist_core::budget::ResourceBudget::default());
     let root_idx = parser.parse_formula();
 
-    let constraints = extract_constraints_aux(&arena, root_idx, 0, false);
+    let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
     let mut graph = GraphArena::from_constraints(&constraints);
 
     println!(">> Executing Kosaraju SCC Flattening...");

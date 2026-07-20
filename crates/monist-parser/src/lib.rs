@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_parse_equality() {
         let mut arena = FormulaArena::new();
-        let mut parser = Parser::new("x = y", &mut arena);
+        let mut parser = Parser::new("x = y", &mut arena, monist_core::budget::ResourceBudget::default());
         let id = parser.parse_formula();
         assert_eq!(
             arena.get(id),
@@ -23,7 +23,7 @@ mod tests {
     #[test]
     fn test_parse_logic() {
         let mut arena = FormulaArena::new();
-        let mut parser = Parser::new("x = y /\\ y in z", &mut arena);
+        let mut parser = Parser::new("x = y /\\ y in z", &mut arena, monist_core::budget::ResourceBudget::default());
         let id = parser.parse_formula();
 
         let left = Formula::Atom(Atomic::Eq(
@@ -44,7 +44,7 @@ mod tests {
     #[test]
     fn test_forall() {
         let mut arena = FormulaArena::new();
-        let mut parser = Parser::new("forall x . x = y", &mut arena);
+        let mut parser = Parser::new("forall x . x = y", &mut arena, monist_core::budget::ResourceBudget::default());
         let id = parser.parse_formula();
 
         let inner = Formula::Atom(Atomic::Eq(Var::Bound(0), Var::Free("y".to_string())));

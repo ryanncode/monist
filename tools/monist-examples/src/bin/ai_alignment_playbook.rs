@@ -68,7 +68,7 @@ fn main() {
     let main_f = f_arena.add(Formula::Conj(conj1, eq_reward_inf));
 
     // Extract constraints and generate the Graph Arena
-    let constraints = extract_constraints_aux(&f_arena, main_f, 0, false);
+    let constraints = extract_constraints_aux(&f_arena, main_f, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
 
     for _ in 0..15 {
         pb_arena.tick();

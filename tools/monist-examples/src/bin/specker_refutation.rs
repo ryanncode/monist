@@ -18,10 +18,10 @@ impl Session {
     }
 
     fn eval(&mut self, formula: &str, test_name: &str) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
-        let mut parser = Parser::new(formula, &mut self.arena);
+        let mut parser = Parser::new(formula, &mut self.arena, monist_core::budget::ResourceBudget::default());
         let root_idx = parser.parse_formula();
 
-        let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false);
+        let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
         self.graph = GraphArena::from_constraints(&constraints);
         self.graph.collapse_scc_0_weight();
 

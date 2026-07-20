@@ -90,3 +90,70 @@ pub fn evaluate_formula(input: &str) -> Result<EvaluationResult, JsValue> {
         }
     }
 }
+
+#[wasm_bindgen]
+pub struct ReplWasmSession {
+    inner: monist_seq::itp::ReplSession,
+}
+
+#[wasm_bindgen]
+impl ReplWasmSession {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            inner: monist_seq::itp::ReplSession::new(),
+        }
+    }
+
+    pub fn start_proof(&mut self, name: String, target_str: String) -> Result<(), JsValue> {
+        let budget = ResourceBudget::default();
+        let mut parser = Parser::with_macros(&target_str, &mut self.inner.arena, Some(&self.inner.macros), budget);
+        let target_idx = parser.parse_formula();
+        self.inner.start_proof(name, target_idx);
+        Ok(())
+    }
+
+    pub fn define_macro(&mut self, name: String, params: Vec<String>, formula_str: String) -> Result<(), JsValue> {
+        self.inner.define_macro(name, params, &formula_str).map_err(|e| JsValue::from_str(&e))
+    }
+
+    pub fn execute_tactic(&mut self, cmd: String, args: Vec<String>) -> Result<(), JsValue> {
+        let res = match cmd.as_str() {
+            "intro" => {
+                let name = args.get(0).cloned().unwrap_or_else(|| "H".to_string());
+                self.inner.tactic_intro(name)
+            }
+            "exact" => {
+                let name = args.get(0).cloned().unwrap_or_default();
+                self.inner.tactic_exact(&name)
+            }
+            "apply" => {
+                let name = args.get(0).cloned().unwrap_or_default();
+                self.inner.tactic_apply(&name)
+            }
+            "split" => self.inner.tactic_split(),
+            "left" => self.inner.tactic_left(),
+            "right" => self.inner.tactic_right(),
+            "destruct" => {
+                let name = args.get(0).cloned().unwrap_or_default();
+                let n1 = args.get(1).cloned().unwrap_or_default();
+                let n2 = args.get(2).cloned().unwrap_or_default();
+                self.inner.tactic_destruct(&name, n1, n2)
+            }
+            _ => Err("Unknown tactic.".to_string()),
+        };
+
+        res.map_err(|e| JsValue::from_str(&e))
+    }
+
+    pub fn get_state_json(&self) -> Result<JsValue, JsValue> {
+        match &self.inner.active_state {
+            Some(state) => {
+                let val = serde_wasm_bindgen::to_value(state)
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                Ok(val)
+            }
+            None => Ok(JsValue::NULL)
+        }
+    }
+}

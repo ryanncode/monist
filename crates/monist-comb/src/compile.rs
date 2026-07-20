@@ -17,7 +17,9 @@ impl<'a> Compiler<'a> {
 
     pub fn compile(&mut self, root: usize) -> Comb {
         // Step 1: Extract constraints to compute execution limits
-        let constraints = monist_core::graph::extract_constraints_aux(self.arena, root, 0, false);
+        let budget = monist_core::budget::ResourceBudget::default();
+        let mut edge_count = 0;
+        let constraints = monist_core::graph::extract_constraints_aux(self.arena, root, 0, false, &budget, &mut edge_count);
         let graph = monist_core::graph::GraphArena::from_constraints(&constraints);
         let limits = monist_core::eval::ExecutionLimits::compute_for_graph(&graph);
 
