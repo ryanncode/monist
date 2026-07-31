@@ -191,7 +191,19 @@ fn process_repl_command(input: &str, session: &mut ReplSession) {
 
     match parts[0] {
         "help" => {
-            eprintln!("{}", "Session & Proof Management:".green().bold());
+            eprintln!("{}", "Logical Operators Syntax:".green().bold());
+            eprintln!("  -> | →                        - Implication");
+            eprintln!("  <->                           - IFF (If and only if)");
+            eprintln!("  forall | ∀                    - Universal Quantifier");
+            eprintln!("  exists | ∃                    - Existential Quantifier");
+            eprintln!("  /\\ | & | ∧                    - Conjunction (AND)");
+            eprintln!("  \\/ | ∨                        - Disjunction (OR)");
+            eprintln!("  ~ | ¬                         - Negation (NOT)");
+            eprintln!("  e | in | ∈                    - Set Membership (e.g., x e y)");
+            eprintln!("  <                             - Typestate Inequality (e.g., x < y)");
+            eprintln!("  {{x | P(x)}}                    - Set Comprehension");
+            
+            eprintln!("\n{}", "Session & Proof Management:".green().bold());
             eprintln!("  help                          - Show this help message");
             eprintln!("  exit | quit                   - Exit the REPL");
             eprintln!("  save_session <file>           - Save current session to a JSON file");
@@ -493,7 +505,7 @@ fn format_formula(arena: &FormulaArena, idx: usize, show_tags: bool) -> String {
             format_var(v2, show_tags)
         ),
         Formula::Atom(Atomic::Mem(v1, v2)) => format!(
-            "{} in {}",
+            "{} e {}",
             format_var(v1, show_tags),
             format_var(v2, show_tags)
         ),

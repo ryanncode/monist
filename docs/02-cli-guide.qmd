@@ -29,10 +29,10 @@ Before diving into proofs, here is exactly how the `monist-parser` reads standar
   * For All: `forall x. P(x)`
   * Exists: `exists y. Q(y)`
 * **Set Theory Operations:**
-  * Membership: `x in y`
+  * Membership: `x e y`
   * Equality: `x = y`
   * Typestate Inequality: `x < y`
-  * Set Comprehension: `{x | P(x)}` (e.g., `{x | ~(x in x)}`)
+  * Set Comprehension: `{x | P(x)}` (e.g., `{x | ~(x e x)}`)
 
 ---
 
@@ -227,7 +227,7 @@ cargo run -p monist-cli -- verify "x = y"
 Generates a `StratificationWitness` trace in standard SMT-LIB format for external theorem provers (like Z3 or CVC5).
 
 ```bash
-cargo run -p monist-cli -- export-smt "x in y /\ y in z /\ z in x" > trace.smt2
+cargo run -p monist-cli -- export-smt "x e y /\ y e z /\ z e x" > trace.smt2
 ```
 
 ---

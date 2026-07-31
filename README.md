@@ -48,7 +48,7 @@ $ cargo run -p monist-cli -- eval "V in V"
 > Neutralized SC defining self-loop on V_0
 
 # 3. Evaluating Russell's Paradox
-$ cargo run -p monist-cli -- eval "{x | ~(x in x)} in {x | ~(x in x)}"
+$ cargo run -p monist-cli -- eval "{x | ~(x e x)} e {x | ~(x e x)}"
 > Error: Extensionality Collision: Negative-weight cycle detected (μ* = -1.0000)!
 > Engine halted safely (K_ITERATION_HALT)
 > Topological Trace: b0_1 -> b0_1 (-1) = -1
@@ -67,7 +67,7 @@ import monist_engine as monist
 oracle = monist.Engine(enable_t_functor=True)
 
 # Evaluate an Extensionality Collision (Russell's Paradox)
-res = oracle.evaluate("{x | ~(x in x)} in {x | ~(x in x)}")
+res = oracle.evaluate("{x | ~(x e x)} e {x | ~(x e x)}")
 print(res.is_stratified) # False
 print(res.collision_weight) # -1.0
 ```
@@ -95,7 +95,7 @@ To start the tactical theorem-proving environment:
 cargo run -p monist-cli -- repl
 ```
 
-Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x in x"`. For full details on available commands, axioms, and visualization options, see the [CLI Guide](docs/02-cli-guide.qmd).
+Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x e x"`. For full details on available commands, axioms, and visualization options, see the [CLI Guide](docs/02-cli-guide.qmd).
 
 ### Visual Demonstrations
 
