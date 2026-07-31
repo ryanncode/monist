@@ -1,3 +1,5 @@
+#![allow(unsafe_op_in_unsafe_fn)]
+
 use pyo3::prelude::*;
 use monist_parser::parser::Parser;
 use monist_core::ast::FormulaArena;

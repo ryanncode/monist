@@ -164,7 +164,7 @@ impl ReplSession {
             return Err("No active goals.".to_string());
         }
 
-        let mut current_goal = state.goals.remove(0);
+        let current_goal = state.goals.remove(0);
         let target_formula = self.arena.get(current_goal.target).unwrap().clone();
 
         if let Formula::Conj(p, q) = target_formula {

@@ -37,7 +37,7 @@ pub fn evaluate_formula(input: &str) -> Result<EvaluationResult, JsValue> {
 
         let mut edge_count = 0;
         let constraints = monist_core::graph::extract_constraints_aux(&arena, formula_idx, 0, false, &budget, &mut edge_count);
-        let mut graph = GraphArena::from_constraints(&constraints);
+        let graph = GraphArena::from_constraints(&constraints);
 
         let limits = ExecutionLimits::compute_for_graph(&graph)
             .ok_or_else(|| JsValue::from_str("Numeric Overflow in Execution Limits DP"))?;

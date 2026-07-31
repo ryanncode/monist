@@ -1,7 +1,7 @@
 use crate::ir::Comb;
 use crate::compile::Compiler;
 use monist_core::ast::{Atomic, Formula, FormulaArena, Var};
-use std::collections::HashMap;
+
 
 /// Compiles a static AST formula into a Combinator representation.
 fn compile_formula(arena: &FormulaArena, root: usize) -> Comb {
