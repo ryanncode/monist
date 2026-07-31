@@ -125,21 +125,24 @@ The Monist Engine subverts this by bifurcating the computational stack:
 
 ---
 
-## Benchmarks & Mathematical Diagnostics
+## Testing, Diagnostics & Benchmarks
 
-The engine's validity is proven via a suite of automated diagnostic refutations located in `tools/monist-examples/src/bin/`. These execute the core paradoxes of modern set theory, outputting the mathematically verified topological boundaries and generating standard `SMT-LIB` witnesses for third-party prover ingestion.
+The engine's validity and performance are proven via a unified suite of automated tests, mathematical diagnostics, and GPU/CPU benchmarks.
 
-### SMT-LIB Differential to Lean Pipeline
+### 1. Unit Tests & Fuzzing
+To run the standard unit tests across all crates (including parser tests and interaction net execution limits):
+```bash
+cargo test
+```
 
-We have built a fully synchronized Differential Equivalence Testing pipeline linking the Rust implementation to our Lean formalization ([nf-sketches/parse-strat](https://github.com/ryanncode/nf-sketches/tree/main/parse-strat)). When a `monist-examples` mathematical test executes, the `monist-core` engine seamlessly generates an SMT-LIB witness of the topological graph, explicitly capturing evaluation limits, bounds, and Extensionality Collisions.
+### 2. Differential Testing (Lean 4 Parity)
+We maintain a strictly synchronized equivalence pipeline linking this Rust implementation to our Lean 4 formalization ([nf-sketches/parse-strat](https://github.com/ryanncode/nf-sketches/tree/main/parse-strat)). 
+To automatically cross-examine the Rust logic against the legacy Lean prototype across core SMT edge traces:
+```bash
+./scripts/run_differential_tests.sh
+```
 
-This witness can then be natively piped into the Lean interpreter (`lake exe parse-strat --ingest-smt`), which uses its own completely independent topological Bellman-Ford implementation to trace the exact same SMT constraints. By proving 1-to-1 equivalence between Lean and Rust, we guarantee that the engine handles paradoxical scopes and Comprehension boundaries flawlessly.
-
-- **`scripts/run_differential_tests.sh`**: Iterates through all automated mathematical refutations, extracting SMT-LIB blocks and piping them seamlessly into the Lean `parse-strat` interpreter.
-- **Comprehension Bounds**: The engine uses the `in_comp` topological boundary flag to distinguish between unstratifiable Comprehensions (like Russell's Paradox) which trigger `Extensionality Collision`, and raw unstratified logical queries which are mathematically neutralized and safely evaluated via the SC-Bedrock daemon.
-
-To manually pipe a diagnostic test directly into the Lean 4 interpreter:
-
+To manually pipe a diagnostic test directly into the Lean 4 interpreter for isolated tracing:
 ```bash
 cd tools/monist-examples
 cargo run --bin specker_refutation | awk '/; === BEGIN STRATIFICATION WITNESS ===/{flag=1; print; next} /; === END STRATIFICATION WITNESS ===/{print; flag=0} flag' > out.smt
@@ -147,27 +150,32 @@ cd ../../../nf-sketches/parse-strat
 lake exe parse-strat --ingest-smt < ../../monist/tools/monist-examples/out.smt
 ```
 
-Or run the full automated cross-language verification script from the root:
-
+### 3. Canonical ITP Tactics Examples
+To demonstrate the Interactive Theorem Prover (ITP) tactics native execution and topological integration, run the canonical example programs located in `crates/monist-seq/examples/`:
 ```bash
-./scripts/run_differential_tests.sh
+cargo run --example strategic_cut
+cargo run --example monotonicity_powerset
+cargo run --example equality_refl
 ```
 
-### Mathematical Diagnostics
-
-- **Specker's Refutation of Global Choice (`specker_refutation.rs`)**: Mechanically proves that bridging disjoint integer weight elevations (${ \Phi(m) }$ vs ${ \Phi(T(m)) }$) without a $T$-operator creates a negative-weight cycle, validating the absolute halting limit.
-- **The Extensionality Collision (`extensionality_collision.rs`)**: Evaluates the Kuratowski ordered pair vs the Quine ordered pair, proving the engine tracks dense structural depth offsets (+2 vs 0) without triggering a false paradox halt.
-- **Russell's Paradox (`russell.rs`)**: Computes $R \in R$, dynamically intercepting the unstratified graph prior to call-stack exhaustion via the $K$-Iteration bound.
-
-To execute a diagnostic:
+### 4. Mathematical Diagnostics
+The `monist-examples` crate executes the core paradoxes of modern set theory, outputting mathematically verified topological boundaries and generating standard `SMT-LIB` witnesses. For example:
+- **Specker's Refutation of Global Choice (`specker_refutation`)**: Mechanically proves that bridging disjoint integer weight elevations without a $T$-operator creates a negative-weight cycle.
+- **The Extensionality Collision (`extensionality_collision`)**: Evaluates the Kuratowski ordered pair vs the Quine ordered pair, proving the engine tracks dense structural depth offsets without triggering a false paradox halt.
+- **Russell's Paradox (`russell`)**: Computes $R \in R$, dynamically intercepting the unstratified graph prior to call-stack exhaustion via the $K$-Iteration bound.
 
 ```bash
 cargo run -p monist-examples --bin specker_refutation
+cargo run -p monist-examples --bin extensionality_collision
+cargo run -p monist-examples --bin russell
 ```
 
-For bare-metal throughput execution tests bypassing the CLI:
-
+### 5. Performance Benchmarks
+To execute bare-metal throughput execution tests bypassing the CLI:
 ```bash
+# Run the discrete CPU bounds benchmarks
+cargo bench -p monist-bench-cpu
+
 # Run the lock-free OpenCL and discrete GPU bounds benchmarks
 cargo bench -p monist-bench-gpu
 ```
