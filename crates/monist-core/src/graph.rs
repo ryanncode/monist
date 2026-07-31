@@ -162,112 +162,98 @@ impl GraphArena {
         arena
     }
 
-    /// Implement Tarjan's SCC algorithm to locate and safely collapse 0-weight semantic cycles
     pub fn collapse_scc_0_weight(&mut self) {
+        // Obsolete: SCC flattening is now handled natively within evaluate_topology using kosaraju_scc.
+        // This is kept strictly for CLI compatibility to avoid refactoring the CLI arguments at this moment.
+    }
+
+    /// Returns Strongly Connected Components for 0-weight edges using Kosaraju's algorithm
+    pub fn kosaraju_scc(&self) -> Vec<Vec<usize>> {
         let n = self.vars.len();
         if n == 0 {
-            return;
+            return Vec::new();
         }
 
         let mut adj = vec![Vec::new(); n];
+        let mut rev_adj = vec![Vec::new(); n];
         for &(u, v, w, _) in &self.edges {
             if w == 0 {
                 adj[u].push(v);
+                rev_adj[v].push(u);
             }
         }
 
-        struct Tarjan<'a> {
-            adj: &'a [Vec<usize>],
-            index: usize,
-            indices: Vec<Option<usize>>,
-            lowlinks: Vec<usize>,
-            on_stack: Vec<bool>,
-            stack: Vec<usize>,
-            scc_count: usize,
-            component: Vec<usize>,
+        let mut visited = vec![false; n];
+        let mut finish_order = Vec::new();
+
+        fn dfs1(u: usize, adj: &[Vec<usize>], visited: &mut [bool], finish_order: &mut Vec<usize>) {
+            visited[u] = true;
+            for &v in &adj[u] {
+                if !visited[v] {
+                    dfs1(v, adj, visited, finish_order);
+                }
+            }
+            finish_order.push(u);
         }
 
-        impl<'a> Tarjan<'a> {
-            fn strongconnect(&mut self, v: usize) {
-                self.indices[v] = Some(self.index);
-                self.lowlinks[v] = self.index;
-                self.index += 1;
-                self.stack.push(v);
-                self.on_stack[v] = true;
+        for i in 0..n {
+            if !visited[i] {
+                dfs1(i, &adj, &mut visited, &mut finish_order);
+            }
+        }
 
-                for &w in &self.adj[v] {
-                    if self.indices[w].is_none() {
-                        self.strongconnect(w);
-                        self.lowlinks[v] = self.lowlinks[v].min(self.lowlinks[w]);
-                    } else if self.on_stack[w] {
-                        self.lowlinks[v] = self.lowlinks[v].min(self.indices[w].unwrap());
-                    }
-                }
+        visited.fill(false);
+        let mut sccs = Vec::new();
 
-                if self.lowlinks[v] == self.indices[v].unwrap() {
-                    loop {
-                        let w = self.stack.pop().unwrap();
-                        self.on_stack[w] = false;
-                        self.component[w] = self.scc_count;
-                        if w == v {
-                            break;
-                        }
-                    }
-                    self.scc_count += 1;
+        fn dfs2(u: usize, rev_adj: &[Vec<usize>], visited: &mut [bool], current_scc: &mut Vec<usize>) {
+            visited[u] = true;
+            current_scc.push(u);
+            for &v in &rev_adj[u] {
+                if !visited[v] {
+                    dfs2(v, rev_adj, visited, current_scc);
                 }
             }
         }
 
-        let mut tarjan = Tarjan {
-            adj: &adj,
-            index: 0,
-            indices: vec![None; n],
-            lowlinks: vec![0; n],
-            on_stack: vec![false; n],
-            stack: Vec::new(),
-            scc_count: 0,
-            component: vec![0; n],
-        };
-
-        for i in 0..n {
-            if tarjan.indices[i].is_none() {
-                tarjan.strongconnect(i);
+        for &u in finish_order.iter().rev() {
+            if !visited[u] {
+                let mut current_scc = Vec::new();
+                dfs2(u, &rev_adj, &mut visited, &mut current_scc);
+                sccs.push(current_scc);
             }
         }
 
-        let scc_count = tarjan.scc_count;
-        let component = tarjan.component;
+        sccs
+    }
 
-        // Map components to the smallest representative variable in that component
-        let mut reps = vec![n; scc_count];
-        for i in 0..n {
-            let comp = component[i];
-            if i < reps[comp] {
-                reps[comp] = i;
+    pub fn contract_graph(&self, sccs: &[Vec<usize>]) -> (Vec<usize>, Vec<(usize, usize, i32)>, Vec<usize>) {
+        let n = self.vars.len();
+        let mut rep = vec![0; n];
+        for scc in sccs {
+            let r = *scc.iter().min().unwrap_or(&0);
+            for &u in scc {
+                rep[u] = r;
             }
         }
 
-        // Update edges to use representatives
-        let mut new_edges = HashSet::new();
-
-        // Ensure that collapsed variables are not orphaned in the SMT matrix.
-        // We mathematically assert their equivalence to the Strongly Cantorian representative.
-        for i in 0..n {
-            let rep = reps[component[i]];
-            if i != rep {
-                new_edges.insert((rep, i, 0, false));
-                new_edges.insert((i, rep, 0, false));
+        let mut c_vars = Vec::new();
+        let mut c_vars_set = std::collections::HashSet::new();
+        for &r in &rep {
+            if c_vars_set.insert(r) {
+                c_vars.push(r);
             }
         }
 
-        for &(u, v, w, in_comp) in &self.edges {
-            let rep_u = reps[component[u]];
-            let rep_v = reps[component[v]];
-            if rep_u != rep_v || w != 0 {
-                new_edges.insert((rep_u, rep_v, w, in_comp));
+        let mut c_edges = std::collections::HashSet::new();
+        for &(u, v, w, _) in &self.edges {
+            let ru = rep[u];
+            let rv = rep[v];
+            if ru != rv || w != 0 {
+                c_edges.insert((ru, rv, w));
             }
         }
-        self.edges = new_edges.into_iter().collect();
+
+        (c_vars, c_edges.into_iter().collect(), rep)
     }
 
     /// Continuous daemon that isolates Strongly Cantorian (ZFC-compliant) bedrock
@@ -438,23 +424,64 @@ impl GraphArena {
             return Ok((Vec::new(), sc_actions, true, true));
         }
 
-        // Fast-path: O(V+E) DAG Shortest Path
-        if let Some(order) = self.topological_sort() {
-            let mut d = vec![0; n];
-            
-            let mut adj = vec![Vec::new(); n];
-            for &(u, v, w, _) in &self.edges {
-                adj[u].push((v, w));
+        let sccs = self.kosaraju_scc();
+        let (c_vars, c_edges, reps) = self.contract_graph(&sccs);
+
+        let mut in_degree = HashMap::new();
+        for &u in &c_vars {
+            in_degree.insert(u, 0);
+        }
+        let mut adj = HashMap::new();
+        for &(u, v, w) in &c_edges {
+            adj.entry(u).or_insert_with(Vec::new).push((v, w));
+            *in_degree.entry(v).or_insert(0) += 1;
+        }
+
+        let mut queue = std::collections::VecDeque::new();
+        for (&u, &deg) in &in_degree {
+            if deg == 0 {
+                queue.push_back(u);
             }
-            
-            for &u in &order {
-                for &(v, w) in &adj[u] {
-                    if d[u] + w < d[v] {
-                        d[v] = d[u] + w;
+        }
+
+        let mut order = Vec::new();
+        while let Some(u) = queue.pop_front() {
+            order.push(u);
+            if let Some(neighbors) = adj.get(&u) {
+                for &(v, _) in neighbors {
+                    if let Some(deg) = in_degree.get_mut(&v) {
+                        *deg -= 1;
+                        if *deg == 0 {
+                            queue.push_back(v);
+                        }
                     }
                 }
             }
-            
+        }
+
+        // Fast-path: O(V+E) DAG Shortest Path on Contracted Graph
+        if order.len() == c_vars.len() {
+            let mut c_d = HashMap::new();
+            for &u in &c_vars {
+                c_d.insert(u, 0);
+            }
+            for &u in &order {
+                let du = *c_d.get(&u).unwrap();
+                if let Some(neighbors) = adj.get(&u) {
+                    for &(v, w) in neighbors {
+                        let dv = *c_d.get(&v).unwrap();
+                        if du + w < dv {
+                            c_d.insert(v, du + w);
+                        }
+                    }
+                }
+            }
+
+            let mut d = vec![0; n];
+            for i in 0..n {
+                d[i] = *c_d.get(&reps[i]).unwrap();
+            }
+
             let (is_nfp, is_nfi) = self.classify_subsystems(&d);
             return Ok((d, sc_actions, is_nfp, is_nfi));
         }

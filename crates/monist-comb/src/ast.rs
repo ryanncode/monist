@@ -133,12 +133,25 @@ impl GNet {
         }
     }
 
-    pub fn reduce(&mut self, k_iteration_limit: usize) -> Result<usize, &'static str> {
+    pub fn reduce(&mut self, k_iteration_limit: usize, sc_depth: usize) -> Result<usize, &'static str> {
         let mut iterations = 0;
 
+        // Buss's polynomial-time bounded arithmetic (Σ_1^b)
+        // Reductions inside Strongly Cantorian islands decay exponentially in budget 
+        // to prevent Ackermann-like infinite recursions masquerading as classical sets.
+        let dynamic_limit = if sc_depth > 0 {
+            k_iteration_limit >> (sc_depth.min(31))
+        } else {
+            k_iteration_limit
+        };
+
         while let Some((p1, p2)) = self.redexes.pop() {
-            if iterations >= k_iteration_limit {
-                return Err("K_ITERATION_HALT: Topological Execution Limit Exceeded.");
+            if iterations >= dynamic_limit {
+                if sc_depth > 0 {
+                    return Err("SC_CUT_HALT: Strongly Cantorian Execution Limit Exceeded (Σ_1^b boundary hit).");
+                } else {
+                    return Err("K_ITERATION_HALT: Topological Execution Limit Exceeded.");
+                }
             }
             iterations += 1;
 

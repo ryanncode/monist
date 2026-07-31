@@ -144,6 +144,30 @@ impl ReplWasmSession {
                 let formula_str = args.join(" ");
                 self.inner.tactic_cut(&formula_str)
             }
+            "stratify" => self.inner.tactic_stratify(),
+            "refl" => self.inner.tactic_refl(),
+            "have" => {
+                let name = args.get(0).cloned().unwrap_or_else(|| "H".to_string());
+                let formula_str = args.iter().skip(1).cloned().collect::<Vec<_>>().join(" ");
+                self.inner.tactic_have(&name, &formula_str)
+            }
+            "collapse_loop" => self.inner.tactic_collapse_loop(),
+            "schonfinkel" => self.inner.tactic_schonfinkel(),
+            "step" => self.inner.tactic_step(),
+            "simp" => self.inner.tactic_simp(),
+            "rw" => {
+                let formula_str = args.join(" ");
+                self.inner.tactic_rw(&formula_str)
+            }
+            "focus_hyp" => {
+                let name = args.get(0).cloned().unwrap_or_default();
+                self.inner.tactic_focus_hyp(&name)
+            }
+            "defer" => self.inner.tactic_defer(),
+            "elevate" => {
+                let name = args.get(0).cloned().unwrap_or_default();
+                self.inner.tactic_elevate(&name)
+            }
             _ => Err("Unknown tactic.".to_string()),
         };
 

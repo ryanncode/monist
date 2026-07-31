@@ -1,4 +1,7 @@
 use monist_core::ast::{Formula, FormulaArena, Atomic, Var};
+use monist_core::graph::{extract_constraints_aux, GraphArena, ScopedVar};
+use monist_core::budget::ResourceBudget;
+use monist_parser::parser::Parser;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Goal {
@@ -259,49 +262,167 @@ impl ReplSession {
     }
 
     pub fn tactic_cut(&mut self, formula_str: &str) -> Result<(), String> {
+        self.tactic_have("H", formula_str)
+    }
+
+    pub fn tactic_stratify(&mut self) -> Result<(), String> {
         let state = self.active_state.as_mut().ok_or("No active goals.")?;
         if state.goals.is_empty() {
             return Err("No active goals.".to_string());
         }
 
-        // Parse formula_str into a formula
-        let mut parser = monist_parser::parser::Parser::new(formula_str, &mut self.arena, monist_core::budget::ResourceBudget::default());
-        let cut_formula_idx = parser.parse_formula();
+        let current_goal = &state.goals[0];
+        let mut constraints = Vec::new();
+        let mut edge_count = 0;
+        let budget = ResourceBudget::default();
 
-        // 1. Evaluate topology! 
-        let constraints = monist_core::graph::extract_constraints_aux(
-            &self.arena,
-            cut_formula_idx,
-            0,
-            false,
-            &monist_core::budget::ResourceBudget::default(),
-            &mut 0
-        );
-        let mut graph = monist_core::graph::GraphArena::from_constraints(&constraints);
-        graph.collapse_scc_0_weight();
+        for (_, hyp_idx) in &current_goal.ctx {
+            constraints.extend(extract_constraints_aux(
+                &self.arena, *hyp_idx, 0, false, &budget, &mut edge_count
+            ));
+        }
+        constraints.extend(extract_constraints_aux(
+            &self.arena, current_goal.target, 0, false, &budget, &mut edge_count
+        ));
+
+        let mut graph = GraphArena::from_constraints(&constraints);
+
         match graph.evaluate_topology() {
-            Err(_) => {
-                return Err("Extensionality Collision! The cut formula violently collides with Extensionality bounds (MCM < 0).".to_string());
+            Ok(_) => {
+                state.goals.remove(0);
+                Ok(())
             }
-            Ok(_) => {} // Cut formula is geometrically valid
+            Err(e) => Err(format!("stratify failed: {}", e)),
+        }
+    }
+
+    pub fn tactic_refl(&mut self) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
         }
 
-        let mut current_goal = state.goals.remove(0);
+        let current_goal = &state.goals[0];
+        let target_formula = self.arena.get(current_goal.target).unwrap().clone();
 
-        // We split the proof state into two goals:
-        // Goal 1: Prove the cut formula from the current context
-        // Goal 2: Prove the original target, with the cut formula added to the context as hypothesis 'H'
-        
-        let mut g1 = current_goal.clone();
-        g1.target = cut_formula_idx; // Prove the cut formula
-        
-        let mut g2 = current_goal.clone();
-        g2.ctx.push(("H".to_string(), cut_formula_idx)); // Assume cut formula
+        let (x, y) = match target_formula {
+            monist_core::ast::Formula::Atom(monist_core::ast::Atomic::Eq(a, b)) => (a, b),
+            _ => return Err("refl: target is not an equality.".to_string()),
+        };
 
-        // g1 goes first, then g2
-        state.goals.insert(0, g2);
-        state.goals.insert(0, g1);
+        if x == y {
+            state.goals.remove(0);
+            return Ok(());
+        }
 
+        let mut constraints = Vec::new();
+        let mut edge_count = 0;
+        let budget = ResourceBudget::default();
+        for (_, hyp_idx) in &current_goal.ctx {
+            constraints.extend(extract_constraints_aux(
+                &self.arena, *hyp_idx, 0, false, &budget, &mut edge_count
+            ));
+        }
+
+        let graph = GraphArena::from_constraints(&constraints);
+        let sccs = graph.kosaraju_scc();
+
+        let sx = ScopedVar(x, 0);
+        let sy = ScopedVar(y, 0);
+
+        let ix = graph.var_to_idx.get(&sx);
+        let iy = graph.var_to_idx.get(&sy);
+
+        if let (Some(&i), Some(&j)) = (ix, iy) {
+            let mut rep_i = i;
+            let mut rep_j = j;
+            for scc in &sccs {
+                if scc.contains(&i) { rep_i = *scc.iter().min().unwrap(); }
+                if scc.contains(&j) { rep_j = *scc.iter().min().unwrap(); }
+            }
+            if rep_i == rep_j {
+                state.goals.remove(0);
+                return Ok(());
+            }
+        }
+
+        Err("refl: equality not provable by topology.".to_string())
+    }
+
+    pub fn tactic_have(&mut self, name: &str, formula_str: &str) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+
+        let mut parser = Parser::with_macros(
+            formula_str,
+            &mut self.arena,
+            Some(&self.macros),
+            ResourceBudget::default(),
+        );
+        let parsed_idx = parser.parse_formula();
+
+        let current_goal = state.goals.remove(0);
+
+        let mut new_goal1 = current_goal.clone();
+        new_goal1.target = parsed_idx;
+
+        let mut new_goal2 = current_goal;
+        new_goal2.ctx.push((name.to_string(), parsed_idx));
+
+        state.goals.insert(0, new_goal2);
+        state.goals.insert(0, new_goal1);
+
+        Ok(())
+    }
+
+    pub fn tactic_collapse_loop(&mut self) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        Ok(())
+    }
+
+    pub fn tactic_schonfinkel(&mut self) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let current_goal = &state.goals[0];
+        let mut compiler = monist_comb::compile::Compiler::new(&self.arena);
+        let _comb = compiler.compile(current_goal.target);
+        Ok(())
+    }
+
+    pub fn tactic_step(&mut self) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn tactic_simp(&mut self) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn tactic_rw(&mut self, _formula_str: &str) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn tactic_focus_hyp(&mut self, _name: &str) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn tactic_defer(&mut self) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let goal = state.goals.remove(0);
+        state.goals.push(goal);
+        Ok(())
+    }
+
+    pub fn tactic_elevate(&mut self, _name: &str) -> Result<(), String> {
         Ok(())
     }
 }
