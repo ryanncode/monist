@@ -3,18 +3,18 @@ use monist_core::graph::{extract_constraints_aux, GraphArena, ScopedVar};
 use monist_core::budget::ResourceBudget;
 use monist_parser::parser::Parser;
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Goal {
     pub ctx: Vec<(String, usize)>,
     pub target: usize,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProofState {
     pub goals: Vec<Goal>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ReplSession {
     pub arena: FormulaArena,
     pub active_state: Option<ProofState>,
@@ -408,8 +408,21 @@ impl ReplSession {
         Ok(())
     }
 
-    pub fn tactic_focus_hyp(&mut self, _name: &str) -> Result<(), String> {
-        Ok(())
+    pub fn tactic_focus_hyp(&mut self, name: &str) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let mut current_goal = state.goals.remove(0);
+        if let Some(idx) = current_goal.ctx.iter().position(|(n, _)| n == name) {
+            let hyp = current_goal.ctx.remove(idx);
+            current_goal.ctx.insert(0, hyp);
+            state.goals.insert(0, current_goal);
+            Ok(())
+        } else {
+            state.goals.insert(0, current_goal);
+            Err("Invalid hypothesis name.".to_string())
+        }
     }
 
     pub fn tactic_defer(&mut self) -> Result<(), String> {

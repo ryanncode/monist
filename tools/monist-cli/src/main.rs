@@ -6,8 +6,7 @@ use monist_core::smt::export_smt_lib;
 use monist_parser::parser::Parser;
 use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor, Result as RlResult};
-use serde::{Deserialize, Serialize};
-use std::fs;
+use monist_seq::itp::ReplSession;
 
 mod demos;
 
@@ -50,32 +49,6 @@ enum DemoAction {
     Agentic,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Goal {
-    context: Vec<(String, usize)>,
-    target: usize,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Session {
-    graph: GraphArena,
-    axioms: Vec<String>,
-    arena: FormulaArena,
-    active_goals: Vec<Goal>,
-    macros: std::collections::HashMap<String, (Vec<String>, usize)>,
-}
-
-impl Default for Session {
-    fn default() -> Self {
-        Self {
-            graph: GraphArena::new(),
-            axioms: Vec::new(),
-            arena: FormulaArena::new(),
-            active_goals: Vec::new(),
-            macros: std::collections::HashMap::new(),
-        }
-    }
-}
 
 fn main() -> RlResult<()> {
     let cli = Cli::parse();
@@ -182,7 +155,7 @@ fn run_repl() -> RlResult<()> {
     let mut rl = DefaultEditor::new()?;
     let _ = rl.load_history("history.txt");
 
-    let mut session = Session::default();
+    let mut session = ReplSession::new();
 
     loop {
         let readline = rl.readline("monist> ");
@@ -210,7 +183,7 @@ fn run_repl() -> RlResult<()> {
     Ok(())
 }
 
-fn process_repl_command(input: &str, session: &mut Session) {
+fn process_repl_command(input: &str, session: &mut ReplSession) {
     let parts: Vec<&str> = input.trim().split_whitespace().collect();
     if parts.is_empty() {
         return;
@@ -218,85 +191,81 @@ fn process_repl_command(input: &str, session: &mut Session) {
 
     match parts[0] {
         "help" => {
-            eprintln!("Commands:");
+            eprintln!("{}", "Session & Proof Management:".green().bold());
             eprintln!("  help                          - Show this help message");
-            eprintln!("  exit                          - Exit the REPL");
+            eprintln!("  exit | quit                   - Exit the REPL");
             eprintln!("  save_session <file>           - Save current session to a JSON file");
             eprintln!("  load_session <file>           - Load a session from a JSON file");
-            eprintln!("  eval <formula>                - Evaluate a formula");
-            eprintln!("  step <formula>                - Step-by-step diagnostic evaluation");
-            eprintln!("  assume <name> <formula>       - Add a named axiom");
             eprintln!("  theorem <name> <formula>      - Set a new goal to prove");
             eprintln!("  show_goal                     - Show the current goal state");
+            eprintln!("  qed                           - Finish proof");
+            eprintln!("  abort                         - Abort current proof");
+            
+            eprintln!("\n{}", "Global Commands:".green().bold());
+            eprintln!("  eval <formula>                - Evaluate a formula");
+            eprintln!("  check_strat <formula>         - Run Bellman-Ford on raw geometry");
+            eprintln!("  assume <name> <formula>       - Add a named axiom");
+            eprintln!("  deff <name>(<args>) := <form> - Define a macro");
+
+            eprintln!("\n{}", "Logical Tactics:".green().bold());
             eprintln!("  intro [name]                  - Introduce a hypothesis or variable");
-            eprintln!(
-                "  exact <name>                  - Close goal if it matches hypothesis exactly"
-            );
+            eprintln!("  exact <name>                  - Close goal if it matches hypothesis exactly");
+            eprintln!("  apply <name>                  - Apply a theorem/hypothesis");
             eprintln!("  split                         - Split a conjunction goal into two");
             eprintln!("  left                          - Prove left side of a disjunction");
             eprintln!("  right                         - Prove right side of a disjunction");
-            eprintln!("  apply <name>                  - Apply a theorem/hypothesis");
             eprintln!("  destruct <name> [n1] [n2]     - Break down a hypothesis");
-            eprintln!("  rewrite <name>                - Substitute variables using equality");
-            eprintln!(
-                "  deff <name>(<args>) := <formula> - Define a macro with Kosaraju SCC pre-flattening"
-            );
             eprintln!("  cut <formula>                 - Introduce a formula as a sub-goal");
-            eprintln!(
-                "  focus_hyp <name>              - Pull a hypothesis to the top of the context"
-            );
-            eprintln!(
-                "  defer                         - Skip the current goal and send it to the back"
-            );
-            eprintln!("  check_strat <formula>         - Run Bellman-Ford on raw geometry");
-            eprintln!("  qed                           - Finish proof");
-            eprintln!("  abort                         - Abort current proof");
+            eprintln!("  have <name> <formula>         - Prove a sub-goal and add to context");
+            eprintln!("  focus_hyp <name>              - Pull a hypothesis to top of context");
+            eprintln!("  defer                         - Skip current goal to back of queue");
+            
+            eprintln!("\n{}", "Topological Tactics:".green().bold());
+            eprintln!("  stratify                      - Weak stratification topological check");
+            eprintln!("  refl                          - DAG topological equivalence check");
+            eprintln!("  schonfinkel                   - SKI combinator extraction");
+            eprintln!("  step [formula]                - Execute geometric evaluation on target or formula");
+            
+            // Mocked / WIP tactics:
+            // eprintln!("\n{}", "WIP Tactics:".yellow().bold());
+            // eprintln!("  simp                          - Simplify current goal");
+            // eprintln!("  rw <formula>                  - Rewrite target");
+            // eprintln!("  elevate <name>                - T-Functor elevation");
+            // eprintln!("  collapse_loop                 - Contract SCC topologies");
+            // eprintln!("  sc_cut <formula>              - Quarantine sub-goal in Strongly Cantorian boundary");
         }
-
         "theorem" => {
             if parts.len() < 3 {
                 eprintln!("{}", "Usage: theorem <name> <formula>".red());
                 return;
             }
-            let _name = parts[1].to_string();
+            let name = parts[1].to_string();
             let formula = parts[2..].join(" ");
-            let mut parser =
-                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
+            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
-
-            let goal = Goal {
-                context: Vec::new(),
-                target: root_idx,
-            };
-            session.active_goals.push(goal);
+            session.start_proof(name, root_idx);
             eprintln!("[Goal Set] 1 unproven target.");
+            show_goal(session);
         }
         "show_goal" => {
             show_goal(session);
         }
         "qed" => {
-            if session.active_goals.is_empty() {
-                eprintln!("Proof accepted.");
+            if let Some(state) = &session.active_state {
+                if state.goals.is_empty() {
+                    eprintln!("Proof accepted.");
+                } else {
+                    eprintln!("There are still unproven goals.");
+                }
             } else {
-                eprintln!("There are still unproven goals.");
+                eprintln!("No active proof.");
             }
         }
         "abort" => {
-            session.active_goals.clear();
+            session.active_state = None;
             eprintln!("Proof aborted.");
         }
-        "rewrite" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: rewrite <hyp_name>".red());
-                return;
-            }
-            eprintln!("Rewriting..."); // Dummy rewrite implementation
-        }
-        "quit" => {
-            std::process::exit(0);
-        }
-
-        "exit" => {
+        "quit" | "exit" => {
             std::process::exit(0);
         }
         "save_session" => {
@@ -307,7 +276,7 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let filename = parts[1];
             match serde_json::to_string_pretty(session) {
                 Ok(json) => {
-                    if let Err(e) = fs::write(filename, json) {
+                    if let Err(e) = std::fs::write(filename, json) {
                         eprintln!("{}: {}", "Failed to save session".red(), e);
                     } else {
                         eprintln!("Session saved to {}", filename.green());
@@ -322,7 +291,7 @@ fn process_repl_command(input: &str, session: &mut Session) {
                 return;
             }
             let filename = parts[1];
-            match fs::read_to_string(filename) {
+            match std::fs::read_to_string(filename) {
                 Ok(json) => match serde_json::from_str(&json) {
                     Ok(loaded_session) => {
                         *session = loaded_session;
@@ -334,13 +303,16 @@ fn process_repl_command(input: &str, session: &mut Session) {
             }
         }
         "assume" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: assume <axiom>".red());
+            if parts.len() < 3 {
+                eprintln!("{}", "Usage: assume <name> <formula>".red());
                 return;
             }
-            let axiom = parts[1..].join(" ");
-            session.axioms.push(axiom.clone());
-            eprintln!("Assumed: {}", axiom.cyan());
+            let name = parts[1].to_string();
+            let formula = parts[2..].join(" ");
+            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
+            let root_idx = parser.parse_formula();
+            session.theorems.push((name.clone(), root_idx));
+            eprintln!("Assumed: {}", name.cyan());
         }
         "eval" => {
             if parts.len() < 2 {
@@ -348,343 +320,116 @@ fn process_repl_command(input: &str, session: &mut Session) {
                 return;
             }
             let formula = parts[1..].join(" ");
-
-            let mut arena = FormulaArena::new();
-            let mut parser = Parser::with_macros(&formula, &mut arena, None, monist_core::budget::ResourceBudget::default());
+            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
-
-            let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
+            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
-
-            // Merge with session graph? For now just evaluate independently
             match graph.evaluate_topology() {
                 Ok((_, _, _, _)) => eprintln!("{}", "Stratification successful.".green()),
                 Err(e) => eprintln!("{}: {}", "Error".red(), e),
             }
         }
         "step" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: step <formula>".red());
-                return;
-            }
-            let formula = parts[1..].join(" ");
-
-            let mut arena = FormulaArena::new();
-            let mut parser = Parser::with_macros(&formula, &mut arena, None, monist_core::budget::ResourceBudget::default());
-            let root_idx = parser.parse_formula();
-
-            let constraints = extract_constraints_aux(&arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
-            let mut graph = GraphArena::from_constraints(&constraints);
-
-            eprintln!("{}", "--- Extracting Constraints ---".yellow());
-            for c in &constraints {
-                eprintln!("{:?}", c);
-            }
-
-            eprintln!("{}", "--- Graph Nodes ---".yellow());
-            for i in 0..graph.vars.len() {
-                eprintln!("Node {}", i);
-            }
-
-            eprintln!("{}", "--- Graph Edges ---".yellow());
-            for e in &graph.edges {
-                if e.2 < 0 {
-                    eprintln!("Edge {} -> {} weight {}", e.0, e.1, e.2.to_string().red());
+            if parts.len() == 1 {
+                if let Err(e) = session.tactic_step() {
+                    eprintln!("{}: {}", "Error".red(), e);
                 } else {
-                    eprintln!("Edge {} -> {} weight {}", e.0, e.1, e.2);
+                    show_goal(session);
                 }
-            }
-
-            eprintln!("{}", "--- Collapsing SCC ---".yellow());
-            graph.collapse_scc_0_weight();
-
-            eprintln!("{}", "--- Running Bellman-Ford ---".yellow());
-            match graph.evaluate_topology() {
-                Ok((_, _, _, _)) => eprintln!("{}", "Stratification successful.".green()),
-                Err(e) => eprintln!("{}: {}", "Error".red(), e),
+            } else {
+                let formula = parts[1..].join(" ");
+                let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
+                let root_idx = parser.parse_formula();
+                let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
+                let mut graph = GraphArena::from_constraints(&constraints);
+                eprintln!("{}", "--- Extracting Constraints ---".yellow());
+                for c in &constraints { eprintln!("{:?}", c); }
+                eprintln!("{}", "--- Graph Nodes ---".yellow());
+                for i in 0..graph.vars.len() { eprintln!("Node {}", i); }
+                eprintln!("{}", "--- Graph Edges ---".yellow());
+                for e in &graph.edges {
+                    if e.2 < 0 { eprintln!("Edge {} -> {} weight {}", e.0, e.1, e.2.to_string().red()); } 
+                    else { eprintln!("Edge {} -> {} weight {}", e.0, e.1, e.2); }
+                }
+                eprintln!("{}", "--- Collapsing SCC ---".yellow());
+                graph.collapse_scc_0_weight();
+                eprintln!("{}", "--- Running Bellman-Ford ---".yellow());
+                match graph.evaluate_topology() {
+                    Ok((_, _, _, _)) => eprintln!("{}", "Stratification successful.".green()),
+                    Err(e) => eprintln!("{}: {}", "Error".red(), e),
+                }
             }
         }
         "intro" => {
-            let name = if parts.len() > 1 {
-                parts[1].to_string()
-            } else {
-                "H".to_string()
-            };
-            if let Some(mut goal) = session.active_goals.pop() {
-                let target = session.arena.get(goal.target).cloned();
-                match target {
-                    Some(Formula::Impl(l, r)) => {
-                        goal.context.push((name, l));
-                        goal.target = r;
-                        session.active_goals.push(goal);
-                        show_goal(session);
-                    }
-                    Some(Formula::Univ(_, _, inner)) => {
-                        // For Univ, we just drop the binder and proceed with inner
-                        goal.target = inner;
-                        session.active_goals.push(goal);
-                        show_goal(session);
-                    }
-                    _ => {
-                        eprintln!(
-                            "{}",
-                            "Goal is not an implication or universal quantification.".red()
-                        );
-                        session.active_goals.push(goal);
-                    }
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
+            let name = parts.get(1).cloned().unwrap_or("H").to_string();
+            if let Err(e) = session.tactic_intro(name) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
         }
         "exact" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: exact <hyp_name>".red());
-                return;
-            }
-            let name = parts[1].to_string();
-            if let Some(goal) = session.active_goals.last() {
-                if let Some((_, hyp_idx)) = goal.context.iter().find(|(n, _)| n == &name) {
-                    if *hyp_idx == goal.target {
-                        eprintln!("{}", "Goal closed!".green());
-                        session.active_goals.pop();
-                        if session.active_goals.is_empty() {
-                            eprintln!("{}", "Proof complete!".green().bold());
-                        } else {
-                            show_goal(session);
-                        }
-                    } else {
-                        eprintln!("{}", "Hypothesis does not exactly match the target.".red());
-                    }
-                } else {
-                    eprintln!("{}", "Invalid hypothesis name.".red());
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
-        }
-        "split" => {
-            if let Some(mut goal) = session.active_goals.pop() {
-                let target = session.arena.get(goal.target).cloned();
-                match target {
-                    Some(Formula::Conj(l, r)) => {
-                        let mut goal2 = goal.clone();
-                        goal.target = l;
-                        goal2.target = r;
-                        session.active_goals.push(goal2);
-                        session.active_goals.push(goal);
-                        show_goal(session);
-                    }
-                    _ => {
-                        eprintln!("{}", "Goal is not a conjunction.".red());
-                        session.active_goals.push(goal);
-                    }
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
-        }
-        "left" => {
-            if let Some(mut goal) = session.active_goals.pop() {
-                let target = session.arena.get(goal.target).cloned();
-                match target {
-                    Some(Formula::Disj(l, _)) => {
-                        goal.target = l;
-                        session.active_goals.push(goal);
-                        show_goal(session);
-                    }
-                    _ => {
-                        eprintln!("{}", "Goal is not a disjunction.".red());
-                        session.active_goals.push(goal);
-                    }
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
-        }
-        "right" => {
-            if let Some(mut goal) = session.active_goals.pop() {
-                let target = session.arena.get(goal.target).cloned();
-                match target {
-                    Some(Formula::Disj(_, r)) => {
-                        goal.target = r;
-                        session.active_goals.push(goal);
-                        show_goal(session);
-                    }
-                    _ => {
-                        eprintln!("{}", "Goal is not a disjunction.".red());
-                        session.active_goals.push(goal);
-                    }
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
+            let name = parts.get(1).cloned().unwrap_or("").to_string();
+            if let Err(e) = session.tactic_exact(&name) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
         }
         "apply" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: apply <hyp_name>".red());
-                return;
-            }
-            let name = parts[1].to_string();
-            if let Some(mut goal) = session.active_goals.pop() {
-                if let Some(&(_, hyp_idx)) = goal.context.iter().find(|(n, _)| n == &name) {
-                    let hyp_f = session.arena.get(hyp_idx).cloned();
-                    match hyp_f {
-                        Some(Formula::Impl(l, r)) if r == goal.target => {
-                            goal.target = l;
-                            session.active_goals.push(goal);
-                            show_goal(session);
-                        }
-                        _ => {
-                            eprintln!(
-                                "{}",
-                                "Hypothesis is not an implication matching the target.".red()
-                            );
-                            session.active_goals.push(goal);
-                        }
-                    }
-                } else {
-                    eprintln!("{}", "Invalid hypothesis name.".red());
-                    session.active_goals.push(goal);
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
+            let name = parts.get(1).cloned().unwrap_or("").to_string();
+            if let Err(e) = session.tactic_apply(&name) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "split" => {
+            if let Err(e) = session.tactic_split() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "left" => {
+            if let Err(e) = session.tactic_left() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "right" => {
+            if let Err(e) = session.tactic_right() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
         }
         "destruct" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: destruct <hyp_name> [n1] [n2]".red());
-                return;
-            }
-            let name = parts[1].to_string();
-            let n1 = if parts.len() > 2 {
-                parts[2].to_string()
-            } else {
-                format!("{}a", name)
-            };
-            let n2 = if parts.len() > 3 {
-                parts[3].to_string()
-            } else {
-                format!("{}b", name)
-            };
-
-            if let Some(mut goal) = session.active_goals.pop() {
-                if let Some(idx) = goal.context.iter().position(|(n, _)| n == &name) {
-                    let (_, hyp_idx) = goal.context.remove(idx);
-                    let hyp_f = session.arena.get(hyp_idx).cloned();
-                    match hyp_f {
-                        Some(Formula::Conj(l, r)) => {
-                            goal.context.push((n1, l));
-                            goal.context.push((n2, r));
-                            session.active_goals.push(goal);
-                            show_goal(session);
-                        }
-                        Some(Formula::Disj(l, r)) => {
-                            let mut goal2 = goal.clone();
-                            goal.context.push((n1, l));
-                            goal2.context.push((n2, r));
-                            session.active_goals.push(goal2);
-                            session.active_goals.push(goal);
-                            show_goal(session);
-                        }
-                        Some(Formula::Exist(_, _, inner)) => {
-                            goal.context.push((n1, inner));
-                            session.active_goals.push(goal);
-                            show_goal(session);
-                        }
-                        _ => {
-                            eprintln!("{}", "Hypothesis cannot be destructed.".red());
-                            goal.context.insert(idx, (name, hyp_idx));
-                            session.active_goals.push(goal);
-                        }
-                    }
-                } else {
-                    eprintln!("{}", "Invalid hypothesis name.".red());
-                    session.active_goals.push(goal);
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
-        }
-        "focus_hyp" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: focus_hyp <hyp_name>".red());
-                return;
-            }
-            let name = parts[1].to_string();
-            if let Some(mut goal) = session.active_goals.pop() {
-                if let Some(idx) = goal.context.iter().position(|(n, _)| n == &name) {
-                    let hyp = goal.context.remove(idx);
-                    goal.context.insert(0, hyp);
-                    session.active_goals.push(goal);
-                    show_goal(session);
-                } else {
-                    eprintln!("{}", "Invalid hypothesis name.".red());
-                    session.active_goals.push(goal);
-                }
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
-        }
-        "defer" => {
-            if session.active_goals.len() > 1 {
-                let goal = session.active_goals.pop().unwrap();
-                session.active_goals.insert(0, goal);
-                eprintln!("{}", "Goal deferred.".green());
-                show_goal(session);
-            } else if session.active_goals.len() == 1 {
-                eprintln!("{}", "Only one active goal.".yellow());
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
+            let name = parts.get(1).cloned().unwrap_or("").to_string();
+            let n1 = parts.get(2).cloned().unwrap_or("").to_string();
+            let n2 = parts.get(3).cloned().unwrap_or("").to_string();
+            if let Err(e) = session.tactic_destruct(&name, n1, n2) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
         }
         "cut" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: cut <formula>".red());
-                return;
-            }
-            let formula_str = parts[1..].join(" ");
-            let mut parser =
-                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
-            let cut_idx = parser.parse_formula();
-
-            if let Some(goal) = session.active_goals.pop() {
-                let mut goal2 = goal.clone();
-                goal2.context.push(("Cut".to_string(), cut_idx));
-
-                let mut goal1 = goal.clone();
-                goal1.target = cut_idx;
-
-                session.active_goals.push(goal2);
-                session.active_goals.push(goal1);
-                show_goal(session);
-            } else {
-                eprintln!("{}", "No active goals.".red());
-            }
-        }
-        "check_strat" => {
-            if parts.len() < 2 {
-                eprintln!("{}", "Usage: check_strat <formula>".red());
-                return;
-            }
             let formula = parts[1..].join(" ");
-
-            let mut parser =
-                Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
-            let root_idx = parser.parse_formula();
-
-            let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
-            let mut graph = GraphArena::from_constraints(&constraints);
-            graph.collapse_scc_0_weight();
-
-            match graph.evaluate_topology() {
-                Ok((_, _, _, _)) => eprintln!(
-                    "{}",
-                    "Stratification successful. Topologically sound.".green()
-                ),
-                Err(e) => eprintln!("{}: {}", "Error: Negative-weight cycle detected".red(), e),
+            if let Err(e) = session.tactic_cut(&formula) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "stratify" => {
+            if let Err(e) = session.tactic_stratify() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "refl" => {
+            if let Err(e) = session.tactic_refl() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "have" => {
+            if parts.len() < 3 {
+                eprintln!("{}", "Usage: have <name> <formula>".red());
+                return;
             }
+            let name = parts[1].to_string();
+            let formula = parts[2..].join(" ");
+            if let Err(e) = session.tactic_have(&name, &formula) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "schonfinkel" => {
+            if let Err(e) = session.tactic_schonfinkel() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "simp" => {
+            if let Err(e) = session.tactic_simp() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "rw" => {
+            let formula = parts[1..].join(" ");
+            if let Err(e) = session.tactic_rw(&formula) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "focus_hyp" => {
+            let name = parts.get(1).cloned().unwrap_or("").to_string();
+            if let Err(e) = session.tactic_focus_hyp(&name) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "defer" => {
+            if let Err(e) = session.tactic_defer() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "elevate" => {
+            let name = parts.get(1).cloned().unwrap_or("").to_string();
+            if let Err(e) = session.tactic_elevate(&name) { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
+        }
+        "collapse_loop" => {
+            if let Err(e) = session.tactic_collapse_loop() { eprintln!("{}: {}", "Error".red(), e); } else { show_goal(session); }
         }
         "deff" => {
             if parts.len() < 3 || !parts.contains(&":=") {
@@ -694,15 +439,11 @@ fn process_repl_command(input: &str, session: &mut Session) {
             let eq_idx = parts.iter().position(|&x| x == ":=").unwrap();
             let sig_str = parts[1..eq_idx].join(" ");
             let formula_str = parts[eq_idx + 1..].join(" ");
-
-            // parse signature: Name(A, B)
             let sig_str = sig_str.replace(" ", "");
             let open_paren = sig_str.find('(');
             let close_paren = sig_str.find(')');
-
             let name;
             let mut params = Vec::new();
-
             if let (Some(op), Some(cp)) = (open_paren, close_paren) {
                 name = sig_str[..op].to_string();
                 let params_str = &sig_str[op + 1..cp];
@@ -712,17 +453,27 @@ fn process_repl_command(input: &str, session: &mut Session) {
             } else {
                 name = sig_str;
             }
-
-            let mut parser =
-                Parser::with_macros(&formula_str, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
+            if let Err(e) = session.define_macro(name.clone(), params, &formula_str) {
+                eprintln!("{}: {}", "Error".red(), e);
+            } else {
+                eprintln!("Macro {} defined and SCC flattened.", name.cyan());
+            }
+        }
+        "check_strat" => {
+            if parts.len() < 2 {
+                eprintln!("{}", "Usage: check_strat <formula>".red());
+                return;
+            }
+            let formula = parts[1..].join(" ");
+            let mut parser = Parser::with_macros(&formula, &mut session.arena, Some(&session.macros), monist_core::budget::ResourceBudget::default());
             let root_idx = parser.parse_formula();
-
             let constraints = extract_constraints_aux(&session.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
             let mut graph = GraphArena::from_constraints(&constraints);
             graph.collapse_scc_0_weight();
-
-            session.macros.insert(name.clone(), (params, root_idx));
-            eprintln!("Macro {} defined and SCC flattened.", name.cyan());
+            match graph.evaluate_topology() {
+                Ok((_, _, _, _)) => eprintln!("{}", "Stratification successful. Topologically sound.".green()),
+                Err(e) => eprintln!("{}: {}", "Error: Negative-weight cycle detected".red(), e),
+            }
         }
         _ => {
             eprintln!("{}: Unknown command '{}'", "Error".red(), parts[0]);
@@ -800,24 +551,28 @@ fn format_var(v: &Var, show_tags: bool) -> String {
     }
 }
 
-fn show_goal(session: &Session) {
-    if let Some(goal) = session.active_goals.last() {
-        eprintln!("{}", "--- Context ---".yellow());
-        for hyp in goal.context.iter() {
+fn show_goal(session: &ReplSession) {
+    if let Some(state) = &session.active_state {
+        if let Some(goal) = state.goals.first() {
+            eprintln!("{}", "--- Context ---".yellow());
+            for hyp in goal.ctx.iter() {
+                eprintln!(
+                    "{}: {}",
+                    hyp.0,
+                    format_formula(&session.arena, hyp.1, false)
+                );
+            }
+            eprintln!("{}", "--- Target ---".yellow());
             eprintln!(
-                "{}: {}",
-                hyp.0,
-                format_formula(&session.arena, hyp.1, false)
+                "{}",
+                format_formula(&session.arena, goal.target, false)
+                    .cyan()
+                    .bold()
             );
+        } else {
+            eprintln!("No active goals.");
         }
-        eprintln!("{}", "--- Target ---".yellow());
-        eprintln!(
-            "{}",
-            format_formula(&session.arena, goal.target, false)
-                .cyan()
-                .bold()
-        );
     } else {
-        eprintln!("No active goals.");
+        eprintln!("No active proof.");
     }
 }

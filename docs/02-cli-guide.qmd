@@ -123,23 +123,25 @@ Proof accepted.
 
 ## Unified Command Reference
 
-### Core Proof Environment
+### Session & Proof Management
 
 * `help`: Show the help message.
 * `exit` / `quit`: Exit the REPL.
 * `save_session <file.json>`: Save the current session (axioms and active goals) to a JSON file.
 * `load_session <file.json>`: Load a previously saved session.
-
-### Axioms & Proofs
-
-* `assume <name> <formula>`: Register a named axiom into the global environment.
 * `theorem <name> <formula>`: Start a new proof with a target goal and enter tactical mode.
-* `deff <name>(<args>) := <formula>`: Define a macro with Kosaraju SCC pre-flattening, collapsing internal 0-weight edges into an optimized DAG to minimize topological evaluation overhead.
 * `show_goal`: Print the active target goal and its local context/hypotheses (with De Bruijn scope tags intentionally hidden to minimize UI clutter).
 * `qed`: Conclude an interactive proof if all goals are solved.
 * `abort`: Cancel the current interactive proof.
 
-### Interactive Tactics
+### Global Commands
+
+* `eval <formula>`: Immediately test a formula for stratification loops and geometric friction without entering the tactical proof state.
+* `check_strat <formula>`: An alias/sandbox command to run the AST parser and Bellman-Ford algorithm on raw geometry instantly before proofs.
+* `assume <name> <formula>`: Register a named axiom into the global environment.
+* `deff <name>(<args>) := <formula>`: Define a macro with Kosaraju SCC pre-flattening, collapsing internal 0-weight edges into an optimized DAG to minimize topological evaluation overhead.
+
+### Logical Tactics
 
 * `intro [name]`: Introduce a premise or a universally quantified variable into the local context.
 * `exact <name>`: Close the current goal if it exactly matches the specified hypothesis.
@@ -147,16 +149,27 @@ Proof accepted.
 * `split`: Split a conjunction (`/\`) goal into two separate sub-goals.
 * `left` / `right`: Choose a side to prove for a disjunction (`\/`) goal.
 * `destruct <name> [n1] [n2]`: Break down a hypothesis (like a conjunction or disjunction) into smaller pieces in the context.
-* `rewrite <name>`: Substitute variables inside the goal based on an equality hypothesis.
 * `cut <formula>`: Diagnostic Cut Tactic. Introduces a highly saturated formula as a sub-goal, allowing you to explicitly trigger Extensionality bounds.
+* `have <name> <formula>`: Prove a sub-goal and add it to the local context.
 * `focus_hyp <name>`: Pull a specific hypothesis to the top of your context array for easier visibility.
 * `defer`: Skip the current active goal, sending it to the back of the `ProofState` queue.
 
-### Diagnostic Evaluation
+### Topological Tactics
 
-* `check_strat <formula>`: An alias/sandbox command to run the AST parser and Bellman-Ford algorithm on raw geometry instantly before proofs.
-* `eval <formula>`: Immediately test a formula for stratification loops and geometric friction without entering the tactical proof state.
-* `step <formula>`: Process a logical formula step-by-step, providing immediate, color-coded feedback on topological friction and geometric bounds.
+* `stratify`: Weak stratification topological check.
+* `refl`: DAG topological equivalence check.
+* `schonfinkel`: SKI combinator extraction.
+* `step [formula]`: Execute geometric evaluation on the active target goal or a specific formula, providing real-time color-coded feedback on topological bounds.
+
+### WIP / Mocked Tactics
+
+*Note: These commands are mocked or incomplete in the current engine release and are commented out of the active CLI.*
+
+* `simp`: Simplify current goal.
+* `rw <formula>` (formerly `rewrite`): Substitute variables inside the goal based on an equality hypothesis.
+* `elevate <name>`: T-Functor elevation.
+* `collapse_loop`: Contract SCC topologies.
+* `sc_cut <formula>`: Quarantine sub-goal in Strongly Cantorian boundary.
 
 ---
 
