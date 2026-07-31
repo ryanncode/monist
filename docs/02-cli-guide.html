@@ -274,10 +274,11 @@ window.Quarto = {
   </ul></li>
   <li><a href="#unified-command-reference" id="toc-unified-command-reference" class="nav-link" data-scroll-target="#unified-command-reference"><span class="header-section-number">2.4</span> Unified Command Reference</a>
   <ul class="collapse">
-  <li><a href="#core-proof-environment" id="toc-core-proof-environment" class="nav-link" data-scroll-target="#core-proof-environment"><span class="header-section-number">2.4.1</span> Core Proof Environment</a></li>
-  <li><a href="#axioms-proofs" id="toc-axioms-proofs" class="nav-link" data-scroll-target="#axioms-proofs"><span class="header-section-number">2.4.2</span> Axioms &amp; Proofs</a></li>
-  <li><a href="#interactive-tactics" id="toc-interactive-tactics" class="nav-link" data-scroll-target="#interactive-tactics"><span class="header-section-number">2.4.3</span> Interactive Tactics</a></li>
-  <li><a href="#diagnostic-evaluation" id="toc-diagnostic-evaluation" class="nav-link" data-scroll-target="#diagnostic-evaluation"><span class="header-section-number">2.4.4</span> Diagnostic Evaluation</a></li>
+  <li><a href="#session-proof-management" id="toc-session-proof-management" class="nav-link" data-scroll-target="#session-proof-management"><span class="header-section-number">2.4.1</span> Session &amp; Proof Management</a></li>
+  <li><a href="#global-commands" id="toc-global-commands" class="nav-link" data-scroll-target="#global-commands"><span class="header-section-number">2.4.2</span> Global Commands</a></li>
+  <li><a href="#logical-tactics" id="toc-logical-tactics" class="nav-link" data-scroll-target="#logical-tactics"><span class="header-section-number">2.4.3</span> Logical Tactics</a></li>
+  <li><a href="#topological-tactics" id="toc-topological-tactics" class="nav-link" data-scroll-target="#topological-tactics"><span class="header-section-number">2.4.4</span> Topological Tactics</a></li>
+  <li><a href="#wip-mocked-tactics" id="toc-wip-mocked-tactics" class="nav-link" data-scroll-target="#wip-mocked-tactics"><span class="header-section-number">2.4.5</span> WIP / Mocked Tactics</a></li>
   </ul></li>
   <li><a href="#troubleshooting-paradoxes" id="toc-troubleshooting-paradoxes" class="nav-link" data-scroll-target="#troubleshooting-paradoxes"><span class="header-section-number">2.5</span> Troubleshooting Paradoxes</a></li>
   <li><a href="#understanding-the-engine-constraints-and-tactics" id="toc-understanding-the-engine-constraints-and-tactics" class="nav-link" data-scroll-target="#understanding-the-engine-constraints-and-tactics"><span class="header-section-number">2.6</span> Understanding the Engine: Constraints and Tactics</a>
@@ -348,10 +349,10 @@ window.Quarto = {
 </ul></li>
 <li><strong>Set Theory Operations:</strong>
 <ul>
-<li>Membership: <code>x in y</code></li>
+<li>Membership: <code>x e y</code></li>
 <li>Equality: <code>x = y</code></li>
 <li>Typestate Inequality: <code>x &lt; y</code></li>
-<li>Set Comprehension: <code>{x | P(x)}</code> (e.g., <code>{x | ~(x in x)}</code>)</li>
+<li>Set Comprehension: <code>{x | P(x)}</code> (e.g., <code>{x | ~(x e x)}</code>)</li>
 </ul></li>
 </ul>
 <hr>
@@ -421,28 +422,30 @@ Proof accepted.</code></pre>
 </section>
 <section id="unified-command-reference" class="level2" data-number="2.4">
 <h2 data-number="2.4" class="anchored" data-anchor-id="unified-command-reference"><span class="header-section-number">2.4</span> Unified Command Reference</h2>
-<section id="core-proof-environment" class="level3" data-number="2.4.1">
-<h3 data-number="2.4.1" class="anchored" data-anchor-id="core-proof-environment"><span class="header-section-number">2.4.1</span> Core Proof Environment</h3>
+<section id="session-proof-management" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="session-proof-management"><span class="header-section-number">2.4.1</span> Session &amp; Proof Management</h3>
 <ul>
 <li><code>help</code>: Show the help message.</li>
 <li><code>exit</code> / <code>quit</code>: Exit the REPL.</li>
 <li><code>save_session &lt;file.json&gt;</code>: Save the current session (axioms and active goals) to a JSON file.</li>
 <li><code>load_session &lt;file.json&gt;</code>: Load a previously saved session.</li>
-</ul>
-</section>
-<section id="axioms-proofs" class="level3" data-number="2.4.2">
-<h3 data-number="2.4.2" class="anchored" data-anchor-id="axioms-proofs"><span class="header-section-number">2.4.2</span> Axioms &amp; Proofs</h3>
-<ul>
-<li><code>assume &lt;name&gt; &lt;formula&gt;</code>: Register a named axiom into the global environment.</li>
 <li><code>theorem &lt;name&gt; &lt;formula&gt;</code>: Start a new proof with a target goal and enter tactical mode.</li>
-<li><code>deff &lt;name&gt;(&lt;args&gt;) := &lt;formula&gt;</code>: Define a macro with Kosaraju SCC pre-flattening, collapsing internal 0-weight edges into an optimized DAG to minimize topological evaluation overhead.</li>
 <li><code>show_goal</code>: Print the active target goal and its local context/hypotheses (with De Bruijn scope tags intentionally hidden to minimize UI clutter).</li>
 <li><code>qed</code>: Conclude an interactive proof if all goals are solved.</li>
 <li><code>abort</code>: Cancel the current interactive proof.</li>
 </ul>
 </section>
-<section id="interactive-tactics" class="level3" data-number="2.4.3">
-<h3 data-number="2.4.3" class="anchored" data-anchor-id="interactive-tactics"><span class="header-section-number">2.4.3</span> Interactive Tactics</h3>
+<section id="global-commands" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="global-commands"><span class="header-section-number">2.4.2</span> Global Commands</h3>
+<ul>
+<li><code>eval &lt;formula&gt;</code>: Immediately test a formula for stratification loops and geometric friction without entering the tactical proof state.</li>
+<li><code>check_strat &lt;formula&gt;</code>: An alias/sandbox command to run the AST parser and Bellman-Ford algorithm on raw geometry instantly before proofs.</li>
+<li><code>assume &lt;name&gt; &lt;formula&gt;</code>: Register a named axiom into the global environment.</li>
+<li><code>deff &lt;name&gt;(&lt;args&gt;) := &lt;formula&gt;</code>: Define a macro with Kosaraju SCC pre-flattening, collapsing internal 0-weight edges into an optimized DAG to minimize topological evaluation overhead.</li>
+</ul>
+</section>
+<section id="logical-tactics" class="level3" data-number="2.4.3">
+<h3 data-number="2.4.3" class="anchored" data-anchor-id="logical-tactics"><span class="header-section-number">2.4.3</span> Logical Tactics</h3>
 <ul>
 <li><code>intro [name]</code>: Introduce a premise or a universally quantified variable into the local context.</li>
 <li><code>exact &lt;name&gt;</code>: Close the current goal if it exactly matches the specified hypothesis.</li>
@@ -450,18 +453,30 @@ Proof accepted.</code></pre>
 <li><code>split</code>: Split a conjunction (<code>/\</code>) goal into two separate sub-goals.</li>
 <li><code>left</code> / <code>right</code>: Choose a side to prove for a disjunction (<code>\/</code>) goal.</li>
 <li><code>destruct &lt;name&gt; [n1] [n2]</code>: Break down a hypothesis (like a conjunction or disjunction) into smaller pieces in the context.</li>
-<li><code>rewrite &lt;name&gt;</code>: Substitute variables inside the goal based on an equality hypothesis.</li>
 <li><code>cut &lt;formula&gt;</code>: Diagnostic Cut Tactic. Introduces a highly saturated formula as a sub-goal, allowing you to explicitly trigger Extensionality bounds.</li>
+<li><code>have &lt;name&gt; &lt;formula&gt;</code>: Prove a sub-goal and add it to the local context.</li>
 <li><code>focus_hyp &lt;name&gt;</code>: Pull a specific hypothesis to the top of your context array for easier visibility.</li>
 <li><code>defer</code>: Skip the current active goal, sending it to the back of the <code>ProofState</code> queue.</li>
 </ul>
 </section>
-<section id="diagnostic-evaluation" class="level3" data-number="2.4.4">
-<h3 data-number="2.4.4" class="anchored" data-anchor-id="diagnostic-evaluation"><span class="header-section-number">2.4.4</span> Diagnostic Evaluation</h3>
+<section id="topological-tactics" class="level3" data-number="2.4.4">
+<h3 data-number="2.4.4" class="anchored" data-anchor-id="topological-tactics"><span class="header-section-number">2.4.4</span> Topological Tactics</h3>
 <ul>
-<li><code>check_strat &lt;formula&gt;</code>: An alias/sandbox command to run the AST parser and Bellman-Ford algorithm on raw geometry instantly before proofs.</li>
-<li><code>eval &lt;formula&gt;</code>: Immediately test a formula for stratification loops and geometric friction without entering the tactical proof state.</li>
-<li><code>step &lt;formula&gt;</code>: Process a logical formula step-by-step, providing immediate, color-coded feedback on topological friction and geometric bounds.</li>
+<li><code>stratify</code>: Weak stratification topological check.</li>
+<li><code>refl</code>: DAG topological equivalence check.</li>
+<li><code>schonfinkel</code>: SKI combinator extraction.</li>
+<li><code>step [formula]</code>: Execute geometric evaluation on the active target goal or a specific formula, providing real-time color-coded feedback on topological bounds.</li>
+</ul>
+</section>
+<section id="wip-mocked-tactics" class="level3" data-number="2.4.5">
+<h3 data-number="2.4.5" class="anchored" data-anchor-id="wip-mocked-tactics"><span class="header-section-number">2.4.5</span> WIP / Mocked Tactics</h3>
+<p><em>Note: These commands are mocked or incomplete in the current engine release and are commented out of the active CLI.</em></p>
+<ul>
+<li><code>simp</code>: Simplify current goal.</li>
+<li><code>rw &lt;formula&gt;</code> (formerly <code>rewrite</code>): Substitute variables inside the goal based on an equality hypothesis.</li>
+<li><code>elevate &lt;name&gt;</code>: T-Functor elevation.</li>
+<li><code>collapse_loop</code>: Contract SCC topologies.</li>
+<li><code>sc_cut &lt;formula&gt;</code>: Quarantine sub-goal in Strongly Cantorian boundary.</li>
 </ul>
 <hr>
 </section>
@@ -528,7 +543,7 @@ Proof accepted.</code></pre>
 <section id="export-smt-formula" class="level3" data-number="2.7.2">
 <h3 data-number="2.7.2" class="anchored" data-anchor-id="export-smt-formula"><span class="header-section-number">2.7.2</span> <code>export-smt &lt;formula&gt;</code></h3>
 <p>Generates a <code>StratificationWitness</code> trace in standard SMT-LIB format for external theorem provers (like Z3 or CVC5).</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> export-smt <span class="st">"x in y /\ y in z /\ z in x"</span> <span class="op">&gt;</span> trace.smt2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> export-smt <span class="st">"x e y /\ y e z /\ z e x"</span> <span class="op">&gt;</span> trace.smt2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>

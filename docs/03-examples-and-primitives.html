@@ -276,7 +276,19 @@ window.Quarto = {
   <li><a href="#primitives-2" id="toc-primitives-2" class="nav-link" data-scroll-target="#primitives-2"><span class="header-section-number">3.3.1</span> Primitives</a></li>
   <li><a href="#execution-testing-2" id="toc-execution-testing-2" class="nav-link" data-scroll-target="#execution-testing-2"><span class="header-section-number">3.3.2</span> Execution &amp; Testing</a></li>
   </ul></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">3.4</span> Conclusion</a></li>
+  <li><a href="#dispatching-to-the-gpu-physics-backend" id="toc-dispatching-to-the-gpu-physics-backend" class="nav-link" data-scroll-target="#dispatching-to-the-gpu-physics-backend"><span class="header-section-number">3.4</span> 4. Dispatching to the GPU Physics Backend</a>
+  <ul class="collapse">
+  <li><a href="#combinator-synthesis" id="toc-combinator-synthesis" class="nav-link" data-scroll-target="#combinator-synthesis"><span class="header-section-number">3.4.1</span> Combinator Synthesis</a></li>
+  <li><a href="#gpu-dispatch" id="toc-gpu-dispatch" class="nav-link" data-scroll-target="#gpu-dispatch"><span class="header-section-number">3.4.2</span> GPU Dispatch</a></li>
+  </ul></li>
+  <li><a href="#the-holographic-co-processor-vsa-embedding-and-discrete-recovery" id="toc-the-holographic-co-processor-vsa-embedding-and-discrete-recovery" class="nav-link" data-scroll-target="#the-holographic-co-processor-vsa-embedding-and-discrete-recovery"><span class="header-section-number">3.5</span> 5. The Holographic Co-processor: VSA Embedding and Discrete Recovery</a>
+  <ul class="collapse">
+  <li><a href="#vsa-embedding" id="toc-vsa-embedding" class="nav-link" data-scroll-target="#vsa-embedding"><span class="header-section-number">3.5.1</span> VSA Embedding</a></li>
+  <li><a href="#destructive-interference" id="toc-destructive-interference" class="nav-link" data-scroll-target="#destructive-interference"><span class="header-section-number">3.5.2</span> Destructive Interference</a></li>
+  <li><a href="#custom-wgsl-compute-shaders" id="toc-custom-wgsl-compute-shaders" class="nav-link" data-scroll-target="#custom-wgsl-compute-shaders"><span class="header-section-number">3.5.3</span> Custom WGSL Compute Shaders</a></li>
+  <li><a href="#discrete-bridge" id="toc-discrete-bridge" class="nav-link" data-scroll-target="#discrete-bridge"><span class="header-section-number">3.5.4</span> Discrete Bridge</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">3.6</span> Conclusion</a></li>
   </ul>
 </nav>
 </nav>
@@ -368,9 +380,91 @@ window.Quarto = {
 <hr>
 </section>
 </section>
-<section id="conclusion" class="level2" data-number="3.4">
-<h2 data-number="3.4" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">3.4</span> Conclusion</h2>
-<p>By bridging Natural Deduction strings (Specker’s) through <code>GraphArena</code> matrices (Russell’s) and into unstratified combinatorial representations (Agentic loops), these primitives form the bedrock for robust, mathematical AI pipelines.</p>
+<section id="dispatching-to-the-gpu-physics-backend" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="dispatching-to-the-gpu-physics-backend"><span class="header-section-number">3.4</span> 4. Dispatching to the GPU Physics Backend</h2>
+<p>The previous examples covered the CPU geometry layer (<code>GraphArena</code>, <code>bellman_ford</code>) and the combinator layer (<code>y_comb</code>, <code>v</code>, <code>abstract_var</code>). This example introduces the final step: compiling a combinator term into a <code>GNet</code> Interaction Net and dispatching it to the WGPU physics backend for lock-free parallel evaluation.</p>
+<p>The working demo (<code>proteomic_autocatalysis.rs</code>) models a cyclic kinase cascade — a domain where traditional type-checkers would diverge. After intercepting the cycle geometrically (Section 1’s API), it synthesizes a <span class="math inline">\(Y\)</span>-combinator fixpoint and hands it to the GPU.</p>
+<section id="combinator-synthesis" class="level3" data-number="3.4.1">
+<h3 data-number="3.4.1" class="anchored" data-anchor-id="combinator-synthesis"><span class="header-section-number">3.4.1</span> Combinator Synthesis</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">// From tools/monist-examples/src/bin/proteomic_autocatalysis.rs</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">monist_comb::comblib::encodings::</span><span class="op">{</span>v<span class="op">,</span> y_comb<span class="op">};</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> kinase_step <span class="op">=</span> v(<span class="st">"catalyst"</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span>app(v(<span class="st">"f"</span>)<span class="op">.</span>app(v(<span class="st">"kinase"</span>)))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span>abstract_var(<span class="st">"f"</span>)<span class="op">;</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> pathway_oscillator <span class="op">=</span> y_comb()<span class="op">.</span>app(kinase_step)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="gpu-dispatch" class="level3" data-number="3.4.2">
+<h3 data-number="3.4.2" class="anchored" data-anchor-id="gpu-dispatch"><span class="header-section-number">3.4.2</span> GPU Dispatch</h3>
+<p><code>GNet::from_comb</code> serializes the combinator tree into a 32-bit tagged pointer arena. <code>WgpuExecutor::execute</code> dispatches it to the WGSL compute shaders, which perform lock-free CAS graph reduction until no further interactions occur:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">monist_comb::ast::</span>GNet<span class="op">;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">monist_comb::backend::</span>WgpuExecutor<span class="op">;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> net <span class="op">=</span> <span class="pp">GNet::</span>from_comb(<span class="op">&amp;</span>pathway_oscillator<span class="op">,</span> <span class="dv">1024</span> <span class="op">*</span> <span class="dv">1024</span>)<span class="op">;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> executor <span class="op">=</span> <span class="pp">WgpuExecutor::</span>new()<span class="op">;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> (_result_net<span class="op">,</span> state) <span class="op">=</span> executor<span class="op">.</span>execute(<span class="op">&amp;</span>net)<span class="op">;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">// state.interactions: total graph-rewrite collisions before stabilization</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">// state.active_nodes: remaining live nodes in the arena</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="pp">println!</span>(<span class="st">"Interactions: {}, Active: {}"</span><span class="op">,</span> state<span class="op">.</span>interactions<span class="op">,</span> state<span class="op">.</span>active_nodes)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>[HARDWARE] Dispatching biological net to GPU...
+[SUCCESS] Oscillator stabilized at 0 unreachable floating rings. Total molecular collisions evaluated: 2003</code></pre>
+<p>The <code>state.interactions</code> count directly measures the topological recursion cost of the compiled term — how many annihilation and commutation rewrites the GPU needed before reaching a stable fixpoint. See <a href="./04-interaction-net.html">The Interaction Net Compiler</a> for details on the underlying CAS atomics and cycle garbage collection.</p>
+<hr>
+</section>
+</section>
+<section id="the-holographic-co-processor-vsa-embedding-and-discrete-recovery" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="the-holographic-co-processor-vsa-embedding-and-discrete-recovery"><span class="header-section-number">3.5</span> 5. The Holographic Co-processor: VSA Embedding and Discrete Recovery</h2>
+<p>The <a href="./05-holographic.html">Holographic Co-processor</a> provides a continuous-domain alternative to discrete graph evaluation. This example introduces its programmatic API: <code>HDCVector</code>, <code>Codebook</code>, <code>superpose</code>, <code>holographic_exclusion_query</code>, and the pattern for writing custom WGSL shaders that bridge continuous results back into discrete <code>monist-core</code> variables.</p>
+<p>The working demo (<code>holographic_genomic_sieve.rs</code>) uses this API to filter transcriptomic noise — but the same pattern applies to any domain where massive discrete search can be replaced by continuous superposition and <span class="math inline">\(O(1)\)</span> cancellation.</p>
+<section id="vsa-embedding" class="level3" data-number="3.5.1">
+<h3 data-number="3.5.1" class="anchored" data-anchor-id="vsa-embedding"><span class="header-section-number">3.5.1</span> VSA Embedding</h3>
+<p><code>HDCVector::random_basis()</code> generates quasi-orthogonal 10,000-dimensional vectors. <code>Codebook</code> provides an associative memory for mapping between labels and vectors. <code>superpose()</code> folds arbitrarily many vectors into a single running sum:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">// From tools/monist-examples/src/bin/holographic_genomic_sieve.rs</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">monist_comb::comblib::vsa_embed::</span><span class="op">{</span>Codebook<span class="op">,</span> HDCVector<span class="op">};</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="kw">mut</span> codebook <span class="op">=</span> <span class="pp">Codebook::</span>new()<span class="op">;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> vec_a <span class="op">=</span> <span class="pp">HDCVector::</span>random_basis()<span class="op">;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>codebook<span class="op">.</span>insert(<span class="st">"Label_A"</span><span class="op">.</span>to_string()<span class="op">,</span> vec_a<span class="op">.</span>clone())<span class="op">;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Fold N vectors into a single tensor — O(D) per call, O(1) storage</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="kw">mut</span> superposed <span class="op">=</span> <span class="pp">HDCVector::</span>new()<span class="op">;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>superposed <span class="op">=</span> superposed<span class="op">.</span>superpose(<span class="op">&amp;</span>vec_a)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="destructive-interference" class="level3" data-number="3.5.2">
+<h3 data-number="3.5.2" class="anchored" data-anchor-id="destructive-interference"><span class="header-section-number">3.5.2</span> Destructive Interference</h3>
+<p><code>holographic_exclusion_query</code> performs pointwise subtraction — a single <span class="math inline">\(O(D)\)</span> operation that cancels a known signal from the superposed wave, regardless of how many vectors were folded in:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> residual <span class="op">=</span> patient_tensor<span class="op">.</span>holographic_exclusion_query(<span class="op">&amp;</span>baseline_tensor)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="custom-wgsl-compute-shaders" class="level3" data-number="3.5.3">
+<h3 data-number="3.5.3" class="anchored" data-anchor-id="custom-wgsl-compute-shaders"><span class="header-section-number">3.5.3</span> Custom WGSL Compute Shaders</h3>
+<p>When the built-in <code>WgpuExecutor</code> (which runs <code>reduce.wgsl</code> for Interaction Nets) is not the right tool, you can write custom WGSL shaders following the pattern in <code>vsa_gpu_stress.rs</code>. This example dispatches a massively parallel dot-product kernel for Successive Interference Cancellation:</p>
+<pre class="wgsl"><code>@compute @workgroup_size(256)
+fn sic_dot_product(@builtin(global_invocation_id) gid: vec3&lt;u32&gt;) {
+    let entry_idx = gid.x;
+    if (entry_idx &gt;= params.x) { return; }
+    var acc: f32 = 0.0;
+    let base = entry_idx * params.y;
+    for (var d = 0u; d &lt; params.y; d = d + 1u) {
+        acc += residual[d] * codebook[base + d];
+    }
+    scores[entry_idx] = acc;
+}</code></pre>
+</section>
+<section id="discrete-bridge" class="level3" data-number="3.5.4">
+<h3 data-number="3.5.4" class="anchored" data-anchor-id="discrete-bridge"><span class="header-section-number">3.5.4</span> Discrete Bridge</h3>
+<p>Recovered results are snapped back into <code>ScopedVar</code> entries in a <code>GraphArena</code>, completing the continuous→discrete handoff. From this point, the standard <code>monist-core</code> evaluation pipeline (Bellman-Ford, SCC, etc.) can process them:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode rust code-with-copy"><code class="sourceCode rust"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="kw">mut</span> arena <span class="op">=</span> <span class="pp">GraphArena::</span>new()<span class="op">;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> var <span class="op">=</span> ScopedVar(<span class="pp">Var::</span>Free(<span class="st">"EGFR_L858R"</span><span class="op">.</span>into())<span class="op">,</span> <span class="dv">0</span>)<span class="op">;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>arena<span class="op">.</span>add_var(var)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>[SUCCESS] Isolated Somatic Mutations: [EGFR_L858R (Confidence: 1.00), KRAS_G12C (Confidence: 0.99)]</code></pre>
+<hr>
+</section>
+</section>
+<section id="conclusion" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">3.6</span> Conclusion</h2>
+<p>These five examples cover the core API surfaces in execution order: <code>GraphArena</code> constraint geometry (Russell’s), parser string bindings (Specker’s), combinator synthesis (Agentic), GPU Interaction Net dispatch (<code>GNet</code>/<code>WgpuExecutor</code>), and the Holographic Co-processor (<code>HDCVector</code>/<code>Codebook</code>/custom WGSL). Together they form a complete developer reference for building programs on top of the Monist Engine’s hybrid synthetic pipeline.</p>
 
 
 </section>
