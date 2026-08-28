@@ -173,6 +173,36 @@ impl GNet {
                 let _n2 = self.nodes[p2.val() as usize];
                 self.free_list.push(p1.val());
                 self.free_list.push(p2.val());
+                let (p_dup, p_con) = if p1.tag() == TAG_DUP { (p1, p2) } else { (p2, p1) };
+                let n_dup = self.nodes[p_dup.val() as usize];
+                let n_con = self.nodes[p_con.val() as usize];
+                let d1 = n_dup.port1();
+                let d2 = n_dup.port2();
+                let c1 = n_con.port1();
+                let c2 = n_con.port2();
+
+                self.free_list.push(p_dup.val());
+                self.free_list.push(p_con.val());
+
+                if self.free_list.len() >= 2 {
+                    let c1_idx = self.alloc_node(Port(0), Port(0));
+                    let c2_idx = self.alloc_node(Port(0), Port(0));
+                    let d1_idx = self.alloc_node(Port(0), Port(0));
+                    let d2_idx = self.alloc_node(Port(0), Port(0));
+
+                    self.nodes[c1_idx as usize] = Node::new(Port::new(TAG_VAR, d1_idx), Port::new(TAG_VAR, d2_idx));
+                    self.nodes[c2_idx as usize] = Node::new(Port::new(TAG_VAR, d1_idx), Port::new(TAG_VAR, d2_idx));
+                    self.nodes[d1_idx as usize] = Node::new(Port::new(TAG_VAR, c1_idx), Port::new(TAG_VAR, c2_idx));
+                    self.nodes[d2_idx as usize] = Node::new(Port::new(TAG_VAR, c1_idx), Port::new(TAG_VAR, c2_idx));
+
+                    self.link(Port::new(TAG_CON, c1_idx), d1);
+                    self.link(Port::new(TAG_CON, c2_idx), d2);
+                    self.link(Port::new(TAG_DUP, d1_idx), c1);
+                    self.link(Port::new(TAG_DUP, d2_idx), c2);
+                } else {
+                    self.link(d1, c1);
+                    self.link(d2, c2);
+                }
             } else {
                 // Other commutations/annihilations (e.g. Eraser combinations)
                 self.free_list.push(p1.val());

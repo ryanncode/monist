@@ -18,16 +18,16 @@ pub enum Atomic {
     Mem(Var, Var),
     /// Less-than relation, used for stratifications (`v1 < v2`).
     Lt(Var, Var),
-    /// Quine pair constructor.
-    QPair,
-    /// Quine pair first projection.
-    QProj1,
-    /// Quine pair second projection.
-    QProj2,
-    /// Application for interaction nets.
-    App,
-    /// Lambda abstraction for interaction nets.
-    Lam,
+    /// Quine pair constructor: `p = <v1, v2>_Q`.
+    QPair(Var, Var, Var),
+    /// Quine pair first projection: `v1 = π_1(p)`.
+    QProj1(Var, Var),
+    /// Quine pair second projection: `v2 = π_2(p)`.
+    QProj2(Var, Var),
+    /// Application for interaction nets: `z = u(v)`.
+    App(Var, Var, Var),
+    /// Lambda abstraction for interaction nets: `z = λx. t`.
+    Lam(Var, Var, Var),
 }
 
 /// Represents a recursive logical formula in the Abstract Syntax Tree (AST).

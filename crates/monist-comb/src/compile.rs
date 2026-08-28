@@ -46,7 +46,7 @@ impl<'a> Compiler<'a> {
         let formula = self.arena.get(root).expect("Invalid formula index");
         match formula {
             Formula::Atom(atomic) => match atomic {
-                Atomic::Eq(v1, v2) => {
+                Atomic::Eq(v1, v2) | Atomic::Lt(v1, v2) | Atomic::QProj1(v1, v2) | Atomic::QProj2(v1, v2) => {
                     self.register_var_req(v1, expected_level, env);
                     self.register_var_req(v2, expected_level, env);
                 }
@@ -54,7 +54,11 @@ impl<'a> Compiler<'a> {
                     self.register_var_req(v1, expected_level - 1, env);
                     self.register_var_req(v2, expected_level, env);
                 }
-                _ => {}
+                Atomic::QPair(v1, v2, v3) | Atomic::App(v1, v2, v3) | Atomic::Lam(v1, v2, v3) => {
+                    self.register_var_req(v1, expected_level, env);
+                    self.register_var_req(v2, expected_level, env);
+                    self.register_var_req(v3, expected_level, env);
+                }
             },
             Formula::Neg(inner) => self.compute_min_levels(*inner, expected_level, env),
             Formula::Conj(l, r) | Formula::Disj(l, r) => {
@@ -138,12 +142,39 @@ impl<'a> Compiler<'a> {
                 let cv2 = self.compile_var(v2, expected_level, env);
                 Comb::Mem.app(cv1).app(cv2)
             }
-            Atomic::QPair => Comb::Var("QPair".to_string()),
-            Atomic::QProj1 => Comb::Var("QProj1".to_string()),
-            Atomic::QProj2 => Comb::Var("QProj2".to_string()),
-            Atomic::App => Comb::Var("App".to_string()),
-            Atomic::Lam => Comb::Var("Lam".to_string()),
-            Atomic::Lt(_, _) => Comb::Var("Lt".to_string()),
+            Atomic::Lt(v1, v2) => {
+                let cv1 = self.compile_var(v1, expected_level, env);
+                let cv2 = self.compile_var(v2, expected_level, env);
+                Comb::Var("Lt".to_string()).app(cv1).app(cv2)
+            }
+            Atomic::QPair(p, x, y) => {
+                let cp = self.compile_var(p, expected_level, env);
+                let cx = self.compile_var(x, expected_level, env);
+                let cy = self.compile_var(y, expected_level, env);
+                Comb::Var("QPair".to_string()).app(cp).app(cx).app(cy)
+            }
+            Atomic::QProj1(x, p) => {
+                let cx = self.compile_var(x, expected_level, env);
+                let cp = self.compile_var(p, expected_level, env);
+                Comb::Var("QProj1".to_string()).app(cx).app(cp)
+            }
+            Atomic::QProj2(y, p) => {
+                let cy = self.compile_var(y, expected_level, env);
+                let cp = self.compile_var(p, expected_level, env);
+                Comb::Var("QProj2".to_string()).app(cy).app(cp)
+            }
+            Atomic::App(z, u, v) => {
+                let cz = self.compile_var(z, expected_level, env);
+                let cu = self.compile_var(u, expected_level, env);
+                let cv = self.compile_var(v, expected_level, env);
+                Comb::Var("App".to_string()).app(cz).app(cu).app(cv)
+            }
+            Atomic::Lam(z, x, t) => {
+                let cz = self.compile_var(z, expected_level, env);
+                let cx = self.compile_var(x, expected_level, env);
+                let ct = self.compile_var(t, expected_level, env);
+                Comb::Var("Lam".to_string()).app(cz).app(cx).app(ct)
+            }
         }
     }
 

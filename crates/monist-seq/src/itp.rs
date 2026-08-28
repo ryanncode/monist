@@ -52,6 +52,68 @@ impl ReplSession {
         self.active_state = Some(ProofState { goals: vec![goal] });
     }
 
+    fn subst_bound_var(arena: &mut FormulaArena, root: usize, target_bound: usize, replacement: &Var) -> usize {
+        let formula = match arena.get(root) {
+            Some(f) => f.clone(),
+            None => return root,
+        };
+
+        let map_var = |v: &Var| -> Var {
+            match v {
+                Var::Bound(idx) if *idx == target_bound => replacement.clone(),
+                _ => v.clone(),
+            }
+        };
+
+        match formula {
+            Formula::Atom(mut atomic) => {
+                match &mut atomic {
+                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) | Atomic::Lt(v1, v2) | Atomic::QProj1(v1, v2) | Atomic::QProj2(v1, v2) => {
+                        *v1 = map_var(v1);
+                        *v2 = map_var(v2);
+                    }
+                    Atomic::QPair(v1, v2, v3) | Atomic::App(v1, v2, v3) | Atomic::Lam(v1, v2, v3) => {
+                        *v1 = map_var(v1);
+                        *v2 = map_var(v2);
+                        *v3 = map_var(v3);
+                    }
+                }
+                arena.add(Formula::Atom(atomic))
+            }
+            Formula::Neg(i) => {
+                let ni = Self::subst_bound_var(arena, i, target_bound, replacement);
+                arena.add(Formula::Neg(ni))
+            }
+            Formula::Conj(l, r) => {
+                let nl = Self::subst_bound_var(arena, l, target_bound, replacement);
+                let nr = Self::subst_bound_var(arena, r, target_bound, replacement);
+                arena.add(Formula::Conj(nl, nr))
+            }
+            Formula::Disj(l, r) => {
+                let nl = Self::subst_bound_var(arena, l, target_bound, replacement);
+                let nr = Self::subst_bound_var(arena, r, target_bound, replacement);
+                arena.add(Formula::Disj(nl, nr))
+            }
+            Formula::Impl(l, r) => {
+                let nl = Self::subst_bound_var(arena, l, target_bound, replacement);
+                let nr = Self::subst_bound_var(arena, r, target_bound, replacement);
+                arena.add(Formula::Impl(nl, nr))
+            }
+            Formula::Univ(d, n, inner) => {
+                let ninner = Self::subst_bound_var(arena, inner, target_bound + 1, replacement);
+                arena.add(Formula::Univ(d, n, ninner))
+            }
+            Formula::Exist(d, n, inner) => {
+                let ninner = Self::subst_bound_var(arena, inner, target_bound + 1, replacement);
+                arena.add(Formula::Exist(d, n, ninner))
+            }
+            Formula::Comp(d, n, inner) => {
+                let ninner = Self::subst_bound_var(arena, inner, target_bound + 1, replacement);
+                arena.add(Formula::Comp(d, n, ninner))
+            }
+        }
+    }
+
     pub fn tactic_intro(&mut self, name: String) -> Result<(), String> {
         let state = self.active_state.as_mut().ok_or("No active goals.")?;
         if state.goals.is_empty() {
@@ -70,11 +132,8 @@ impl ReplSession {
                 Ok(())
             }
             Formula::Univ(_, _, p) => {
-                // Simplified intro for ∀: assume a dummy equality
-                let eq_atom = Formula::Atom(Atomic::Eq(Var::Free(name.clone()), Var::Free(name.clone())));
-                let eq_idx = self.arena.add(eq_atom);
-                current_goal.ctx.push((name, eq_idx));
-                current_goal.target = p;
+                let instantiated = Self::subst_bound_var(&mut self.arena, p, 0, &Var::Free(name));
+                current_goal.target = instantiated;
                 state.goals.insert(0, current_goal);
                 Ok(())
             }
@@ -392,7 +451,12 @@ impl ReplSession {
         }
         let current_goal = &state.goals[0];
         let mut compiler = monist_comb::compile::Compiler::new(&self.arena);
-        let _comb = compiler.compile(current_goal.target);
+        let comb = compiler.compile(current_goal.target);
+        if let monist_comb::ir::Comb::Limit(max_k, _, _) = &comb {
+            if *max_k == 0 {
+                return Err("schonfinkel: target contains an unstratifiable Extensionality Collision".to_string());
+            }
+        }
         Ok(())
     }
 

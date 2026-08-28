@@ -33,6 +33,241 @@ impl From<Constraint> for Edge {
     }
 }
 
+pub fn extract_atom_constraints(
+    atomic: &Atomic,
+    depth: usize,
+    in_comp: bool,
+    edge_count: &mut usize,
+) -> Vec<Constraint> {
+    let mut constraints = Vec::new();
+    match atomic {
+        Atomic::Eq(x, y) => {
+            let sx = ScopedVar(x.clone(), depth);
+            let sy = ScopedVar(y.clone(), depth);
+            constraints.push(Constraint {
+                v1: sx.clone(),
+                v2: sy.clone(),
+                weight: 0,
+                in_comp,
+            });
+            constraints.push(Constraint {
+                v1: sy,
+                v2: sx,
+                weight: 0,
+                in_comp,
+            });
+            *edge_count += 2;
+        }
+        Atomic::Mem(x, y) => {
+            let sx = ScopedVar(x.clone(), depth);
+            let sy = ScopedVar(y.clone(), depth);
+            constraints.push(Constraint {
+                v1: sx.clone(),
+                v2: sy.clone(),
+                weight: 1,
+                in_comp,
+            });
+            constraints.push(Constraint {
+                v1: sy,
+                v2: sx,
+                weight: -1,
+                in_comp,
+            });
+            *edge_count += 2;
+        }
+        Atomic::Lt(x, y) => {
+            let sx = ScopedVar(x.clone(), depth);
+            let sy = ScopedVar(y.clone(), depth);
+            constraints.push(Constraint {
+                v1: sy.clone(),
+                v2: sx.clone(),
+                weight: -1,
+                in_comp,
+            });
+            *edge_count += 1;
+        }
+        Atomic::QPair(p, x, y) => {
+            let sp = ScopedVar(p.clone(), depth);
+            let sx = ScopedVar(x.clone(), depth);
+            let sy = ScopedVar(y.clone(), depth);
+            constraints.push(Constraint { v1: sp.clone(), v2: sx.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sx, v2: sp.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sp.clone(), v2: sy.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sy, v2: sp, weight: 0, in_comp });
+            *edge_count += 4;
+        }
+        Atomic::QProj1(x, p) => {
+            let sx = ScopedVar(x.clone(), depth);
+            let sp = ScopedVar(p.clone(), depth);
+            constraints.push(Constraint { v1: sx.clone(), v2: sp.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sp, v2: sx, weight: 0, in_comp });
+            *edge_count += 2;
+        }
+        Atomic::QProj2(y, p) => {
+            let sy = ScopedVar(y.clone(), depth);
+            let sp = ScopedVar(p.clone(), depth);
+            constraints.push(Constraint { v1: sy.clone(), v2: sp.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sp, v2: sy, weight: 0, in_comp });
+            *edge_count += 2;
+        }
+        Atomic::App(z, u, v) => {
+            let sz = ScopedVar(z.clone(), depth);
+            let su = ScopedVar(u.clone(), depth);
+            let sv = ScopedVar(v.clone(), depth);
+            constraints.push(Constraint { v1: sz.clone(), v2: sv.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sv, v2: sz.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sz.clone(), v2: su.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: su, v2: sz, weight: 0, in_comp });
+            *edge_count += 4;
+        }
+        Atomic::Lam(z, x, t) => {
+            let sz = ScopedVar(z.clone(), depth);
+            let sx = ScopedVar(x.clone(), depth);
+            let st = ScopedVar(t.clone(), depth);
+            constraints.push(Constraint { v1: sz.clone(), v2: st.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: st, v2: sz.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sz.clone(), v2: sx.clone(), weight: 0, in_comp });
+            constraints.push(Constraint { v1: sx, v2: sz, weight: 0, in_comp });
+            *edge_count += 4;
+        }
+    }
+    constraints
+}
+
+pub fn extract_dnf_clauses(
+    arena: &FormulaArena,
+    formula_idx: usize,
+    depth: usize,
+    in_comp: bool,
+    budget: &ResourceBudget,
+    edge_count: &mut usize,
+) -> Vec<Vec<Constraint>> {
+    extract_dnf_clauses_aux(arena, formula_idx, false, depth, in_comp, budget, edge_count)
+}
+
+pub fn extract_dnf_clauses_aux(
+    arena: &FormulaArena,
+    formula_idx: usize,
+    is_negated: bool,
+    depth: usize,
+    in_comp: bool,
+    budget: &ResourceBudget,
+    edge_count: &mut usize,
+) -> Vec<Vec<Constraint>> {
+    if depth > budget.max_depth {
+        panic!("Graph Extraction Nesting Limit Exceeded");
+    }
+
+    let formula = match arena.get(formula_idx) {
+        Some(f) => f,
+        None => return vec![Vec::new()],
+    };
+
+    if !is_negated {
+        match formula {
+            Formula::Atom(atomic) => {
+                vec![extract_atom_constraints(atomic, depth, in_comp, edge_count)]
+            }
+            Formula::Neg(f_idx) => {
+                extract_dnf_clauses_aux(arena, *f_idx, true, depth, in_comp, budget, edge_count)
+            }
+            Formula::Conj(f1_idx, f2_idx) => {
+                let left_clauses = extract_dnf_clauses_aux(arena, *f1_idx, false, depth, in_comp, budget, edge_count);
+                let right_clauses = extract_dnf_clauses_aux(arena, *f2_idx, false, depth, in_comp, budget, edge_count);
+                let mut combined = Vec::new();
+                for lc in &left_clauses {
+                    for rc in &right_clauses {
+                        let mut merged = lc.clone();
+                        merged.extend(rc.clone());
+                        combined.push(merged);
+                    }
+                }
+                if combined.is_empty() {
+                    left_clauses
+                } else {
+                    combined
+                }
+            }
+            Formula::Disj(f1_idx, f2_idx) => {
+                let mut clauses = extract_dnf_clauses_aux(arena, *f1_idx, false, depth, in_comp, budget, edge_count);
+                clauses.extend(extract_dnf_clauses_aux(arena, *f2_idx, false, depth, in_comp, budget, edge_count));
+                clauses
+            }
+            Formula::Impl(f1_idx, f2_idx) => {
+                // A -> B => ~A \/ B
+                let mut clauses = extract_dnf_clauses_aux(arena, *f1_idx, true, depth, in_comp, budget, edge_count);
+                clauses.extend(extract_dnf_clauses_aux(arena, *f2_idx, false, depth, in_comp, budget, edge_count));
+                clauses
+            }
+            Formula::Univ(_, _, f_idx) | Formula::Exist(_, _, f_idx) => {
+                extract_dnf_clauses_aux(arena, *f_idx, false, depth + 1, in_comp, budget, edge_count)
+            }
+            Formula::Comp(_, _, f_idx) => {
+                extract_dnf_clauses_aux(arena, *f_idx, false, depth + 1, true, budget, edge_count)
+            }
+        }
+    } else {
+        // Negated formula branch
+        match formula {
+            Formula::Atom(atomic) => {
+                vec![extract_atom_constraints(atomic, depth, in_comp, edge_count)]
+            }
+            Formula::Neg(f_idx) => {
+                // Double negation: ~~A => A
+                extract_dnf_clauses_aux(arena, *f_idx, false, depth, in_comp, budget, edge_count)
+            }
+            Formula::Conj(f1_idx, f2_idx) => {
+                // De Morgan: ~(A /\ B) => ~A \/ ~B
+                let mut clauses = extract_dnf_clauses_aux(arena, *f1_idx, true, depth, in_comp, budget, edge_count);
+                clauses.extend(extract_dnf_clauses_aux(arena, *f2_idx, true, depth, in_comp, budget, edge_count));
+                clauses
+            }
+            Formula::Disj(f1_idx, f2_idx) => {
+                // De Morgan: ~(A \/ B) => ~A /\ ~B
+                let left_clauses = extract_dnf_clauses_aux(arena, *f1_idx, true, depth, in_comp, budget, edge_count);
+                let right_clauses = extract_dnf_clauses_aux(arena, *f2_idx, true, depth, in_comp, budget, edge_count);
+                let mut combined = Vec::new();
+                for lc in &left_clauses {
+                    for rc in &right_clauses {
+                        let mut merged = lc.clone();
+                        merged.extend(rc.clone());
+                        combined.push(merged);
+                    }
+                }
+                if combined.is_empty() {
+                    left_clauses
+                } else {
+                    combined
+                }
+            }
+            Formula::Impl(f1_idx, f2_idx) => {
+                // ~(A -> B) => A /\ ~B
+                let left_clauses = extract_dnf_clauses_aux(arena, *f1_idx, false, depth, in_comp, budget, edge_count);
+                let right_clauses = extract_dnf_clauses_aux(arena, *f2_idx, true, depth, in_comp, budget, edge_count);
+                let mut combined = Vec::new();
+                for lc in &left_clauses {
+                    for rc in &right_clauses {
+                        let mut merged = lc.clone();
+                        merged.extend(rc.clone());
+                        combined.push(merged);
+                    }
+                }
+                if combined.is_empty() {
+                    left_clauses
+                } else {
+                    combined
+                }
+            }
+            Formula::Univ(_, _, f_idx) | Formula::Exist(_, _, f_idx) => {
+                extract_dnf_clauses_aux(arena, *f_idx, true, depth + 1, in_comp, budget, edge_count)
+            }
+            Formula::Comp(_, _, f_idx) => {
+                extract_dnf_clauses_aux(arena, *f_idx, true, depth + 1, true, budget, edge_count)
+            }
+        }
+    }
+}
+
 pub fn extract_constraints_aux(
     arena: &FormulaArena,
     formula_idx: usize,
@@ -41,85 +276,12 @@ pub fn extract_constraints_aux(
     budget: &ResourceBudget,
     edge_count: &mut usize,
 ) -> Vec<Constraint> {
-    if depth > budget.max_depth {
-        panic!("Graph Extraction Nesting Limit Exceeded");
+    let clauses = extract_dnf_clauses(arena, formula_idx, depth, in_comp, budget, edge_count);
+    if let Some(first) = clauses.into_iter().next() {
+        first
+    } else {
+        Vec::new()
     }
-    let mut constraints = Vec::new();
-
-    let formula = match arena.get(formula_idx) {
-        Some(f) => f,
-        None => return constraints,
-    };
-
-    match formula {
-        Formula::Atom(atomic) => match atomic {
-            Atomic::Eq(x, y) => {
-                let sx = ScopedVar(x.clone(), depth);
-                let sy = ScopedVar(y.clone(), depth);
-                constraints.push(Constraint {
-                    v1: sx.clone(),
-                    v2: sy.clone(),
-                    weight: 0,
-                    in_comp,
-                });
-                constraints.push(Constraint {
-                    v1: sy,
-                    v2: sx,
-                    weight: 0,
-                    in_comp,
-                });
-                *edge_count += 2;
-            }
-            Atomic::Mem(x, y) => {
-                let sx = ScopedVar(x.clone(), depth);
-                let sy = ScopedVar(y.clone(), depth);
-                constraints.push(Constraint {
-                    v1: sx.clone(),
-                    v2: sy.clone(),
-                    weight: 1,
-                    in_comp,
-                });
-                constraints.push(Constraint {
-                    v1: sy,
-                    v2: sx,
-                    weight: -1,
-                    in_comp,
-                });
-                *edge_count += 2;
-            }
-            Atomic::Lt(x, y) => {
-                let sx = ScopedVar(x.clone(), depth);
-                let sy = ScopedVar(y.clone(), depth);
-                constraints.push(Constraint {
-                    v1: sy.clone(),
-                    v2: sx.clone(),
-                    weight: -1,
-                    in_comp,
-                });
-                *edge_count += 1;
-            }
-            _ => {}
-        },
-        Formula::Neg(f_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f_idx, depth, in_comp, budget, edge_count));
-        }
-        Formula::Conj(f1_idx, f2_idx)
-        | Formula::Disj(f1_idx, f2_idx)
-        | Formula::Impl(f1_idx, f2_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f1_idx, depth, in_comp, budget, edge_count));
-            constraints.extend(extract_constraints_aux(arena, *f2_idx, depth, in_comp, budget, edge_count));
-        }
-        Formula::Univ(_, _, f_idx) | Formula::Exist(_, _, f_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1, in_comp, budget, edge_count));
-        }
-        Formula::Comp(_, _, f_idx) => {
-            constraints.extend(extract_constraints_aux(arena, *f_idx, depth + 1, true, budget, edge_count));
-        }
-    }
-    if *edge_count > budget.max_graph_edges {
-        panic!("Graph Edge Limit Exceeded");
-    }
-    constraints
 }
 
 /// The GraphArena represents the CPU Geometry Layer in the hybrid pipeline.
@@ -163,67 +325,81 @@ impl GraphArena {
     }
 
     pub fn collapse_scc_0_weight(&mut self) {
-        // Obsolete: SCC flattening is now handled natively within evaluate_topology using kosaraju_scc.
+        // Obsolete: SCC flattening is now handled natively within evaluate_topology using tarjan_scc.
         // This is kept strictly for CLI compatibility to avoid refactoring the CLI arguments at this moment.
     }
 
-    /// Returns Strongly Connected Components for 0-weight edges using Kosaraju's algorithm
-    pub fn kosaraju_scc(&self) -> Vec<Vec<usize>> {
+    /// Returns Strongly Connected Components for 0-weight edges using Tarjan's single-pass algorithm.
+    pub fn tarjan_scc(&self) -> Vec<Vec<usize>> {
         let n = self.vars.len();
         if n == 0 {
             return Vec::new();
         }
 
         let mut adj = vec![Vec::new(); n];
-        let mut rev_adj = vec![Vec::new(); n];
         for &(u, v, w, _) in &self.edges {
             if w == 0 {
                 adj[u].push(v);
-                rev_adj[v].push(u);
             }
         }
 
-        let mut visited = vec![false; n];
-        let mut finish_order = Vec::new();
+        let mut dfn = vec![None; n];
+        let mut low = vec![0; n];
+        let mut on_stack = vec![false; n];
+        let mut stack = Vec::new();
+        let mut timer = 0;
+        let mut sccs = Vec::new();
 
-        fn dfs1(u: usize, adj: &[Vec<usize>], visited: &mut [bool], finish_order: &mut Vec<usize>) {
-            visited[u] = true;
+        fn dfs(
+            u: usize,
+            adj: &[Vec<usize>],
+            dfn: &mut [Option<usize>],
+            low: &mut [usize],
+            on_stack: &mut [bool],
+            stack: &mut Vec<usize>,
+            timer: &mut usize,
+            sccs: &mut Vec<Vec<usize>>,
+        ) {
+            dfn[u] = Some(*timer);
+            low[u] = *timer;
+            *timer += 1;
+            stack.push(u);
+            on_stack[u] = true;
+
             for &v in &adj[u] {
-                if !visited[v] {
-                    dfs1(v, adj, visited, finish_order);
+                if dfn[v].is_none() {
+                    dfs(v, adj, dfn, low, on_stack, stack, timer, sccs);
+                    low[u] = low[u].min(low[v]);
+                } else if on_stack[v] {
+                    low[u] = low[u].min(dfn[v].unwrap());
                 }
             }
-            finish_order.push(u);
+
+            if low[u] == dfn[u].unwrap() {
+                let mut scc = Vec::new();
+                while let Some(v) = stack.pop() {
+                    on_stack[v] = false;
+                    scc.push(v);
+                    if v == u {
+                        break;
+                    }
+                }
+                sccs.push(scc);
+            }
         }
 
         for i in 0..n {
-            if !visited[i] {
-                dfs1(i, &adj, &mut visited, &mut finish_order);
-            }
-        }
-
-        visited.fill(false);
-        let mut sccs = Vec::new();
-
-        fn dfs2(u: usize, rev_adj: &[Vec<usize>], visited: &mut [bool], current_scc: &mut Vec<usize>) {
-            visited[u] = true;
-            current_scc.push(u);
-            for &v in &rev_adj[u] {
-                if !visited[v] {
-                    dfs2(v, rev_adj, visited, current_scc);
-                }
-            }
-        }
-
-        for &u in finish_order.iter().rev() {
-            if !visited[u] {
-                let mut current_scc = Vec::new();
-                dfs2(u, &rev_adj, &mut visited, &mut current_scc);
-                sccs.push(current_scc);
+            if dfn[i].is_none() {
+                dfs(i, &adj, &mut dfn, &mut low, &mut on_stack, &mut stack, &mut timer, &mut sccs);
             }
         }
 
         sccs
+    }
+
+    /// Alias to tarjan_scc for backwards compatibility
+    pub fn kosaraju_scc(&self) -> Vec<Vec<usize>> {
+        self.tarjan_scc()
     }
 
     pub fn contract_graph(&self, sccs: &[Vec<usize>]) -> (Vec<usize>, Vec<(usize, usize, i32)>, Vec<usize>) {
@@ -424,7 +600,7 @@ impl GraphArena {
             return Ok((Vec::new(), sc_actions, true, true));
         }
 
-        let sccs = self.kosaraju_scc();
+        let sccs = self.tarjan_scc();
         let (c_vars, c_edges, reps) = self.contract_graph(&sccs);
 
         let mut in_degree = HashMap::new();
@@ -640,5 +816,25 @@ impl GraphArena {
         }
         
         conflict_clauses
+    }
+
+    /// Evaluates a formula in Disjunctive Normal Form (DNF) across all extracted clauses.
+    /// Stratification succeeds if at least one DNF clause forms an acyclic/valid topological graph.
+    pub fn evaluate_dnf_formula(
+        arena: &FormulaArena,
+        formula_idx: usize,
+        budget: &ResourceBudget,
+    ) -> Result<(Vec<i32>, Vec<String>, bool, bool), String> {
+        let mut edge_count = 0;
+        let clauses = extract_dnf_clauses(arena, formula_idx, 0, false, budget, &mut edge_count);
+        let mut last_err = String::from("No DNF clauses generated");
+        for clause in clauses {
+            let mut graph = GraphArena::from_constraints(&clause);
+            match graph.evaluate_topology() {
+                Ok(res) => return Ok(res),
+                Err(e) => last_err = e,
+            }
+        }
+        Err(last_err)
     }
 }

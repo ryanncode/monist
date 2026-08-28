@@ -277,11 +277,15 @@ impl<'a> Parser<'a> {
         let res = match f {
             Formula::Atom(mut atomic) => {
                 match &mut atomic {
-                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) | Atomic::Lt(v1, v2) => {
+                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) | Atomic::Lt(v1, v2) | Atomic::QProj1(v1, v2) | Atomic::QProj2(v1, v2) => {
                         *v1 = map_var(v1);
                         *v2 = map_var(v2);
                     }
-                    _ => {}
+                    Atomic::QPair(v1, v2, v3) | Atomic::App(v1, v2, v3) | Atomic::Lam(v1, v2, v3) => {
+                        *v1 = map_var(v1);
+                        *v2 = map_var(v2);
+                        *v3 = map_var(v3);
+                    }
                 }
                 self.arena.add(Formula::Atom(atomic))
             }
