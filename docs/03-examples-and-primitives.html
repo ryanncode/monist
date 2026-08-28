@@ -288,7 +288,13 @@ window.Quarto = {
   <li><a href="#custom-wgsl-compute-shaders" id="toc-custom-wgsl-compute-shaders" class="nav-link" data-scroll-target="#custom-wgsl-compute-shaders"><span class="header-section-number">3.5.3</span> Custom WGSL Compute Shaders</a></li>
   <li><a href="#discrete-bridge" id="toc-discrete-bridge" class="nav-link" data-scroll-target="#discrete-bridge"><span class="header-section-number">3.5.4</span> Discrete Bridge</a></li>
   </ul></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">3.6</span> Conclusion</a></li>
+  <li><a href="#mathematical-diagnostic-binaries-visual-demos" id="toc-mathematical-diagnostic-binaries-visual-demos" class="nav-link" data-scroll-target="#mathematical-diagnostic-binaries-visual-demos"><span class="header-section-number">3.6</span> 6. Mathematical Diagnostic Binaries &amp; Visual Demos</a>
+  <ul class="collapse">
+  <li><a href="#set-theoretic-paradox-diagnostics" id="toc-set-theoretic-paradox-diagnostics" class="nav-link" data-scroll-target="#set-theoretic-paradox-diagnostics"><span class="header-section-number">3.6.1</span> Set-Theoretic Paradox Diagnostics</a></li>
+  <li><a href="#canonical-itp-tactics-example-suites" id="toc-canonical-itp-tactics-example-suites" class="nav-link" data-scroll-target="#canonical-itp-tactics-example-suites"><span class="header-section-number">3.6.2</span> Canonical ITP Tactics Example Suites</a></li>
+  <li><a href="#visual-demonstrations" id="toc-visual-demonstrations" class="nav-link" data-scroll-target="#visual-demonstrations"><span class="header-section-number">3.6.3</span> Visual Demonstrations</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">3.7</span> Conclusion</a></li>
   </ul>
 </nav>
 </nav>
@@ -462,9 +468,50 @@ fn sic_dot_product(@builtin(global_invocation_id) gid: vec3&lt;u32&gt;) {
 <hr>
 </section>
 </section>
-<section id="conclusion" class="level2" data-number="3.6">
-<h2 data-number="3.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">3.6</span> Conclusion</h2>
-<p>These five examples cover the core API surfaces in execution order: <code>GraphArena</code> constraint geometry (Russell’s), parser string bindings (Specker’s), combinator synthesis (Agentic), GPU Interaction Net dispatch (<code>GNet</code>/<code>WgpuExecutor</code>), and the Holographic Co-processor (<code>HDCVector</code>/<code>Codebook</code>/custom WGSL). Together they form a complete developer reference for building programs on top of the Monist Engine’s hybrid synthetic pipeline.</p>
+<section id="mathematical-diagnostic-binaries-visual-demos" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="mathematical-diagnostic-binaries-visual-demos"><span class="header-section-number">3.6</span> 6. Mathematical Diagnostic Binaries &amp; Visual Demos</h2>
+<p>The workspace provides ready-to-run diagnostic binaries in <code>tools/monist-examples</code> that test edge-case paradoxes, transfinite limits, and continuous-to-discrete pipelines:</p>
+<section id="set-theoretic-paradox-diagnostics" class="level3" data-number="3.6.1">
+<h3 data-number="3.6.1" class="anchored" data-anchor-id="set-theoretic-paradox-diagnostics"><span class="header-section-number">3.6.1</span> Set-Theoretic Paradox Diagnostics</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Specker's Refutation of Global Choice across disjoint integer elevations</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-examples <span class="at">--bin</span> specker_refutation</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Extensionality Collision detection (Kuratowski vs Quine pairs)</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-examples <span class="at">--bin</span> extensionality_collision</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Russell's Paradox K-Iteration halting verification</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-examples <span class="at">--bin</span> russell</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Strongly Cantorian bedrock and Quine atoms</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-examples <span class="at">--bin</span> strongly_cantorian</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Transfinite cardinal arithmetic without the Axiom of Choice</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-examples <span class="at">--bin</span> transfinite</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="canonical-itp-tactics-example-suites" class="level3" data-number="3.6.2">
+<h3 data-number="3.6.2" class="anchored" data-anchor-id="canonical-itp-tactics-example-suites"><span class="header-section-number">3.6.2</span> Canonical ITP Tactics Example Suites</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Strategic Cut tactics and intermediate lemmas</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">--example</span> strategic_cut</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Monotonicity proofs across power set topologies</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">--example</span> monotonicity_powerset</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Equivalence and DAG isomorphism via reflexivity</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">--example</span> equality_refl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="visual-demonstrations" class="level3" data-number="3.6.3">
+<h3 data-number="3.6.3" class="anchored" data-anchor-id="visual-demonstrations"><span class="header-section-number">3.6.3</span> Visual Demonstrations</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Demonstrate O(1) Exclusion-First Routing for Holographic Queries</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> demo holographic</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Demonstrate the Principle of Least Syntactic Action for AI Agentic boundaries</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> run <span class="at">-p</span> monist-cli <span class="at">--</span> demo agentic</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="conclusion" class="level2" data-number="3.7">
+<h2 data-number="3.7" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">3.7</span> Conclusion</h2>
+<p>These examples cover the complete API surface across execution order: <code>GraphArena</code> constraint geometry (Russell’s), parser string bindings (Specker’s), combinator synthesis (Agentic), GPU Interaction Net dispatch (<code>GNet</code>/<code>WgpuExecutor</code>), and the Holographic Co-processor (<code>HDCVector</code>/<code>Codebook</code>/custom WGSL). Together they form a complete developer reference for building programs on top of the Monist Engine’s hybrid synthetic pipeline.</p>
 
 
 </section>

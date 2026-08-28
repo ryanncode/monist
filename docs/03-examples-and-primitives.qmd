@@ -185,6 +185,51 @@ arena.add_var(var);
 
 ---
 
+## 6. Mathematical Diagnostic Binaries & Visual Demos
+
+The workspace provides ready-to-run diagnostic binaries in `tools/monist-examples` that test edge-case paradoxes, transfinite limits, and continuous-to-discrete pipelines:
+
+### Set-Theoretic Paradox Diagnostics
+```bash
+# Specker's Refutation of Global Choice across disjoint integer elevations
+cargo run -p monist-examples --bin specker_refutation
+
+# Extensionality Collision detection (Kuratowski vs Quine pairs)
+cargo run -p monist-examples --bin extensionality_collision
+
+# Russell's Paradox K-Iteration halting verification
+cargo run -p monist-examples --bin russell
+
+# Strongly Cantorian bedrock and Quine atoms
+cargo run -p monist-examples --bin strongly_cantorian
+
+# Transfinite cardinal arithmetic without the Axiom of Choice
+cargo run -p monist-examples --bin transfinite
+```
+
+### Canonical ITP Tactics Example Suites
+```bash
+# Strategic Cut tactics and intermediate lemmas
+cargo run --example strategic_cut
+
+# Monotonicity proofs across power set topologies
+cargo run --example monotonicity_powerset
+
+# Equivalence and DAG isomorphism via reflexivity
+cargo run --example equality_refl
+```
+
+### Visual Demonstrations
+```bash
+# Demonstrate O(1) Exclusion-First Routing for Holographic Queries
+cargo run -p monist-cli -- demo holographic
+
+# Demonstrate the Principle of Least Syntactic Action for AI Agentic boundaries
+cargo run -p monist-cli -- demo agentic
+```
+
+---
+
 ## Conclusion
 
-These five examples cover the core API surfaces in execution order: `GraphArena` constraint geometry (Russell's), parser string bindings (Specker's), combinator synthesis (Agentic), GPU Interaction Net dispatch (`GNet`/`WgpuExecutor`), and the Holographic Co-processor (`HDCVector`/`Codebook`/custom WGSL). Together they form a complete developer reference for building programs on top of the Monist Engine's hybrid synthetic pipeline.
+These examples cover the complete API surface across execution order: `GraphArena` constraint geometry (Russell's), parser string bindings (Specker's), combinator synthesis (Agentic), GPU Interaction Net dispatch (`GNet`/`WgpuExecutor`), and the Holographic Co-processor (`HDCVector`/`Codebook`/custom WGSL). Together they form a complete developer reference for building programs on top of the Monist Engine's hybrid synthetic pipeline.

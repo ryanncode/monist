@@ -277,8 +277,7 @@ window.Quarto = {
   <li><a href="#session-proof-management" id="toc-session-proof-management" class="nav-link" data-scroll-target="#session-proof-management"><span class="header-section-number">2.4.1</span> Session &amp; Proof Management</a></li>
   <li><a href="#global-commands" id="toc-global-commands" class="nav-link" data-scroll-target="#global-commands"><span class="header-section-number">2.4.2</span> Global Commands</a></li>
   <li><a href="#logical-tactics" id="toc-logical-tactics" class="nav-link" data-scroll-target="#logical-tactics"><span class="header-section-number">2.4.3</span> Logical Tactics</a></li>
-  <li><a href="#topological-tactics" id="toc-topological-tactics" class="nav-link" data-scroll-target="#topological-tactics"><span class="header-section-number">2.4.4</span> Topological Tactics</a></li>
-  <li><a href="#wip-mocked-tactics" id="toc-wip-mocked-tactics" class="nav-link" data-scroll-target="#wip-mocked-tactics"><span class="header-section-number">2.4.5</span> WIP / Mocked Tactics</a></li>
+  <li><a href="#topological-advanced-tactics" id="toc-topological-advanced-tactics" class="nav-link" data-scroll-target="#topological-advanced-tactics"><span class="header-section-number">2.4.4</span> Topological &amp; Advanced Tactics</a></li>
   </ul></li>
   <li><a href="#troubleshooting-paradoxes" id="toc-troubleshooting-paradoxes" class="nav-link" data-scroll-target="#troubleshooting-paradoxes"><span class="header-section-number">2.5</span> Troubleshooting Paradoxes</a></li>
   <li><a href="#understanding-the-engine-constraints-and-tactics" id="toc-understanding-the-engine-constraints-and-tactics" class="nav-link" data-scroll-target="#understanding-the-engine-constraints-and-tactics"><span class="header-section-number">2.6</span> Understanding the Engine: Constraints and Tactics</a>
@@ -459,24 +458,18 @@ Proof accepted.</code></pre>
 <li><code>defer</code>: Skip the current active goal, sending it to the back of the <code>ProofState</code> queue.</li>
 </ul>
 </section>
-<section id="topological-tactics" class="level3" data-number="2.4.4">
-<h3 data-number="2.4.4" class="anchored" data-anchor-id="topological-tactics"><span class="header-section-number">2.4.4</span> Topological Tactics</h3>
+<section id="topological-advanced-tactics" class="level3" data-number="2.4.4">
+<h3 data-number="2.4.4" class="anchored" data-anchor-id="topological-advanced-tactics"><span class="header-section-number">2.4.4</span> Topological &amp; Advanced Tactics</h3>
 <ul>
-<li><code>stratify</code>: Weak stratification topological check.</li>
-<li><code>refl</code>: DAG topological equivalence check.</li>
-<li><code>schonfinkel</code>: SKI combinator extraction.</li>
-<li><code>step [formula]</code>: Execute geometric evaluation on the active target goal or a specific formula, providing real-time color-coded feedback on topological bounds.</li>
-</ul>
-</section>
-<section id="wip-mocked-tactics" class="level3" data-number="2.4.5">
-<h3 data-number="2.4.5" class="anchored" data-anchor-id="wip-mocked-tactics"><span class="header-section-number">2.4.5</span> WIP / Mocked Tactics</h3>
-<p><em>Note: These commands are mocked or incomplete in the current engine release and are commented out of the active CLI.</em></p>
-<ul>
-<li><code>simp</code>: Simplify current goal.</li>
-<li><code>rw &lt;formula&gt;</code> (formerly <code>rewrite</code>): Substitute variables inside the goal based on an equality hypothesis.</li>
-<li><code>elevate &lt;name&gt;</code>: T-Functor elevation.</li>
-<li><code>collapse_loop</code>: Contract SCC topologies.</li>
-<li><code>sc_cut &lt;formula&gt;</code>: Quarantine sub-goal in Strongly Cantorian boundary.</li>
+<li><code>stratify</code>: Weak stratification topological check via Bellman-Ford shortest-path routing.</li>
+<li><code>refl</code>: DAG topological equivalence check via SCC isomorphism.</li>
+<li><code>schonfinkel</code>: Compiles goal or formula into pure SKI combinator tree representation.</li>
+<li><code>step [formula]</code>: Executes geometric evaluation on the active target goal or a specific formula, providing real-time color-coded feedback on topological bounds.</li>
+<li><code>simp</code>: Normalizes formulas into Disjunctive Normal Form (DNF) using De Morgan push-negation laws.</li>
+<li><code>rw &lt;hyp&gt;</code> / <code>rewrite &lt;hyp&gt;</code>: Substitutes variables in the target AST using an active equality hypothesis.</li>
+<li><code>elevate [name]</code>: Applies Forster’s <span class="math inline">\(T\)</span>-operator (<span class="math inline">\(x \mapsto x_\iota\)</span>) to elevate variables across topological stratum boundaries.</li>
+<li><code>collapse_loop</code>: Contracts 0-weight equality rings into unified concept vertices mid-proof.</li>
+<li><code>sc_cut &lt;set&gt;</code>: Injects Strongly Cantorian bedrock axioms into the local context.</li>
 </ul>
 <hr>
 </section>

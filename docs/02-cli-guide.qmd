@@ -154,22 +154,17 @@ Proof accepted.
 * `focus_hyp <name>`: Pull a specific hypothesis to the top of your context array for easier visibility.
 * `defer`: Skip the current active goal, sending it to the back of the `ProofState` queue.
 
-### Topological Tactics
+### Topological & Advanced Tactics
 
-* `stratify`: Weak stratification topological check.
-* `refl`: DAG topological equivalence check.
-* `schonfinkel`: SKI combinator extraction.
-* `step [formula]`: Execute geometric evaluation on the active target goal or a specific formula, providing real-time color-coded feedback on topological bounds.
-
-### WIP / Mocked Tactics
-
-*Note: These commands are mocked or incomplete in the current engine release and are commented out of the active CLI.*
-
-* `simp`: Simplify current goal.
-* `rw <formula>` (formerly `rewrite`): Substitute variables inside the goal based on an equality hypothesis.
-* `elevate <name>`: T-Functor elevation.
-* `collapse_loop`: Contract SCC topologies.
-* `sc_cut <formula>`: Quarantine sub-goal in Strongly Cantorian boundary.
+* `stratify`: Weak stratification topological check via Bellman-Ford shortest-path routing.
+* `refl`: DAG topological equivalence check via SCC isomorphism.
+* `schonfinkel`: Compiles goal or formula into pure SKI combinator tree representation.
+* `step [formula]`: Executes geometric evaluation on the active target goal or a specific formula, providing real-time color-coded feedback on topological bounds.
+* `simp`: Normalizes formulas into Disjunctive Normal Form (DNF) using De Morgan push-negation laws.
+* `rw <hyp>` / `rewrite <hyp>`: Substitutes variables in the target AST using an active equality hypothesis.
+* `elevate [name]`: Applies Forster's $T$-operator ($x \mapsto x_\iota$) to elevate variables across topological stratum boundaries.
+* `collapse_loop`: Contracts 0-weight equality rings into unified concept vertices mid-proof.
+* `sc_cut <set>`: Injects Strongly Cantorian bedrock axioms into the local context.
 
 ---
 

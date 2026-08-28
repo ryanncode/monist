@@ -1,212 +1,134 @@
 # <div align="center">The Monist Engine</div>
 
+_A bare-metal, GPU-accelerated logic engine utilizing `O(V+E)` topological bounds checking for lock-free interaction net reduction._
+
 <div align="center">
   <br>
-  <a href="https://ryanncode.github.io/monist/"><strong>📚 Read the Docs</strong></a>
+  <a href="https://ryanncode.github.io/monist/"><strong>Read the Docs</strong></a>
   &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://firstsynth.dev/"><strong>🌐 First Synth</strong></a>
+  <a href="https://firstsynth.dev/"><strong>First Synth</strong></a>
   &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://firstsynth.dev/console/"><strong>🖥️ Web Console</strong></a>
+  <a href="https://firstsynth.dev/console/"><strong>Web Console</strong></a>
   <br><br>
 </div>
 
-> **TL;DR:** A bare-metal, GPU-accelerated logic engine that safely evaluates self-referential paradoxes and cyclic graphs without crashing. It serves as a deterministic topological foundry for transfinite combinatorial computing, quantum-logical physics simulations, custom hardware synthesis, and formal AI verification.
+---
 
-_For the mathematically verified Lean 4 companion project, see the [NF Sketches](https://github.com/ryanncode/nf-sketches) repository._
+## Architecture & Syntactic Monism
 
-This logic engine is a high-performance evaluator and bare-metal compilation pipeline designed exclusively to compute Quine's New Foundations (NF). By abandoning traditional hierarchical type-checking in favor of geometric shortest-path routing (Bellman-Ford), the project successfully compiles unstratified, self-referential paradoxes into executable Interaction Nets.
+The Monist Engine is a deterministic logic evaluator and hardware compilation pipeline designed for non-well-founded set theories, specifically Quine's New Foundations (NF).
 
-It mathematically computes the precise topological weight of systemic ambiguity, catching extensionality collisions before offloading purely untyped combinator nodes to the GPU.
+Mainstream type systems and formal proof assistants (ZFC, Homotopy Type Theory, Coq, Lean) enforce logical consistency through infinite hierarchical universe towers (`U0:U1:U2...`) and acyclic data dependencies. These invariants forbid self-membership, rejecting self-referential graph structures and cyclic feedback networks at the compilation boundary.
+
+Monist implements **Syntactic Monism**, shifting consistency enforcement entirely from ontological hierarchies onto graph topology:
+
+* **Topological Stratification**: The engine translates first-order propositions into difference-constraint matrices. Algorithms for shortest-path routing (Bellman-Ford) and cycle means (Karp MCM) detect logical paradoxes as negative-weight cycles in `O(V+E)` time.
+* **Native Cyclic Graphs**: Propositions containing cyclic self-reference, including the Universal Set (`V ∈ V`), evaluate without infinite recursion or stack exhaustion.
+* **GPU Interaction Combinators**: Validated logic graphs compile into variable-free 2-Symmetric Interaction Combinators (2-SIC), executing as parallel graph rewrites across lock-free GPU compute shaders.
+
+**The Dual-Verification Pipeline:** Monist pairs bare-metal execution with formal mathematical verification through a synchronized differential testing pipeline with its companion lab in Lean 4 ([NF Sketches](https://github.com/ryanncode/nf-sketches)). The Rust solver exports SMT-LIB witnesses capturing difference constraints, which the Lean 4 kernel independently ingests and checks against formal soundness proofs.
 
 ---
 
-## Transfinite Computing & Speculative Frontiers
+## Setup and Building
 
-The standard computing industry enforces memory safety via strict Directed Acyclic Graphs (DAGs)—evidenced by Rust's borrow checker or Lean's dependent type hierarchy. This limits computation to well-founded, hierarchical structures. The Monist Engine abandons this completely, providing a deterministic execution layer capable of safely evaluating infinitely recursive or cyclical topological structures natively on the GPU.
+This repository is organized as a unified Cargo workspace containing all core libraries, WebGPU shaders, Python bindings, and CLI tools.
 
-This unlocks a highly speculative frontier where abstract combinatorial rewriting meets physical constraints, enabling:
+### Quick Build & Test
 
-- **Transfinite Combinatorial Computing:** Native computation of transfinite cardinals without bottlenecking on the Axiom of Choice, utilizing Ramsey-theoretic bounds to calculate fixed points in self-referential systems.
-- **Hardware-Logic Co-Evolution:** Synthesizing custom Interaction Net FPGAs where logical reduction is performed via physical signal collisions, transforming processor spatial routing into execution logic without fetch-execute cycles.
-- **Quantum-Topos Logic Synthesis:** Treating logic as a geometric object to model quantum vacuums as "saturated computational boundaries," calculating measurable energy shifts based on the algorithmic friction of re-leveling variables.
-- **Scalable AI Oversight:** Providing mathematical guarantees over probabilistic black-box models. Organizations can use Monist as a deterministic bedrock to audit, govern, and formally verify neural network outputs, checking for hallucination via structural self-verification.
-
----
-
-## Quickstart: The Paradox Engine
-
-Traditional type systems crash when fed cyclic self-reference. Monist executes it natively.
+To build the entire workspace and run the full unit and integration test suite:
 
 ```bash
-# 1. A standard proposition is evaluated normally
-$ cargo run -p monist-cli -- eval "forall x. x = x"
-> Stratification successful.
-
-# 2. Evaluating the Universal Set (V in V)
-$ cargo run -p monist-cli -- eval "V in V"
-> Stratification successful.
-> Neutralized SC defining self-loop on V_0
-
-# 3. Evaluating Russell's Paradox
-$ cargo run -p monist-cli -- eval "{x | ~(x e x)} e {x | ~(x e x)}"
-> Error: Extensionality Collision: Negative-weight cycle detected (μ* = -1.0000)!
-> Engine halted safely (K_ITERATION_HALT)
-> Topological Trace: b0_1 -> b0_1 (-1) = -1
-```
-
----
-
-## Python Bindings (`monist-python`)
-
-To integrate Monist topological bounding directly into machine learning pipelines (such as PyTorch, JAX, or LLM inference loops), we provide zero-cost PyO3 bindings via the `monist-python` package. This unlocks **Semantic Self-Verification (SSV)**, allowing LLMs to rapidly query the Monist Oracle in parallel, instantly checking for paradoxical loops, hallucinated cycles, or geometric extensionality violations in $O(1)$ time.
-
-```python
-import monist_engine as monist
-
-# Initialize the topological bounds checker
-oracle = monist.Engine(enable_t_functor=True)
-
-# Evaluate an Extensionality Collision (Russell's Paradox)
-res = oracle.evaluate("{x | ~(x e x)} e {x | ~(x e x)}")
-print(res.is_stratified) # False
-print(res.collision_weight) # -1.0
-```
-
----
-
-## Build & Run
-
-Ensure you have Rust and Cargo installed, alongside a WGPU-compatible graphics backend (Vulkan, Metal, DirectX 12, or WebGPU) for executing the engine natively on the GPU.
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/monist.git
-cd monist
-
-# Build the entire workspace (Crates, Tools, and Benches)
+# Build all crates, CLI binaries, and examples
 cargo build --release
+
+# Execute test suite across all crates
+cargo test --workspace
 ```
 
 ### The Interactive REPL
 
-To start the tactical theorem-proving environment:
+Launch the tactical theorem-proving environment:
 
 ```bash
 cargo run -p monist-cli -- repl
 ```
 
-Inside the REPL, you can `assume Extensionality`, run backwards-reasoning tactics (`intro`, `apply`, `destruct`), or run a live, color-coded diagnostic visualizer using `step "x e x"`. For full details on available commands, axioms, and visualization options, see the [CLI Guide](docs/02-cli-guide.qmd).
+Inside the REPL, you can declare axioms (`assume`), set proof goals (`theorem`), and deploy 19 interactive tactics (`intro`, `destruct`, `rw`, `simp`, `elevate`, `collapse_loop`, `sc_cut`). For full details on tactic syntax and proof management, see the [CLI User Guide](docs/02-cli-guide.qmd).
 
-### Visual Demonstrations
+### Hello World: Your First Evaluation
 
-The Engine includes visual terminal simulations illustrating its unique performance boundaries:
+Evaluate foundational propositions and paradoxical self-references directly from the command line:
 
 ```bash
-# Demonstrate O(1) Exclusion-First Routing for Holographic Queries
-cargo run -p monist-cli -- demo holographic
+# 1. Standard tautology evaluates and stratifies
+cargo run -p monist-cli -- eval "forall x. x = x"
 
-# Demonstrate the Principle of Least Syntactic Action for AI Agentic boundaries
-cargo run -p monist-cli -- demo agentic
+cargo run -p monist-cli -- eval "V in V"
+
+# 3. Russell's Paradox triggers an Extensionality Collision and halts safely
+cargo run -p monist-cli -- eval "{x | ~(x in x)} in {x | ~(x in x)}"
+```
+
+### Python Machine Learning Bridge (`monist-python`)
+
+For **Semantic Self-Verification (SSV)**, neural networks and neuro-symbolic agent loops query the Monist Oracle via zero-cost PyO3 bindings to audit reasoning graphs and intercept cyclic hallucinations:
+
+```python
+import monist_engine as monist
+
+# Initialize the topological bounds engine
+oracle = monist.Engine(enable_t_functor=True)
+
+# Evaluate an Extensionality Collision (Russell's Paradox)
+res = oracle.evaluate("{x | ~(x in x)} in {x | ~(x in x)}")
+print(res.is_stratified)     # False
+print(res.collision_weight)  # -1.0
 ```
 
 ---
 
-## Capabilities & Architecture
+## Core Crates
 
-If you attempt to feed a structurally dense, cyclic self-reference like the Universal Set ($V \in V$) into standard frameworks, they immediately crash, resulting in either a syntax error or a VRAM exhaustion (warp divergence).
+The workspace partitions execution across dedicated crates, separating logical syntax from CPU constraint geometry, GPU shaders, formal verification, and developer tooling.
 
-The Monist Engine subverts this by bifurcating the computational stack:
+### 1. `monist-core`: The Oracle Layer
+The CPU-bound geometry solver. It translates formulas into algebraic constraint matrices, executes Kosaraju and Tarjan SCC algorithms to single-pass flatten 0-weight semantic equality rings, and deploys Bellman-Ford traversal with Karp's Minimum Cycle Mean (MCM) integration to detect negative-weight paradox loops.
 
-1. **The Oracle Layer (CPU/Geometry):** The frontend parser transforms standard first-order logic into an algebraic system of constraints. Instead of rejecting cyclic graphs, the `monist-core` executes Tarjan's SCC algorithm to single-pass flatten 0-weight semantic cycles, and deploys the Bellman-Ford algorithm with Karp's Minimum Cycle Mean (MCM) integration to explicitly map the thermodynamic weight and path sequences between nodes. If a paradox forms, the engine mathematically calculates Extensionality Collisions, dynamically bounding the execution via K-Iteration limits.
-2. **The T-Functor Synthesis**: When dense impredicative recursion forms, the engine dynamically synthesizes and injects a `T-operator` ($x \mapsto \iota"x$), acting as a topological stabilizer that absorbs the structural friction, preserving the weak stratification boundary.
-3. **Variable Annihilation and Lock-Free Atomics:** Traditional software engineering binds logic to named variables. Monist eliminates this overhead entirely. The `monist-comb` compiler destroys alphanumeric variables, replacing them with nameless de Bruijn levels, `Susp` lazy thunks (Okasaki), and 2-Symmetric Interaction Combinator (2-SIC) topological rewrite rules. GPU threads evaluate Annihilations and Commutations natively utilizing Interaction Monoid structure and Girard's Execution Formula to bypass cycle exhaustion.
-4. **Holographic Fast-Failing Oracle:** The runtime natively supports Vector Symbolic Architectures (VSA/HDC) to embed discrete graph logic into a continuous $10,000$-dimensional phase space. Enterprise systems (such as legacy SIEMs or computational biology pipelines) can use the Monist Engine as a massively parallel data sieve. By utilizing $O(1)$ destructive interference and a GPU-accelerated Successive Interference Cancellation (SIC) bridge, it violently drops valid data and snaps unresolvable anomalies back into discrete variables in milliseconds, shielding exact traditional databases from combinatorial explosion.
-5. **Topological Recursion Cost:** When the GPU executes a logic network, it outputs a precise, reproducible integer: the exact count of graph-rewrite collisions required to normalize a feedback topology into a stable fixpoint. This deterministic observable functions as a discrete topological analogue of free energy expenditure, providing an exact, distribution-free count of erasures versus rearrangements.
+### 2. `monist-comb`: The Interaction Net Backend
+An untyped combinator execution environment (`S, K, I`). It compiles validated logic graphs into nameless de Bruijn combinators bounded by Okasaki `Susp` structures, evaluating 2-Symmetric Interaction Combinators (2-SIC) natively through lock-free WebGPU WGSL compute shaders.
 
----
+### 3. `monist-seq`: Sequent Calculus & ITP Engine
+Implements an interactive natural deduction engine and sequent calculus evaluator. It features a complete 19-tactic ecosystem (including `intro`, `destruct`, `rw`, `simp`, `elevate`, `collapse_loop`, `sc_cut`) driving automated goal management and proof session serialization.
 
-## Testing, Diagnostics & Benchmarks
+### 4. `monist-verify`: The Verification Gateway
+Manages cross-language differential equivalence testing against the Lean 4 formal lab. It automatically extracts SMT-LIB stratification witnesses for exported graph topologies, enabling independent mathematical audit of runtime execution.
 
-The engine's validity and performance are proven via a unified suite of automated tests, mathematical diagnostics, and GPU/CPU benchmarks.
+### 5. `monist-wasm` & `monist-console`: WebAssembly & Interactive Infoview
+Compiles the topological solver and proof session to WebAssembly, powering the in-browser interactive Infoview console with real-time syntax tokenization, interactive hypothesis chips, and multi-goal proof tabs.
 
-### 1. Unit Tests & Fuzzing
-To run the standard unit tests across all crates (including parser tests and interaction net execution limits):
-```bash
-cargo test
-```
+### 6. `monist-python`: Neuro-Symbolic ML Bridge
+Provides zero-cost PyO3 bindings for Python pipelines (PyTorch, JAX, LLMs). This enables Semantic Self-Verification (SSV), allowing neural network inference loops to query the Monist Oracle in `O(1)` time to intercept hallucinations and cyclic reasoning loops.
 
-### 2. Differential Testing (Lean 4 Parity)
-We maintain a strictly synchronized equivalence pipeline linking this Rust implementation to our Lean 4 formalization ([nf-sketches/parse-strat](https://github.com/ryanncode/nf-sketches/tree/main/parse-strat)). 
-To automatically cross-examine the Rust logic against the legacy Lean prototype across core SMT edge traces:
-```bash
-./scripts/run_differential_tests.sh
-```
-
-To manually pipe a diagnostic test directly into the Lean 4 interpreter for isolated tracing:
-```bash
-cd tools/monist-examples
-cargo run --bin specker_refutation | awk '/; === BEGIN STRATIFICATION WITNESS ===/{flag=1; print; next} /; === END STRATIFICATION WITNESS ===/{print; flag=0} flag' > out.smt
-cd ../../../nf-sketches/parse-strat
-lake exe parse-strat --ingest-smt < ../../monist/tools/monist-examples/out.smt
-```
-
-### 3. Canonical ITP Tactics Examples
-To demonstrate the Interactive Theorem Prover (ITP) tactics native execution and topological integration, run the canonical example programs located in `crates/monist-seq/examples/`:
-```bash
-cargo run --example strategic_cut
-cargo run --example monotonicity_powerset
-cargo run --example equality_refl
-```
-
-### 4. Mathematical Diagnostics
-The `monist-examples` crate executes the core paradoxes of modern set theory, outputting mathematically verified topological boundaries and generating standard `SMT-LIB` witnesses. For example:
-- **Specker's Refutation of Global Choice (`specker_refutation`)**: Mechanically proves that bridging disjoint integer weight elevations without a $T$-operator creates a negative-weight cycle.
-- **The Extensionality Collision (`extensionality_collision`)**: Evaluates the Kuratowski ordered pair vs the Quine ordered pair, proving the engine tracks dense structural depth offsets without triggering a false paradox halt.
-- **Russell's Paradox (`russell`)**: Computes $R \in R$, dynamically intercepting the unstratified graph prior to call-stack exhaustion via the $K$-Iteration bound.
-
-```bash
-cargo run -p monist-examples --bin specker_refutation
-cargo run -p monist-examples --bin extensionality_collision
-cargo run -p monist-examples --bin russell
-```
-
-### 5. Performance Benchmarks
-To execute bare-metal throughput execution tests bypassing the CLI:
-```bash
-# Run the discrete CPU bounds benchmarks
-cargo bench -p monist-bench-cpu
-
-# Run the lock-free OpenCL and discrete GPU bounds benchmarks
-cargo bench -p monist-bench-gpu
-```
-
-For an in-depth breakdown of lock-free atomic throughput and discrete execution bounds, see the [Reproducible Performance Benchmarks Matrix](docs/06-benchmarks.qmd).
-
-## Formal Theory Integration
-
-The mechanical systems defined in this codebase strictly adhere to the formal axioms outlined in the Lean proof architecture. For the formal verification of the Bellman-Ford geometric matrices, see [NF Sketches - AUDIT](https://github.com/ryanncode/nf-sketches/blob/main/AUDIT.md). For detailed instructions on running these proofs and understanding the theoretical bounds of our non-well-founded set implementation, see our [Lean Proofs Repository Integration](docs/07-proofs.qmd) document. To dive deeper into the theoretical origins of this architecture, see [Theoretical Foundations](docs/09-theoretical-foundations.qmd) and [Mathematical Philosophy](docs/10-mathematical-philosophy.qmd).
+### 7. `monist-examples` & `monist-cli`: Tooling & Mathematical Diagnostics
+Hosts the interactive command-line interface alongside automated diagnostic suites executing canonical set-theoretic paradoxes (Specker's Refutation of Global Choice, Extensionality Collisions, and Choice-Free Transfinite Arithmetic).
 
 ---
 
-## API Documentation
+## Documentation & Formal Theory
 
-For a complete technical breakdown of the Rust workspace and core engine functions, see the [Monist Core API Specs](https://ryanncode.github.io/monist/specs/monist_core/).
+Detailed technical guides, benchmarks, and mathematical foundations are available in [`docs/`](docs/):
 
-## Repository Structure
-
-To help orient yourself within the codebase, here is how the architecture maps to the crates:
-
-- `crates/monist-parser` - **The Syntax Layer**: Parses raw text and ASCII constraints into standard logical syntax.
-- `crates/monist-core` - **The Oracle Layer**: The frontend AST, constraint algebra, and the CPU-bound geometric routing algorithms (Kosaraju SCC & Bellman-Ford) that detect extensionality collisions.
-- `crates/monist-comb` - **The Interaction Net Backend**: The purely untyped combinator nodes ($S, K, I$) and the WebGPU (`wgpu`) compute shaders that evaluate the logic dynamically.
-- `crates/monist-seq` - **Sequent Operations**: Sequent calculus evaluation mapping structural rules to combinatory embeddings.
-- `crates/monist-category` - **Categorical Structures**: The T-functor and relative adjunction definitions.
-- `crates/monist-psg` - **Phase Space Geometry**: Data structures for topological graphing and boundary checks.
-- `crates/monist-verify` - **Verification Layer**: Validates differential equivalence and Bellman-Ford limits prior to evaluation.
-- `crates/monist-macros` - **Engine Macros**: Syntactic procedural macros for seamless Rust testing and syntax.
-- `bindings/monist-python` - **The Python ML Bridge**: Zero-cost PyO3 bindings for direct integration into PyTorch, JAX, and Neuro-symbolic LLM verification loops.
-- `tools/monist-cli` - **The Interactive REPL**: The tactical theorem-proving interface and diagnostic visualizer.
-- `tools/monist-examples` - **Mathematical Diagnostics**: The automated mathematical refutations that prove the engine's theoretical boundaries.
+* [System Architecture & Compilation Pipeline](docs/01-architecture.qmd)
+* [CLI User Guide & Tactic Cheatsheet](docs/02-cli-guide.qmd)
+* [Building Primitives & Canonical Examples](docs/03-examples-and-primitives.qmd)
+* [Interaction Nets & GPU Compute Engine](docs/04-interaction-net.qmd)
+* [Holographic Co-Processor & Continuous VSA](docs/05-holographic.qmd)
+* [Performance Benchmarks Matrix](docs/06-benchmarks.qmd)
+* [Lean 4 Formal Verification Integration](docs/07-proofs.qmd)
+* [Advanced Synthetic Applications & Frontiers](docs/08-advanced-synthetic-applications.qmd)
+* [Theoretical Foundations](docs/09-theoretical-foundations.qmd)
+* [Mathematical Philosophy](docs/10-mathematical-philosophy.qmd)
 
 ---
 
