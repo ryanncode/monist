@@ -279,83 +279,56 @@ export default function App() {
     reqIdRef.current += 1;
     const currentReqId = reqIdRef.current;
     
-    let w = "";
-    let s: any = null;
+    setIsEvaluating(true);
+    const worker = workerRef.current;
+    if (!worker) return;
 
-    if (q === "Omega = {Omega}") {
-      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Quine Atom Loop\n(assert (= topological_weight 0))\n; === END STRATIFICATION WITNESS ===";
-      s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'basic_loop' };
-      finishEval(s, w);
-    }
-    else if (q === "{{x}, {x, y}} = {{a}, {a, b}}") {
-      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Kuratowski Ordered Pair\n; Differential offset tracked (+2)\n(assert (<= (- depth_a depth_x) 0))\n; === END STRATIFICATION WITNESS ===";
-      s = { isStratified: true, iterations: 4, mcm: 0.0, graphType: 'kuratowski' };
-      finishEval(s, w);
-    }
-    else if (q === "Phi(m) = Phi(T(m))") {
-      if (useTFunctor) {
-        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation (Stabilized by T-Functor)\n; Collision Absorbed\n(assert (= elevation elevation))\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: true, iterations: 5, mcm: 0.0, graphType: 'specker_t_functor' };
-      } else {
-        w = "; === BEGIN STRATIFICATION WITNESS ===\n; Specker's Refutation of Global Choice\n; Extensionality Collision Detected\n(assert (<= (- elevation elevation) -1))\n; === END STRATIFICATION WITNESS ===";
-        s = { isStratified: false, iterations: 0, mcm: -1.0, graphType: 'specker_erratic' };
-      }
-      finishEval(s, w);
-    }
-    else if (q === "simulate_hypothetical(agent_core, action)") {
-      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Agentic Reflection Sandbox\n; Algorithmic Friction Cost: 14\n; SC_ISLAND_STABLE\n; === END STRATIFICATION WITNESS ===";
-      s = { isStratified: true, iterations: 14, mcm: 0.0, graphType: 'agentic_reflection' };
-      finishEval(s, w);
-    }
-    else if (q === "SC_CUT(exclusionIndex[isCorrupted, isExpired])") {
-      w = "; === BEGIN STRATIFICATION WITNESS ===\n; Holographic Sieve Execution\n; O(1) Interference Sweep\n; === END STRATIFICATION WITNESS ===";
-      s = { isStratified: true, iterations: 1, mcm: 0.0, graphType: 'holographic_sieve' };
-      finishEval(s, w);
-    }
-    else {
-      setIsEvaluating(true);
-      const worker = workerRef.current;
-      if (!worker) return;
+    let graphType = 'default';
+    if (q.includes("Omega") || q.includes("Ω")) graphType = 'basic_loop';
+    else if (q.includes("{{x}") || q.includes("{{a}")) graphType = 'kuratowski';
+    else if (q.includes("Phi") || q.includes("Φ")) graphType = useTFunctor ? 'specker_t_functor' : 'specker_erratic';
+    else if (q.includes("agent_core") || q.includes("simulate")) graphType = 'agentic_reflection';
+    else if (q.includes("SC_CUT") || q.includes("exclusionIndex")) graphType = 'holographic_sieve';
 
-      let timeoutId: number;
+    let timeoutId: number;
 
-      worker.onmessage = (e) => {
-        const { id, success, data, error } = e.data;
-        if (id !== reqIdRef.current) return;
-        
-        clearTimeout(timeoutId);
-
-        if (!success) {
-           setSmtWitness(null);
-           setStats({ error });
-           setIsEvaluating(false);
-           return;
-        }
-
-        s = {
-          isStratified: data.is_stratified,
-          iterations: data.max_k_iterations,
-          mcm: data.mcm
-        };
-        w = data.smt_witness || 'No witness generated.';
-        finishEval(s, w);
-      };
-
-      worker.postMessage({ id: currentReqId, query: q });
-      setLastEvaluatedQuery(q);
+    worker.onmessage = (e) => {
+      const { id, success, data, error } = e.data;
+      if (id !== reqIdRef.current) return;
       
-      // Safety timeout for UI responsiveness (kill worker if it hangs)
-      timeoutId = window.setTimeout(() => {
-         if (reqIdRef.current === currentReqId) {
-             workerRef.current?.terminate();
-             workerRef.current = new EvaluationWorker();
-             setSmtWitness(null);
-             setStats({ error: "Worker timeout (evaluation took too long)" });
-             setIsEvaluating(false);
-         }
-      }, 5000); // 5s timeout
-    }
-  }, [finishEval, useTFunctor]);
+      clearTimeout(timeoutId);
+
+      if (!success) {
+         setSmtWitness(null);
+         setStats({ error });
+         setIsEvaluating(false);
+         return;
+      }
+
+      const s = {
+        isStratified: data.is_stratified,
+        iterations: data.max_k_iterations,
+        mcm: data.mcm,
+        graphType
+      };
+      const w = data.smt_witness || 'No witness generated.';
+      finishEval(s, w);
+    };
+
+    worker.postMessage({ id: currentReqId, query: q });
+    setLastEvaluatedQuery(q);
+    
+    // Safety timeout for UI responsiveness (kill worker if it hangs)
+    timeoutId = window.setTimeout(() => {
+       if (reqIdRef.current === currentReqId) {
+           workerRef.current?.terminate();
+           workerRef.current = new EvaluationWorker();
+           setSmtWitness(null);
+           setStats({ error: "Worker timeout (evaluation took too long)" });
+           setIsEvaluating(false);
+       }
+    }, 5000);
+  }, [useTFunctor, finishEval]);
 
   const runEval = useCallback((q: string) => {
     if (debounceTimerRef.current) {

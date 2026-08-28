@@ -52,7 +52,7 @@ pub fn succ() -> Comb {
         .abstract_var("n")
 }
 
-// Inductive Lists geometries
+// Inductive Lists and Pair geometries
 pub fn cons() -> Comb {
     // \h t z. z h t
     v("z")
@@ -63,14 +63,26 @@ pub fn cons() -> Comb {
         .abstract_var("h")
 }
 
+pub fn pair() -> Comb {
+    cons()
+}
+
 pub fn head() -> Comb {
     // \l. l True
     v("l").app(true_comb()).abstract_var("l")
 }
 
+pub fn fst() -> Comb {
+    head()
+}
+
 pub fn tail() -> Comb {
     // \l. l False
     v("l").app(false_comb()).abstract_var("l")
+}
+
+pub fn snd() -> Comb {
+    tail()
 }
 
 // Y Combinator

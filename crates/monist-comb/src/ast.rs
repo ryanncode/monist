@@ -167,12 +167,6 @@ impl GNet {
                 self.free_list.push(p2.val());
             } else if p1.tag() == TAG_DUP && p2.tag() == TAG_CON || p1.tag() == TAG_CON && p2.tag() == TAG_DUP {
                 // Commutation: Duplicator commutes through Constructor (Lévy-optimality).
-                // In a complete implementation this allocates 4 new nodes and cross-wires them.
-                // We leave the memory allocation stubbed, but mathematically this avoids exponential clone scaling.
-                let _n1 = self.nodes[p1.val() as usize];
-                let _n2 = self.nodes[p2.val() as usize];
-                self.free_list.push(p1.val());
-                self.free_list.push(p2.val());
                 let (p_dup, p_con) = if p1.tag() == TAG_DUP { (p1, p2) } else { (p2, p1) };
                 let n_dup = self.nodes[p_dup.val() as usize];
                 let n_con = self.nodes[p_con.val() as usize];

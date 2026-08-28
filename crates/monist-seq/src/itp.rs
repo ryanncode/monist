@@ -436,10 +436,94 @@ impl ReplSession {
         Ok(())
     }
 
+    fn map_var_free(v: &Var, target: &Var, replacement: &Var) -> Var {
+        if v == target {
+            replacement.clone()
+        } else {
+            v.clone()
+        }
+    }
+
+    pub fn subst_var(arena: &mut FormulaArena, root: usize, target: &Var, replacement: &Var) -> usize {
+        let formula = match arena.get(root) {
+            Some(f) => f.clone(),
+            None => return root,
+        };
+
+        match formula {
+            Formula::Atom(mut atomic) => {
+                match &mut atomic {
+                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) | Atomic::Lt(v1, v2) | Atomic::QProj1(v1, v2) | Atomic::QProj2(v1, v2) => {
+                        *v1 = Self::map_var_free(v1, target, replacement);
+                        *v2 = Self::map_var_free(v2, target, replacement);
+                    }
+                    Atomic::QPair(v1, v2, v3) | Atomic::App(v1, v2, v3) | Atomic::Lam(v1, v2, v3) => {
+                        *v1 = Self::map_var_free(v1, target, replacement);
+                        *v2 = Self::map_var_free(v2, target, replacement);
+                        *v3 = Self::map_var_free(v3, target, replacement);
+                    }
+                }
+                arena.add(Formula::Atom(atomic))
+            }
+            Formula::Neg(i) => {
+                let ni = Self::subst_var(arena, i, target, replacement);
+                arena.add(Formula::Neg(ni))
+            }
+            Formula::Conj(l, r) => {
+                let nl = Self::subst_var(arena, l, target, replacement);
+                let nr = Self::subst_var(arena, r, target, replacement);
+                arena.add(Formula::Conj(nl, nr))
+            }
+            Formula::Disj(l, r) => {
+                let nl = Self::subst_var(arena, l, target, replacement);
+                let nr = Self::subst_var(arena, r, target, replacement);
+                arena.add(Formula::Disj(nl, nr))
+            }
+            Formula::Impl(l, r) => {
+                let nl = Self::subst_var(arena, l, target, replacement);
+                let nr = Self::subst_var(arena, r, target, replacement);
+                arena.add(Formula::Impl(nl, nr))
+            }
+            Formula::Univ(d, n, inner) => {
+                let ninner = Self::subst_var(arena, inner, target, replacement);
+                arena.add(Formula::Univ(d, n, ninner))
+            }
+            Formula::Exist(d, n, inner) => {
+                let ninner = Self::subst_var(arena, inner, target, replacement);
+                arena.add(Formula::Exist(d, n, ninner))
+            }
+            Formula::Comp(d, n, inner) => {
+                let ninner = Self::subst_var(arena, inner, target, replacement);
+                arena.add(Formula::Comp(d, n, ninner))
+            }
+        }
+    }
+
     pub fn tactic_collapse_loop(&mut self) -> Result<(), String> {
         let state = self.active_state.as_mut().ok_or("No active goals.")?;
         if state.goals.is_empty() {
             return Err("No active goals.".to_string());
+        }
+        let current_goal = &mut state.goals[0];
+        let budget = ResourceBudget::default();
+        let mut edge_count = 0;
+        let constraints = extract_constraints_aux(
+            &self.arena, current_goal.target, 0, false, &budget, &mut edge_count
+        );
+        let graph = GraphArena::from_constraints(&constraints);
+        let sccs = graph.kosaraju_scc();
+
+        for scc in &sccs {
+            if scc.len() > 1 {
+                let rep_idx = *scc.iter().min().unwrap();
+                let rep_var = graph.vars[rep_idx].0.clone();
+                for &v_idx in scc {
+                    if v_idx != rep_idx {
+                        let old_var = graph.vars[v_idx].0.clone();
+                        current_goal.target = Self::subst_var(&mut self.arena, current_goal.target, &old_var, &rep_var);
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -461,15 +545,108 @@ impl ReplSession {
     }
 
     pub fn tactic_step(&mut self) -> Result<(), String> {
-        Ok(())
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let current_goal = &state.goals[0];
+        let budget = ResourceBudget::default();
+        let mut edge_count = 0;
+        let constraints = extract_constraints_aux(
+            &self.arena, current_goal.target, 0, false, &budget, &mut edge_count
+        );
+        let mut graph = GraphArena::from_constraints(&constraints);
+        graph.collapse_scc_0_weight();
+        match graph.evaluate_topology() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("step: negative-weight cycle detected: {}", e)),
+        }
+    }
+
+    fn push_neg(arena: &mut FormulaArena, idx: usize) -> usize {
+        let f = match arena.get(idx) {
+            Some(f) => f.clone(),
+            None => return idx,
+        };
+        match f {
+            Formula::Neg(inner) => {
+                let inner_f = match arena.get(inner) {
+                    Some(f) => f.clone(),
+                    None => return idx,
+                };
+                match inner_f {
+                    Formula::Neg(p) => Self::push_neg(arena, p),
+                    Formula::Conj(p, q) => {
+                        let np = arena.add(Formula::Neg(p));
+                        let nq = arena.add(Formula::Neg(q));
+                        let snp = Self::push_neg(arena, np);
+                        let snq = Self::push_neg(arena, nq);
+                        arena.add(Formula::Disj(snp, snq))
+                    }
+                    Formula::Disj(p, q) => {
+                        let np = arena.add(Formula::Neg(p));
+                        let nq = arena.add(Formula::Neg(q));
+                        let snp = Self::push_neg(arena, np);
+                        let snq = Self::push_neg(arena, nq);
+                        arena.add(Formula::Conj(snp, snq))
+                    }
+                    Formula::Impl(p, q) => {
+                        let nq = arena.add(Formula::Neg(q));
+                        let sp = Self::push_neg(arena, p);
+                        let snq = Self::push_neg(arena, nq);
+                        arena.add(Formula::Conj(sp, snq))
+                    }
+                    _ => idx,
+                }
+            }
+            Formula::Conj(p, q) => {
+                let sp = Self::push_neg(arena, p);
+                let sq = Self::push_neg(arena, q);
+                arena.add(Formula::Conj(sp, sq))
+            }
+            Formula::Disj(p, q) => {
+                let sp = Self::push_neg(arena, p);
+                let sq = Self::push_neg(arena, q);
+                arena.add(Formula::Disj(sp, sq))
+            }
+            Formula::Impl(p, q) => {
+                let np = arena.add(Formula::Neg(p));
+                let snp = Self::push_neg(arena, np);
+                let sq = Self::push_neg(arena, q);
+                arena.add(Formula::Disj(snp, sq))
+            }
+            _ => idx,
+        }
     }
 
     pub fn tactic_simp(&mut self) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let current_goal = &mut state.goals[0];
+        current_goal.target = Self::push_neg(&mut self.arena, current_goal.target);
         Ok(())
     }
 
-    pub fn tactic_rw(&mut self, _formula_str: &str) -> Result<(), String> {
-        Ok(())
+    pub fn tactic_rw(&mut self, name: &str) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let current_goal = &mut state.goals[0];
+        let hyp = current_goal.ctx.iter().find(|(n, _)| n == name).map(|(_, i)| *i);
+        if let Some(hyp_idx) = hyp {
+            let hyp_formula = self.arena.get(hyp_idx).unwrap().clone();
+            if let Formula::Atom(Atomic::Eq(x, y)) = hyp_formula {
+                current_goal.target = Self::subst_var(&mut self.arena, current_goal.target, &x, &y);
+                Ok(())
+            } else {
+                Err(format!("rewrite: hypothesis {} is not an equality.", name))
+            }
+        } else {
+            Err(format!("rewrite: hypothesis {} not found.", name))
+        }
     }
 
     pub fn tactic_focus_hyp(&mut self, name: &str) -> Result<(), String> {
@@ -499,7 +676,192 @@ impl ReplSession {
         Ok(())
     }
 
+    fn elevate_var(v: &Var) -> Var {
+        match v {
+            Var::Free(s) => Var::Free(format!("{}_iota", s)),
+            Var::Bound(n) => Var::Bound(*n),
+        }
+    }
+
+    fn elevate_formula(arena: &mut FormulaArena, idx: usize) -> usize {
+        let f = match arena.get(idx) {
+            Some(f) => f.clone(),
+            None => return idx,
+        };
+        match f {
+            Formula::Atom(mut a) => {
+                match &mut a {
+                    Atomic::Eq(v1, v2) | Atomic::Mem(v1, v2) | Atomic::Lt(v1, v2) | Atomic::QProj1(v1, v2) | Atomic::QProj2(v1, v2) => {
+                        *v1 = Self::elevate_var(v1);
+                        *v2 = Self::elevate_var(v2);
+                    }
+                    Atomic::QPair(v1, v2, v3) | Atomic::App(v1, v2, v3) | Atomic::Lam(v1, v2, v3) => {
+                        *v1 = Self::elevate_var(v1);
+                        *v2 = Self::elevate_var(v2);
+                        *v3 = Self::elevate_var(v3);
+                    }
+                }
+                arena.add(Formula::Atom(a))
+            }
+            Formula::Neg(i) => {
+                let ni = Self::elevate_formula(arena, i);
+                arena.add(Formula::Neg(ni))
+            }
+            Formula::Conj(l, r) => {
+                let nl = Self::elevate_formula(arena, l);
+                let nr = Self::elevate_formula(arena, r);
+                arena.add(Formula::Conj(nl, nr))
+            }
+            Formula::Disj(l, r) => {
+                let nl = Self::elevate_formula(arena, l);
+                let nr = Self::elevate_formula(arena, r);
+                arena.add(Formula::Disj(nl, nr))
+            }
+            Formula::Impl(l, r) => {
+                let nl = Self::elevate_formula(arena, l);
+                let nr = Self::elevate_formula(arena, r);
+                arena.add(Formula::Impl(nl, nr))
+            }
+            Formula::Univ(d, n, inner) => {
+                let ninner = Self::elevate_formula(arena, inner);
+                arena.add(Formula::Univ(d, n, ninner))
+            }
+            Formula::Exist(d, n, inner) => {
+                let ninner = Self::elevate_formula(arena, inner);
+                arena.add(Formula::Exist(d, n, ninner))
+            }
+            Formula::Comp(d, n, inner) => {
+                let ninner = Self::elevate_formula(arena, inner);
+                arena.add(Formula::Comp(d, n, ninner))
+            }
+        }
+    }
+
     pub fn tactic_elevate(&mut self, _name: &str) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let current_goal = &mut state.goals[0];
+        current_goal.target = Self::elevate_formula(&mut self.arena, current_goal.target);
         Ok(())
+    }
+
+    pub fn tactic_sc_cut(&mut self, var_name: &str) -> Result<(), String> {
+        let state = self.active_state.as_mut().ok_or("No active goals.")?;
+        if state.goals.is_empty() {
+            return Err("No active goals.".to_string());
+        }
+        let current_goal = &mut state.goals[0];
+        let v = Var::Free(var_name.to_string());
+        let sc_bedrock = self.arena.add(Formula::Atom(Atomic::Eq(v.clone(), v.clone())));
+        current_goal.ctx.push((format!("SC_BEDROCK_{}", var_name), sc_bedrock));
+        Ok(())
+    }
+
+    pub fn format_formula(&self, idx: usize) -> String {
+        Self::format_formula_aux(&self.arena, idx, false)
+    }
+
+    pub fn format_formula_aux(arena: &FormulaArena, idx: usize, show_tags: bool) -> String {
+        let formula = match arena.get(idx) {
+            Some(f) => f,
+            None => return format!("<?{}>", idx),
+        };
+        match formula {
+            Formula::Atom(Atomic::Eq(v1, v2)) => format!(
+                "{} = {}",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags)
+            ),
+            Formula::Atom(Atomic::Mem(v1, v2)) => format!(
+                "{} ∈ {}",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags)
+            ),
+            Formula::Atom(Atomic::Lt(v1, v2)) => format!(
+                "{} < {}",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags)
+            ),
+            Formula::Atom(Atomic::QPair(v1, v2, v3)) => format!(
+                "{} = Q({}, {})",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags),
+                Self::format_var(v3, show_tags)
+            ),
+            Formula::Atom(Atomic::QProj1(v1, v2)) => format!(
+                "{} = π₁({})",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags)
+            ),
+            Formula::Atom(Atomic::QProj2(v1, v2)) => format!(
+                "{} = π₂({})",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags)
+            ),
+            Formula::Atom(Atomic::App(v1, v2, v3)) => format!(
+                "{} = {}({})",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags),
+                Self::format_var(v3, show_tags)
+            ),
+            Formula::Atom(Atomic::Lam(v1, v2, v3)) => format!(
+                "{} = (λ{}. {})",
+                Self::format_var(v1, show_tags),
+                Self::format_var(v2, show_tags),
+                Self::format_var(v3, show_tags)
+            ),
+            Formula::Neg(i) => format!("¬{}", Self::format_formula_aux(arena, *i, show_tags)),
+            Formula::Conj(l, r) => format!(
+                "({} ∧ {})",
+                Self::format_formula_aux(arena, *l, show_tags),
+                Self::format_formula_aux(arena, *r, show_tags)
+            ),
+            Formula::Disj(l, r) => format!(
+                "({} ∨ {})",
+                Self::format_formula_aux(arena, *l, show_tags),
+                Self::format_formula_aux(arena, *r, show_tags)
+            ),
+            Formula::Impl(l, r) => format!(
+                "({} → {})",
+                Self::format_formula_aux(arena, *l, show_tags),
+                Self::format_formula_aux(arena, *r, show_tags)
+            ),
+            Formula::Univ(_, var, inner) => format!(
+                "∀ {}. {}",
+                var,
+                Self::format_formula_aux(arena, *inner, show_tags)
+            ),
+            Formula::Exist(_, var, inner) => format!(
+                "∃ {}. {}",
+                var,
+                Self::format_formula_aux(arena, *inner, show_tags)
+            ),
+            Formula::Comp(_, var, inner) => format!(
+                "{{ {} | {} }}",
+                var,
+                Self::format_formula_aux(arena, *inner, show_tags)
+            ),
+        }
+    }
+
+    fn format_var(v: &Var, show_tags: bool) -> String {
+        match v {
+            Var::Free(name) => {
+                if !show_tags && name.contains('@') {
+                    name.split('@').next().unwrap_or(name).to_string()
+                } else {
+                    name.clone()
+                }
+            }
+            Var::Bound(idx) => {
+                if show_tags {
+                    format!("^{}", idx)
+                } else {
+                    format!("v{}", idx)
+                }
+            }
+        }
     }
 }

@@ -45,6 +45,7 @@ fn main() {
         Err(e) => {
             println!("Bellman-Ford detection: {}", e);
             assert!(e.contains("Negative-weight cycle detected"));
+            println!("{}", monist_core::smt::export_smt_lib(&arena, "russell_paradox_interception", Some(&e), &[], None));
         }
     }
 

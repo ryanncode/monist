@@ -449,21 +449,27 @@ fn process_repl_command(input: &str, session: &mut ReplSession) {
                 return;
             }
             let eq_idx = parts.iter().position(|&x| x == ":=").unwrap();
-            let sig_str = parts[1..eq_idx].join(" ");
+            let raw_sig = parts[1..eq_idx].join(" ");
             let formula_str = parts[eq_idx + 1..].join(" ");
-            let sig_str = sig_str.replace(" ", "");
-            let open_paren = sig_str.find('(');
-            let close_paren = sig_str.find(')');
             let name;
             let mut params = Vec::new();
-            if let (Some(op), Some(cp)) = (open_paren, close_paren) {
+            if raw_sig.contains('(') && raw_sig.contains(')') {
+                let sig_str = raw_sig.replace(" ", "");
+                let op = sig_str.find('(').unwrap();
+                let cp = sig_str.find(')').unwrap();
                 name = sig_str[..op].to_string();
                 let params_str = &sig_str[op + 1..cp];
                 if !params_str.is_empty() {
                     params = params_str.split(',').map(|s| s.to_string()).collect();
                 }
             } else {
-                name = sig_str;
+                let tokens: Vec<&str> = parts[1..eq_idx].iter().cloned().filter(|s| !s.is_empty()).collect();
+                if tokens.is_empty() {
+                    name = "macro".to_string();
+                } else {
+                    name = tokens[0].to_string();
+                    params = tokens[1..].iter().map(|s| s.to_string()).collect();
+                }
             }
             if let Err(e) = session.define_macro(name.clone(), params, &formula_str) {
                 eprintln!("{}: {}", "Error".red(), e);

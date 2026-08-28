@@ -83,7 +83,7 @@ fn main() {
     // The implication chains define the power set hierarchy natively via free variable scopes,
     // causing p1 to be mathematically typed at +1 above m, and p2 to be +1 above p1.
     // However, F attempts to contain them all natively (m in F, p1 in F, p2 in F), triggering the collision.
-    let specker_formula = "{ F | (((m in F /\\ p1 in F) /\\ p2 in F) /\\ (z in p1 -> (w in z -> w in m))) /\\ (z2 in p2 -> (w2 in z2 -> w2 in p1)) }";
+    let specker_formula = "{ F | (((m in F /\\ p1 in F) /\\ p2 in F) /\\ (m in p1 /\\ p1 in p2)) }";
     println!("Evaluating Formula via REPL engine: {}", specker_formula);
 
     // Resetting session for fresh graph

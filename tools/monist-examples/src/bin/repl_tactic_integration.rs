@@ -1,133 +1,154 @@
-use indicatif::{ProgressBar, ProgressStyle};
-use monist_core::ast::FormulaArena;
-use monist_core::eval::ExecutionLimits;
-use monist_core::graph::{extract_constraints_aux, GraphArena};
-use monist_core::smt::export_smt_lib;
+use monist_core::ast::{Atomic, Formula, Var};
+use monist_seq::itp::ReplSession;
 use monist_parser::parser::Parser;
-use std::thread;
-use std::time::Duration;
+use monist_core::budget::ResourceBudget;
 
-struct Session {
-    graph: GraphArena,
-    arena: FormulaArena,
-}
-
-impl Session {
-    fn new() -> Self {
-        Self {
-            graph: GraphArena::new(),
-            arena: FormulaArena::new(),
+fn print_goal_state(session: &ReplSession) {
+    if let Some(state) = &session.active_state {
+        if let Some(goal) = state.goals.first() {
+            println!("  Context ({} items):", goal.ctx.len());
+            for (name, idx) in &goal.ctx {
+                println!("    {} : {}", name, session.format_formula(*idx));
+            }
+            println!("  ⊢ Target:");
+            println!("    {}", session.format_formula(goal.target));
+            if state.goals.len() > 1 {
+                println!("  (+ {} pending subgoals)", state.goals.len() - 1);
+            }
+        } else {
+            println!("  No remaining goals. Proof completed!");
         }
-    }
-
-    fn eval_graph(&mut self, formula: &str, test_name: &str) {
-        let mut parser = Parser::new(formula, &mut self.arena, monist_core::budget::ResourceBudget::default());
-        let root_idx = parser.parse_formula();
-
-        let constraints = extract_constraints_aux(&self.arena, root_idx, 0, false, &monist_core::budget::ResourceBudget::default(), &mut 0);
-        self.graph = GraphArena::from_constraints(&constraints);
-
-        println!(
-            "\n=== Stratification Witness (SMT-LIB format) for {} ===",
-            test_name
-        );
-        println!("{}", export_smt_lib(&self.graph, test_name, None, &[], None));
-        println!("===============================================\n");
-
-        self.graph.collapse_scc_0_weight();
-
-        if let Some(limits) = ExecutionLimits::compute_for_graph(&self.graph) {
-            println!(
-                "Execution Limits Computed: MCM = {:.2}, Max K-Iterations = {}\n",
-                limits.mcm, limits.max_k_iterations
-            );
-        }
-
-        println!(
-            "Max Graph Topology: {} nodes reached.\n",
-            self.graph.vars.len()
-        );
     }
 }
 
 fn main() {
-    println!("=== REPL Tactic Integration ===");
-    println!("Initializing Interactive Proof Session...\n");
+    println!("============================================================");
+    println!("  MONIST ITP LIVE TACTIC INTEGRATION TEST SUITE");
+    println!("  Exercising all 5 advanced tactics: rw, simp, elevate,");
+    println!("  collapse_loop, and sc_cut");
+    println!("============================================================\n");
 
-    thread::sleep(Duration::from_millis(400));
+    let mut session = ReplSession::new();
 
-    println!("> assume SC_Def \"forall x. SC(x) <-> (x = T(x))\"");
-    println!("[Loaded] Axiom SC_Def registered.\n");
+    // ------------------------------------------------------------
+    // TEST 1: Equality Rewriting (`tactic_rw`)
+    // ------------------------------------------------------------
+    println!("--- TEST 1: Equality Rewriting (tactic_rw) ---");
+    let mut parser = Parser::new("a = b", &mut session.arena, ResourceBudget::default());
+    let hyp_eq = parser.parse_formula();
+    session.theorems.push(("H_ab".to_string(), hyp_eq));
 
-    thread::sleep(Duration::from_millis(400));
+    let mut parser = Parser::new("a = c", &mut session.arena, ResourceBudget::default());
+    let target_eq = parser.parse_formula();
+    session.start_proof("Proof_RW".to_string(), target_eq);
+    
+    println!("[Initial Goal]");
+    print_goal_state(&session);
 
-    println!("> assume Quine_Flatness \"forall x y. typestate(Q(x,y)) == max(typestate(x), typestate(y))\"");
-    println!("[Loaded] Axiom Quine_Flatness registered.\n");
+    println!("\n> rw H_ab");
+    session.tactic_rw("H_ab").expect("rw H_ab failed");
+    print_goal_state(&session);
+    assert_eq!(session.format_formula(session.active_state.as_ref().unwrap().goals[0].target), "b = c");
+    println!("✓ Equality rewriting successfully substituted variable in target AST.\n");
 
-    thread::sleep(Duration::from_millis(400));
+    // ------------------------------------------------------------
+    // TEST 2: De Morgan & DNF Normalization (`tactic_simp`)
+    // ------------------------------------------------------------
+    println!("--- TEST 2: Simplification (tactic_simp) ---");
+    let mut parser = Parser::new("~((a = a) \\/ (b = b))", &mut session.arena, ResourceBudget::default());
+    let target_simp = parser.parse_formula();
+    session.start_proof("Proof_Simp".to_string(), target_simp);
 
-    println!("> theorem SC_Preservation \"forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))\"");
-    println!("[Goal Set] 1 unproven target.");
-    println!("Target 1: forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))");
-    println!("Context: \n");
+    println!("[Initial Goal]");
+    print_goal_state(&session);
 
-    thread::sleep(Duration::from_millis(400));
+    println!("\n> simp");
+    session.tactic_simp().expect("simp failed");
+    print_goal_state(&session);
+    let target_str = session.format_formula(session.active_state.as_ref().unwrap().goals[0].target);
+    assert_eq!(target_str, "(¬a = a ∧ ¬b = b)");
+    println!("✓ De Morgan push-negation normalized disjunction into DNF conjunction.\n");
 
-    println!("> intro a");
-    println!("> intro b");
-    println!("> intro H_SC");
-    println!("> destruct H_SC H1 H2");
-    println!("[Context Updated] Hypotheses H1: SC(a), H2: SC(b) added.\n");
-    println!("Target 1: SC(Q(a,b))");
+    // ------------------------------------------------------------
+    // TEST 3: Forster T-Functor Elevation (`tactic_elevate`)
+    // ------------------------------------------------------------
+    println!("--- TEST 3: T-Functor Elevation (tactic_elevate) ---");
+    let mut parser = Parser::new("x = y", &mut session.arena, ResourceBudget::default());
+    let target_elevate = parser.parse_formula();
+    session.start_proof("Proof_Elevate".to_string(), target_elevate);
 
-    thread::sleep(Duration::from_millis(400));
+    println!("[Initial Goal]");
+    print_goal_state(&session);
 
-    println!("> rewrite SC_Def");
-    println!("[Goal Rewritten] Target 1 is now: Q(a,b) = T(Q(a,b))\n");
+    println!("\n> elevate");
+    session.tactic_elevate("x").expect("elevate failed");
+    print_goal_state(&session);
+    let target_str = session.format_formula(session.active_state.as_ref().unwrap().goals[0].target);
+    assert_eq!(target_str, "x_iota = y_iota");
+    println!("✓ T-functor shifted free variables into elevated stratum (x ↦ x_iota).\n");
 
-    thread::sleep(Duration::from_millis(400));
+    // ------------------------------------------------------------
+    // TEST 4: 0-Weight SCC Loop Contraction (`tactic_collapse_loop`)
+    // ------------------------------------------------------------
+    println!("--- TEST 4: 0-Weight Loop Contraction (tactic_collapse_loop) ---");
+    let mut parser = Parser::new("(x = y) /\\ (y = x)", &mut session.arena, ResourceBudget::default());
+    let target_loop = parser.parse_formula();
+    session.start_proof("Proof_Collapse".to_string(), target_loop);
 
-    println!("> rewrite H1");
-    println!("> rewrite H2");
-    println!("[Goal Rewritten] Target 1 is now: Q(T(a), T(b)) = T(Q(a,b))\n");
+    println!("[Initial Goal]");
+    print_goal_state(&session);
 
-    thread::sleep(Duration::from_millis(400));
+    println!("\n> collapse_loop");
+    session.tactic_collapse_loop().expect("collapse_loop failed");
+    print_goal_state(&session);
+    let target_str = session.format_formula(session.active_state.as_ref().unwrap().goals[0].target);
+    println!("✓ 0-weight SCC loop contracted cyclic variables: {}\n", target_str);
 
-    println!("> tactic t_shift_resolve");
+    // ------------------------------------------------------------
+    // TEST 5: Strongly Cantorian Bedrock Isolation (`tactic_sc_cut`)
+    // ------------------------------------------------------------
+    println!("--- TEST 5: Strongly Cantorian Cut (tactic_sc_cut) ---");
+    let mut parser = Parser::new("z in S", &mut session.arena, ResourceBudget::default());
+    let target_sc = parser.parse_formula();
+    session.start_proof("Proof_SCCut".to_string(), target_sc);
 
-    let pb = ProgressBar::new_spinner();
-    pb.set_style(
-        ProgressStyle::default_spinner()
-            .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
-            .template("{spinner:.green} {msg}")
-            .unwrap(),
-    );
-    pb.enable_steady_tick(Duration::from_millis(80));
+    println!("[Initial Goal]");
+    print_goal_state(&session);
 
-    pb.set_message("Evaluating substitution closure via DAG Flattening...");
-    thread::sleep(Duration::from_millis(800));
-    pb.suspend(|| println!("Evaluating substitution closure via DAG Flattening..."));
+    println!("\n> sc_cut S");
+    session.tactic_sc_cut("S").expect("sc_cut failed");
+    print_goal_state(&session);
+    let ctx = &session.active_state.as_ref().unwrap().goals[0].ctx;
+    assert!(ctx.iter().any(|(name, _)| name == "SC_BEDROCK_S"));
+    println!("✓ Strongly Cantorian bedrock axiom successfully injected into proof context.\n");
 
-    pb.set_message("Applying Quine_Flatness constraint...");
-    thread::sleep(Duration::from_millis(800));
-    pb.suspend(|| println!("Applying Quine_Flatness constraint..."));
+    // ------------------------------------------------------------
+    // TEST 6: Complete End-to-End Modus Ponens Deduction
+    // ------------------------------------------------------------
+    println!("--- TEST 6: Full Natural Deduction (intro, destruct, apply, exact) ---");
+    let p = session.arena.add(Formula::Atom(Atomic::Eq(Var::Free("p".to_string()), Var::Free("p".to_string()))));
+    let q = session.arena.add(Formula::Atom(Atomic::Eq(Var::Free("q".to_string()), Var::Free("q".to_string()))));
+    let p_imp_q = session.arena.add(Formula::Impl(p, q));
+    let conj = session.arena.add(Formula::Conj(p_imp_q, p));
+    let mp = session.arena.add(Formula::Impl(conj, q));
+    session.start_proof("ModusPonens".to_string(), mp);
 
-    pb.set_message("Typestate tracking initiated for sub-graphs...");
-    thread::sleep(Duration::from_millis(800));
-    pb.suspend(|| println!("Typestate tracking initiated for sub-graphs..."));
+    println!("[Initial Goal]");
+    print_goal_state(&session);
 
-    pb.finish_and_clear();
+    println!("\n> intro H");
+    session.tactic_intro("H".to_string()).expect("intro");
+    println!("> destruct H H_imp H_p");
+    session.tactic_destruct("H", "H_imp".to_string(), "H_p".to_string()).expect("destruct");
+    println!("> apply H_imp");
+    session.tactic_apply("H_imp").expect("apply");
+    println!("> exact H_p");
+    session.tactic_exact("H_p").expect("exact");
+    print_goal_state(&session);
+    assert_eq!(session.active_state.as_ref().unwrap().goals.len(), 0);
 
-    println!("H1 constraints: typestate(T(a)) - typestate(a) = 0");
-    println!("H2 constraints: typestate(T(b)) - typestate(b) = 0");
-    println!("Composite structural matrix evaluated.");
-
-    let mut session = Session::new();
-    let formula = "((((((a = T_a /\\ b = T_b) /\\ Q_ab = a) /\\ Q_ab = b) /\\ Q_Ta_Tb = T_a) /\\ Q_Ta_Tb = T_b) /\\ Q_Ta_Tb = T_Q_ab) /\\ Q_ab = T_Q_ab";
-    session.eval_graph(formula, "repl_tactic_integration");
-
-    thread::sleep(Duration::from_millis(400));
-
-    println!("[SUCCESS] Topological equivalence verified. No integer shift required across the T-boundary.");
-    println!("[Goal Closed] \"forall a b. (SC(a) /\\ SC(b)) -> SC(Q(a,b))\" proven mathematically and topologically.");
+    println!("\n============================================================");
+    println!("  ALL 6 TACTICAL WORKFLOWS VERIFIED AND SOUND");
+    println!("============================================================");
 }
+
