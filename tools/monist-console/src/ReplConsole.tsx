@@ -30,7 +30,7 @@ const STARTER_PROOFS = [
   { name: 'Modus Ponens', cmd: 'theorem ModusPonens ((P -> Q) /\\ P) -> Q' },
   { name: 'Identity', cmd: 'theorem Identity P -> P' },
   { name: 'De Morgan (LR)', cmd: 'theorem DeMorganLR ~(A \\/ B) -> (~A /\\ ~B)' },
-  { name: 'Quine Atom Flatness', cmd: 'theorem QuineAtom Omega = {Omega}' },
+  { name: 'Quine Atom Flatness', cmd: 'theorem QuineAtom Omega in Omega' },
   { name: 'Russell Collision', cmd: 'theorem Russell {x | ~(x in x)} in {x | ~(x in x)}' },
   { name: 'Subset Transitivity', cmd: 'theorem SubsetTrans ((A subset B) /\\ (B subset C)) -> (A subset C)' },
 ];
@@ -51,12 +51,6 @@ export function ReplConsole({ workerRef, onCommandExecuted }: ReplConsoleProps) 
   const historyRef = useRef<HTMLDivElement>(null);
   const endOfLogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!isEvaluating && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEvaluating]);
 
   useEffect(() => {
     if (historyRef.current) {
@@ -174,6 +168,21 @@ export function ReplConsole({ workerRef, onCommandExecuted }: ReplConsoleProps) 
     }
   };
 
+  const resetSession = () => {
+    workerRef.current?.postMessage({
+      id: Math.random().toString(),
+      type: 'REPL_RESET'
+    });
+    setHistory([
+      { type: 'output', text: '=== Monist Interactive Theorem Prover (ITP) ===' },
+      { type: 'output', text: 'Type "help" for syntax reference, or click a 1-Click Starter Proof above.' },
+      { type: 'output', text: 'Session reset to default.' }
+    ]);
+    setProofState(null);
+    setActiveGoalIndex(0);
+    setInputValue('');
+  };
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isEvaluating) return;
@@ -198,7 +207,7 @@ export function ReplConsole({ workerRef, onCommandExecuted }: ReplConsoleProps) 
 
   const insertTactic = (tactic: string) => {
     setInputValue(prev => (prev ? `${prev} ${tactic}` : tactic));
-    inputRef.current?.focus();
+    inputRef.current?.focus({ preventScroll: true });
   };
 
   const runQuickAction = (cmd: string) => {
@@ -260,21 +269,26 @@ export function ReplConsole({ workerRef, onCommandExecuted }: ReplConsoleProps) 
             <div ref={endOfLogRef} />
           </div>
 
+          {/* Top-Right Scroll Button */}
           <button
             type="button"
-            onClick={() => historyRef.current?.scrollBy({ top: -150, behavior: 'smooth' })}
-            style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: '1px solid #ccc', color: '#666', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.color = '#000'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666'; }}
+            onClick={() => historyRef.current?.scrollBy({ top: -150, behavior: "smooth" })}
+            style={{ position: "absolute", top: "15px", right: "12px", background: "transparent", border: "1px solid #ccc", color: "#666", width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "11px", borderRadius: "2px", zIndex: 10 }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#000"; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#666"; }}
+            title="Scroll Up"
           >
             ▲
           </button>
+
+          {/* Bottom-Right Scroll Button */}
           <button
             type="button"
-            onClick={() => historyRef.current?.scrollBy({ top: 150, behavior: 'smooth' })}
-            style={{ position: 'absolute', bottom: '50px', right: '10px', background: 'transparent', border: '1px solid #ccc', color: '#666', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.color = '#000'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666'; }}
+            onClick={() => historyRef.current?.scrollBy({ top: 150, behavior: "smooth" })}
+            style={{ position: "absolute", bottom: "15px", right: "12px", background: "transparent", border: "1px solid #ccc", color: "#666", width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "11px", borderRadius: "2px", zIndex: 10 }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#000"; e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#666"; }}
+            title="Scroll Down"
           >
             ▼
           </button>
@@ -304,17 +318,27 @@ export function ReplConsole({ workerRef, onCommandExecuted }: ReplConsoleProps) 
               onChange={handleInputChange}
               placeholder="Enter tactic or command (e.g. intro H, apply H, qed)..."
               disabled={isEvaluating}
-              autoFocus
             />
-            <button 
-              type="button" 
-              onClick={cancelExecution} 
-              disabled={!isEvaluating} 
-              className="btn-primary rounded-0" 
-              style={{ padding: '0.4rem 0.8rem', backgroundColor: isEvaluating ? '#dc3545' : '#6c757d', borderColor: isEvaluating ? '#dc3545' : '#6c757d', color: 'white' }}
-            >
-              Cancel
-            </button>
+            {isEvaluating ? (
+              <button 
+                type="button" 
+                onClick={cancelExecution} 
+                className="btn-primary rounded-0" 
+                style={{ padding: '0.4rem 0.8rem', backgroundColor: '#dc3545', borderColor: '#dc3545', color: 'white', minWidth: '70px' }}
+              >
+                Cancel
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                onClick={resetSession} 
+                className="btn-secondary rounded-0" 
+                style={{ padding: '0.4rem 0.8rem', backgroundColor: '#f0f0f0', borderColor: '#ccc', color: '#333', minWidth: '70px' }}
+                title="Reset proof state and session back to default"
+              >
+                Reset
+              </button>
+            )}
           </form>
         </div>
 

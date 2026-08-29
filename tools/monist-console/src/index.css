@@ -25,6 +25,12 @@ body {
   padding: 2rem;
 }
 
+@media (max-width: 1024px) {
+  .container {
+    padding: 1.5rem 1rem;
+  }
+}
+
 .header {
   margin-bottom: 2rem;
   border-bottom: 1px solid var(--mono-border);
@@ -46,12 +52,16 @@ body {
 /* IDE Grid Layout */
 .ide-grid {
   display: grid;
-  grid-template-columns: minmax(490px, 1.1fr) 1.5fr;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr);
   gap: 2rem;
   width: 100%;
 }
 
-@media (max-width: 900px) {
+.ide-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
   .ide-grid {
     grid-template-columns: 1fr;
   }

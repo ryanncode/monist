@@ -5,10 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build:wasm": "wasm-pack build --target web ../../crates/monist-wasm",
     "build": "tsc -b && vite build",
-    "build:all": "npm run build:wasm && npm run build",
-    "sync:first-synth": "npm run build:all && cp -r dist/* ../../../first-synth/console/",
     "lint": "oxlint",
     "preview": "vite preview"
   },

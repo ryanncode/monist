@@ -35,7 +35,7 @@
   overflow-y: auto;
   margin-bottom: 10px;
   font-size: 0.95rem;
-  padding-right: 25px;
+  padding-right: 36px;
 }
 
 .repl-line {
@@ -62,7 +62,7 @@
   display: flex;
   align-items: center;
   border-top: 1px solid var(--mono-border, #eaeaea);
-  padding-top: 8px;
+  padding: 8px 36px 0 0;
   gap: 8px;
 }
 
@@ -129,7 +129,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  padding: 8px 0;
+  padding: 8px 36px 8px 0;
   border-top: 1px solid var(--mono-border, #eaeaea);
   margin-top: 5px;
 }

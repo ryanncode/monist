@@ -214,10 +214,27 @@ impl ReplWasmSession {
                     let name = parts[1].to_string();
                     let target_str = parts[2..].join(" ");
                     let budget = ResourceBudget::default();
-                    let mut parser = Parser::with_macros(&target_str, &mut self.inner.arena, Some(&self.inner.macros), budget);
-                    let target_idx = parser.parse_formula();
-                    self.inner.start_proof(name.clone(), target_idx);
-                    output_lines.push(format!("Starting proof of {}", name));
+                    let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        let mut parser = Parser::with_macros(&target_str, &mut self.inner.arena, Some(&self.inner.macros), budget);
+                        parser.parse_formula()
+                    }));
+                    match parse_result {
+                        Ok(target_idx) => {
+                            self.inner.start_proof(name.clone(), target_idx);
+                            output_lines.push(format!("Starting proof of {}", name));
+                        }
+                        Err(e) => {
+                            let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                                s.to_string()
+                            } else if let Some(s) = e.downcast_ref::<String>() {
+                                s.clone()
+                            } else {
+                                "Parse error in formula.".to_string()
+                            };
+                            error_msg = Some(format!("Syntax Error: {}", msg));
+                            success = false;
+                        }
+                    }
                 }
             }
             "assume" => {
@@ -228,10 +245,27 @@ impl ReplWasmSession {
                     let name = parts[1].to_string();
                     let formula_str = parts[2..].join(" ");
                     let budget = ResourceBudget::default();
-                    let mut parser = Parser::with_macros(&formula_str, &mut self.inner.arena, Some(&self.inner.macros), budget);
-                    let root_idx = parser.parse_formula();
-                    self.inner.theorems.push((name.clone(), root_idx));
-                    output_lines.push(format!("Axiom {} added.", name));
+                    let parse_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        let mut parser = Parser::with_macros(&formula_str, &mut self.inner.arena, Some(&self.inner.macros), budget);
+                        parser.parse_formula()
+                    }));
+                    match parse_result {
+                        Ok(root_idx) => {
+                            self.inner.theorems.push((name.clone(), root_idx));
+                            output_lines.push(format!("Axiom {} added.", name));
+                        }
+                        Err(e) => {
+                            let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                                s.to_string()
+                            } else if let Some(s) = e.downcast_ref::<String>() {
+                                s.clone()
+                            } else {
+                                "Parse error in formula.".to_string()
+                            };
+                            error_msg = Some(format!("Syntax Error: {}", msg));
+                            success = false;
+                        }
+                    }
                 }
             }
             "deff" => {
