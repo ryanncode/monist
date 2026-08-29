@@ -1,14 +1,18 @@
 .repl-ide-grid {
   display: grid;
-  grid-template-columns: minmax(500px, 1.8fr) 1.2fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 1.5rem;
   width: 100%;
   margin-bottom: 1.5rem;
 }
 
-@media (max-width: 960px) {
+.repl-ide-grid > * {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
   .repl-ide-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 100%;
   }
 }
 
@@ -237,6 +241,8 @@
   background: #fff;
   border: 1px solid #eee;
   border-radius: 2px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .hyp-row:hover {
@@ -318,6 +324,8 @@
   margin-top: 6px;
   font-weight: 500;
   color: #000;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Formula syntax tokens */
